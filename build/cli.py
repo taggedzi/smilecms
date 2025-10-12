@@ -14,6 +14,7 @@ from .reporting import (
     build_media_stats,
     write_report,
 )
+from .staging import reset_directory, stage_static_site
 from .validation import DocumentValidationError
 
 console = Console()
@@ -23,6 +24,8 @@ app = typer.Typer(help="SmileCMS static publishing toolkit.")
 def build(config_path: str = "smilecms.yml") -> None:
     """Run a full rebuild of site artifacts."""
     config = _load(config_path)
+    reset_directory(config.output_dir)
+    reset_directory(config.media_processing.output_dir)
     try:
         documents = load_documents(config)
     except DocumentValidationError as error:
@@ -73,6 +76,15 @@ def build(config_path: str = "smilecms.yml") -> None:
         f"[bold green]Report[/]: {report_path} "
         f"(duration {duration:.2f}s)"
     )
+    staged = stage_static_site(config)
+    if staged:
+        console.print(
+            f"[bold green]Static bundle[/]: staged {len(staged)} item(s) into {config.output_dir}"
+        )
+    else:
+        console.print(
+            f"[bold yellow]Static bundle[/]: no template assets found at {config.templates_dir}"
+        )
     if report.warnings:
         console.print("[bold yellow]Warnings:[/]")
         for warning in report.warnings:

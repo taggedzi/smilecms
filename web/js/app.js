@@ -1,7 +1,7 @@
 import { initializeRenderer } from "./renderer.js";
 
 const config = {
-  manifestUrl: "/site/manifests/content-001.json",
+  manifestUrl: ["./manifests/content-001.json", "/site/manifests/content-001.json"],
   siteConfigUrl: "./config/site.json",
 };
 

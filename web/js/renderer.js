@@ -64,12 +64,22 @@ function renderSite({ manifest, siteConfig }) {
 }
 
 async function fetchJson(url) {
-  if (!url) throw new Error("fetchJson requires a URL");
-  const response = await fetch(url, { cache: "no-cache" });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url} (${response.status})`);
+  const candidates = Array.isArray(url) ? url : [url];
+  let lastError;
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      const response = await fetch(candidate, { cache: "no-cache" });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${candidate} (${response.status})`);
+      }
+      return await response.json();
+    } catch (error) {
+      lastError = error;
+      console.debug("[renderer] fetch attempt failed", candidate, error);
+    }
   }
-  return response.json();
+  throw lastError ?? new Error("fetchJson requires at least one URL");
 }
 
 function renderLoading(container, message) {

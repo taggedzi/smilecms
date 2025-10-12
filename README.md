@@ -12,3 +12,12 @@ Allowing support for:
 * Music Catalog (mp3, wave, mp4) allowing the display of the cover art, title, and description information AND the ability to play the audio or video(optional) if available with also the ability to display all relevant metadata for the sounds/songs. Allow infinite scroll on the catalog page.
 
 ## Requirements
+
+
+## Build & Deploy
+
+1. Install dependencies into your environment (`pip install -e .` or `pip install .`).
+2. Run `python -m build build` from the project root. The command regenerates manifests, media derivatives, and stages the web assets.
+3. Deploy the contents of the `site/` directory to your hosting provider. That folder now contains everything required to serve SmileCMS (HTML, CSS/JS, templates, manifests, and media derivatives).
+
+For a quick local preview of the production bundle, start a static server inside `site/` (for example, `python -m http.server 8000`) and open `http://localhost:8000/`.
