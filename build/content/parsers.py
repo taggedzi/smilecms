@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any
 
 import yaml
 from pydantic import ValidationError
@@ -34,7 +34,7 @@ def load_markdown_document(path: str | Path) -> ContentDocument:
     )
 
 
-def _split_front_matter(text: str) -> Tuple[dict[str, Any], str]:
+def _split_front_matter(text: str) -> tuple[dict[str, Any], str]:
     lines = text.splitlines()
     if not lines:
         return {}, ""
@@ -52,7 +52,7 @@ def _split_front_matter(text: str) -> Tuple[dict[str, Any], str]:
     raise FrontMatterError("Closing front matter delimiter '---' missing.")
 
 
-def _parse_meta(data: dict[str, Any], source_path: Path) -> Tuple[ContentMeta, list[MediaReference]]:
+def _parse_meta(data: dict[str, Any], source_path: Path) -> tuple[ContentMeta, list[MediaReference]]:
     data = dict(data)
     assets_data = data.pop("assets", []) or []
 
