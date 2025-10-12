@@ -25,6 +25,10 @@ def load_documents(config: Config) -> list[ContentDocument]:
 
 
 def _iter_content_files(root: Path) -> Iterable[Path]:
-    for path in sorted(root.rglob("*")):
-        if path.is_file() and path.suffix.lower() in SUPPORTED_SUFFIXES:
-            yield path
+    directories = sorted(p for p in root.rglob("*") if p.is_dir())
+    directories.insert(0, root)
+
+    for directory in directories:
+        for path in sorted(directory.iterdir()):
+            if path.is_file() and path.suffix.lower() in SUPPORTED_SUFFIXES:
+                yield path

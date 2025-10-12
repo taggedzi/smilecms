@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any
 import yaml
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 class Config(BaseModel):
     project_name: str = Field(default="SmileCMS Project")
@@ -11,7 +11,7 @@ class Config(BaseModel):
     templates_dir: Path = Field(default=Path("web"))
     cache_dir: Path = Field(default=Path(".cache"))
 
-    @validator("content_dir", "media_dir", "output_dir", "templates_dir", "cache_dir", pre=True)
+    @field_validator("content_dir", "media_dir", "output_dir", "templates_dir", "cache_dir", mode="before")
     def _ensure_path(cls, value: Any) -> Path:
         return Path(value)
 
