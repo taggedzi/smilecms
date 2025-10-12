@@ -1,0 +1,82 @@
+{
+  "site": {
+    "title": "SmileCMS Studio",
+    "tagline": "Art, essays, and ambient soundscapes."
+  },
+  "mediaBasePath": "/media/derived",
+  "navigation": [
+    { "label": "Home", "href": "#home", "active": true },
+    { "label": "Gallery", "href": "#gallery" },
+    { "label": "Journal", "href": "#journal" },
+    { "label": "Audio", "href": "#audio" }
+  ],
+  "hero": {
+    "eyebrow": "Curated Collections",
+    "title": "Artistry in Motion",
+    "subtitle": "Explore evolving galleries, reflective writing, and ambient audio journeys—crafted with SmileCMS.",
+    "actions": [
+      { "label": "View Galleries", "href": "#gallery" },
+      { "label": "Read Journal", "href": "#journal" }
+    ]
+  },
+  "sections": [
+    {
+      "id": "journal",
+      "eyebrow": "Latest Writing",
+      "title": "Journal & Articles",
+      "type": "article",
+      "limit": 6,
+      "filters": {
+        "status": "published",
+        "tagsAny": ["blog", "article", "journal"]
+      },
+      "empty": {
+        "message": "No articles yet. Stay tuned for fresh updates."
+      },
+      "actions": [
+        { "label": "Browse Archives", "href": "/journal/" }
+      ]
+    },
+    {
+      "id": "gallery",
+      "eyebrow": "Visual Stories",
+      "title": "Featured Galleries",
+      "type": "gallery",
+      "limit": 6,
+      "filters": {
+        "status": "published",
+        "tagsAny": ["gallery", "image", "photos"]
+      },
+      "empty": {
+        "message": "Upload images to see galleries appear here."
+      },
+      "actions": [
+        { "label": "View Gallery Index", "href": "/gallery/" }
+      ]
+    },
+    {
+      "id": "audio",
+      "eyebrow": "Ambient Soundscapes",
+      "title": "Audio & Music",
+      "type": "audio",
+      "limit": 4,
+      "filters": {
+        "status": "published",
+        "tagsAny": ["audio", "music", "sound"]
+      },
+      "empty": {
+        "message": "No audio tracks yet. Share your sounds."
+      },
+      "actions": [
+        { "label": "Listen More", "href": "/audio/" }
+      ]
+    }
+  ],
+  "footer": {
+    "copy": "© 2025 SmileCMS. Crafted with care.",
+    "links": [
+      { "label": "GitHub", "href": "https://github.com" },
+      { "label": "Contact", "href": "mailto:hello@example.com" }
+    ]
+  }
+}

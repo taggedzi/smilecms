@@ -115,6 +115,56 @@
   margin: 0;
 }
 
+.nav-toggle {
+  display: none;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.nav-toggle__icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  position: relative;
+}
+
+.nav-toggle__icon::before,
+.nav-toggle__icon::after,
+.nav-toggle__icon {
+  display: block;
+  background: currentColor;
+  border-radius: 999px;
+  content: "";
+}
+
+.nav-toggle__icon::before,
+.nav-toggle__icon::after {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  left: 0;
+}
+
+.nav-toggle__icon {
+  height: 2px;
+}
+
+.nav-toggle__icon::before {
+  top: -6px;
+}
+
+.nav-toggle__icon::after {
+  top: 6px;
+}
+
 .nav-link {
   position: relative;
   padding: var(--space-xs) var(--space-sm);
@@ -195,4 +245,45 @@
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  .nav-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    background: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-soft);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+    transition: opacity var(--duration-fast) var(--easing-standard),
+      transform var(--duration-fast) var(--easing-standard);
+  }
+
+  .nav-list[data-open="true"] {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

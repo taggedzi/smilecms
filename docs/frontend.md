@@ -9,14 +9,15 @@ web/
 ├── index.html          # Shell document and base layout regions
 ├── js/
 │   ├── app.js          # Entry point wiring configuration + renderer bootstrap
-│   └── renderer.js     # (WIP) Module that hydrates templates from manifest data
+│   └── renderer.js     # Manifest fetch + template hydration + interactions
 ├── styles/
 │   ├── tokens.css      # Design tokens (colors, typography, spacing)
 │   ├── base.css        # Global resets, background, accessibility affordances
 │   ├── layout.css      # Grid & layout primitives (shell, sections, footer)
 │   ├── typography.css  # Text styles, buttons, pills
 │   └── components.css  # Cards, tiles, navigation, hero banner, sections
-└── templates/          # (Incoming) HTML <template> files for modular sections/tiles
+├── templates/          # HTML <template> files for modular sections/tiles
+└── config/site.json    # Front-end configuration (nav, hero, sections, footer)
 ```
 
 ## Visual Direction
@@ -38,12 +39,8 @@ web/
 
 ## Next Steps
 
-1. Populate `templates/` with semantic `<template>` elements for:
-   - Site header / navigation
-   - Hero section + home sections
-   - Tile variants (gallery, article, audio)
-   - Footer
-2. Flesh out `renderer.js` to fetch manifests, clone templates, and inject content.
-3. Add responsive menu interactions and audio control styling.
+1. Build additional templates or variants as the content model evolves (e.g., video tiles, spotlight sections).
+2. Extend `renderer.js` filters to support pagination or more complex rules when multiple manifest pages exist.
+3. Add progressive enhancement hooks (intersection observers, smooth theme transitions) as needed.
 
 The CSS files already include design tokens and base component styles, so subsequent work can focus on wiring data into templates while keeping accessibility and responsiveness intact.

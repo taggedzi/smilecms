@@ -1,0 +1,15 @@
+<template id="tmpl-tile-audio">
+  <article class="tile tile--audio">
+    <header class="tile__content">
+      <span class="badge" data-tile-genre></span>
+      <h3 class="tile__title" data-tile-title></h3>
+      <p class="tile__excerpt" data-tile-description></p>
+    </header>
+    <div class="audio-player">
+      <audio controls preload="none" data-tile-audio>
+        Your browser does not support the audio element.
+      </audio>
+      <div class="caption" data-tile-meta></div>
+    </div>
+  </article>
+</template>
