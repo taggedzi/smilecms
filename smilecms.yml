@@ -1,0 +1,6 @@
+project_name: "SmileCMS Prototype"
+content_dir: "content"
+media_dir: "media"
+output_dir: "site"
+templates_dir: "web"
+cache_dir: ".cache"

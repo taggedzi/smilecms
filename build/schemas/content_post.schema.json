@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smilecms.dev/schema/content-post.json",
+  "title": "SmileCMS Content Document",
+  "type": "object",
+  "required": ["meta", "body", "source_path"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["slug", "title", "status"],
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9][-a-z0-9_/]*[a-z0-9]$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "published", "archived"]
+        },
+        "hero_media": {
+          "$ref": "#/$defs/media"
+        },
+        "canonical_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "published_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "body": {
+      "type": "string"
+    },
+    "source_path": {
+      "type": "string"
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/media"
+      }
+    }
+  },
+  "$defs": {
+    "media": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "alt_text": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "mime_type": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
