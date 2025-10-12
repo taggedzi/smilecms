@@ -22,7 +22,7 @@ def test_load_documents_from_nested_directories(tmp_path: Path) -> None:
     _write(content / "notes" / "ignore.txt", "Plain text")
 
     config = Config(content_dir=content)
-    documents = load_documents(config)
+    documents = sorted(load_documents(config), key=lambda doc: doc.slug)
 
     slugs = [doc.slug for doc in documents]
     assert slugs == ["first", "second"]
