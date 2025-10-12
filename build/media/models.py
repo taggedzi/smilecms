@@ -37,18 +37,18 @@ class MediaPlan(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     tasks: list[MediaDerivativeTask] = Field(default_factory=list)
-    static_assets: set[str] = Field(default_factory=set)
+    static_assets: dict[str, Path] = Field(default_factory=dict)
 
     def add_task(self, task: MediaDerivativeTask) -> None:
         self.tasks.append(task)
 
-    def add_static_asset(self, path: str) -> None:
-        self.static_assets.add(path)
+    def add_static_asset(self, path: str, source: Path) -> None:
+        self.static_assets[path] = source
 
     @property
     def asset_count(self) -> int:
         media_paths = {task.media_path for task in self.tasks}
-        media_paths.update(self.static_assets)
+        media_paths.update(self.static_assets.keys())
         return len(media_paths)
 
     @property

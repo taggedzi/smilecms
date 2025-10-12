@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, List
 
+from .collections import load_gallery_documents, load_music_documents
 from .config import Config
 from .content import ContentDocument, load_markdown_document
 from .validation import validate_document
@@ -15,14 +16,22 @@ SUPPORTED_SUFFIXES = {".md", ".markdown", ".mdx"}
 def load_documents(config: Config) -> list[ContentDocument]:
     """Load all supported content documents from the configured content directory."""
     root = config.content_dir
-    if not root.exists():
-        return []
 
-    documents: list[ContentDocument] = []
-    for path in _iter_content_files(root):
-        document = load_markdown_document(path)
+    documents: List[ContentDocument] = []
+    if root.exists():
+        for path in _iter_content_files(root):
+            document = load_markdown_document(path)
+            validate_document(document)
+            documents.append(document)
+
+    for document in load_gallery_documents(config):
         validate_document(document)
         documents.append(document)
+
+    for document in load_music_documents(config):
+        validate_document(document)
+        documents.append(document)
+
     return documents
 
 

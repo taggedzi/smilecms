@@ -30,6 +30,7 @@ class ManifestItem(BaseModel):
     reading_time_minutes: int = Field(default=0, ge=0)
     asset_count: int = Field(default=0, ge=0)
     has_media: bool = Field(default=False)
+    duration: Optional[float] = Field(default=None, ge=0)
 
 
 class ManifestPage(BaseModel):

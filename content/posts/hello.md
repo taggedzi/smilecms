@@ -2,9 +2,9 @@
 title: "Hello"
 status: published
 hero_media:
-  path: "gallery/photo.jpg"
+  path: "media/hello-hero.jpg"
 assets:
-  - path: "gallery/audio.mp3"
+  - path: "audio/doorway-dreams/doorway-dreams.mp3"
 ---
 
 Welcome to SmileCMS!

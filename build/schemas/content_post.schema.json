@@ -49,6 +49,10 @@
         "updated_at": {
           "type": ["string", "null"],
           "format": "date-time"
+        },
+        "duration": {
+          "type": ["number", "null"],
+          "minimum": 0
         }
       },
       "additionalProperties": false

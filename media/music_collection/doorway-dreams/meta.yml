@@ -1,0 +1,18 @@
+title: "Doorway Dreams"
+summary: "Ambient synth swells designed for late-night journaling."
+description: |
+  Doorway Dreams drifts between analog synth pads and gentle field
+  recordings. Perfect for winding down or setting the tone for a reflective
+  gallery session.
+tags:
+  - ambient
+  - synth
+status: published
+published_at: 2025-08-12T09:00:00
+duration: 186
+audio: doorway-dreams.mp3
+assets:
+  doorway-dreams-cover.png:
+    alt_text: "Abstract neon doorway artwork."
+  doorway-dreams-video.mp4:
+    title: "Visualizer"

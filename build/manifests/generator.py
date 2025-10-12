@@ -73,6 +73,7 @@ class ManifestGenerator:
             reading_time_minutes=reading_time,
             asset_count=asset_count,
             has_media=asset_count > 0,
+            duration=meta.duration,
         )
 
 

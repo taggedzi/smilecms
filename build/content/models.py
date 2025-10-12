@@ -71,6 +71,9 @@ class ContentMeta(BaseModel):
     updated_at: Optional[datetime] = Field(
         default=None, description="Last modification timestamp."
     )
+    duration: Optional[float] = Field(
+        default=None, description="Duration in seconds for audio/video items.", ge=0
+    )
 
     @field_validator("slug")
     def _normalize_slug(cls, value: str) -> str:

@@ -78,8 +78,7 @@ def process_media_plan(plan: MediaPlan, config: Config) -> MediaProcessingResult
             variant.path = destination.as_posix()
         result.add_task_variant(task.media_path, variant)
 
-    for rel_path in plan.static_assets:
-        source = config.media_processing.source_dir / rel_path
+    for rel_path, source in plan.static_assets.items():
         destination = derived_root / rel_path
         if not source.exists():
             message = f"Media source missing: {source}"

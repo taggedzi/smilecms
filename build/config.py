@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any
+
 import yaml
 from pydantic import BaseModel, Field, field_validator
 
@@ -32,18 +33,61 @@ class MediaProcessingConfig(BaseModel):
     def _ensure_path(cls, value: Any) -> Path:
         return Path(value)
 
+
+class GalleryConfig(BaseModel):
+    """Configuration for gallery collection ingestion."""
+
+    source_dir: Path = Field(default=Path("media/image_gallery_raw"))
+    metadata_filename: str = Field(default="meta.yml")
+
+    @field_validator("source_dir", mode="before")
+    def _ensure_path(cls, value: Any) -> Path:
+        return Path(value)
+
+
+class MusicConfig(BaseModel):
+    """Configuration for music collection ingestion."""
+
+    source_dir: Path = Field(default=Path("media/music_collection"))
+    metadata_filename: str = Field(default="meta.yml")
+
+    @field_validator("source_dir", mode="before")
+    def _ensure_path(cls, value: Any) -> Path:
+        return Path(value)
+
+
 class Config(BaseModel):
     project_name: str = Field(default="SmileCMS Project")
     content_dir: Path = Field(default=Path("content"))
     media_dir: Path = Field(default=Path("media"))
+    article_media_dir: Path = Field(default=Path("content/media"))
     output_dir: Path = Field(default=Path("site"))
     templates_dir: Path = Field(default=Path("web"))
     cache_dir: Path = Field(default=Path(".cache"))
     media_processing: MediaProcessingConfig = Field(default_factory=MediaProcessingConfig)
+    gallery: GalleryConfig = Field(default_factory=GalleryConfig)
+    music: MusicConfig = Field(default_factory=MusicConfig)
 
-    @field_validator("content_dir", "media_dir", "output_dir", "templates_dir", "cache_dir", mode="before")
+    @field_validator(
+        "content_dir",
+        "media_dir",
+        "article_media_dir",
+        "output_dir",
+        "templates_dir",
+        "cache_dir",
+        mode="before",
+    )
     def _ensure_path(cls, value: Any) -> Path:
         return Path(value)
+
+    @property
+    def media_mounts(self) -> list[tuple[str, Path]]:
+        return [
+            ("media", self.article_media_dir),
+            ("gallery", self.gallery.source_dir),
+            ("audio", self.music.source_dir),
+        ]
+
 
 def load_config(path: str | Path) -> Config:
     config_path = Path(path)
