@@ -17,6 +17,21 @@ class ContentStatus(str, Enum):
     ARCHIVED = "archived"
 
 
+class MediaVariant(BaseModel):
+    """Represents a generated derivative of a media asset."""
+
+    profile: str = Field(description="Derivative profile name, e.g. 'thumb'.")
+    path: str = Field(description="Relative path to the generated asset.")
+    width: Optional[int] = Field(default=None, ge=1)
+    height: Optional[int] = Field(default=None, ge=1)
+    format: Optional[str] = Field(default=None)
+    quality: Optional[int] = Field(default=None, ge=1, le=100)
+
+    @field_validator("path")
+    def _strip_leading_slash(cls, value: str) -> str:
+        return value.lstrip("/")
+
+
 class MediaReference(BaseModel):
     """Reference to a media asset associated with a document."""
 
@@ -29,6 +44,7 @@ class MediaReference(BaseModel):
     duration: Optional[float] = Field(
         default=None, description="Duration in seconds for time-based media."
     )
+    variants: list[MediaVariant] = Field(default_factory=list, description="Derived variants.")
 
     @field_validator("path")
     def _strip_leading_slash(cls, value: str) -> str:

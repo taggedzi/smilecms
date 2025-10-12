@@ -20,11 +20,16 @@ class ManifestItem(BaseModel):
     slug: str = Field(...)
     title: str = Field(...)
     summary: Optional[str] = Field(default=None)
+    excerpt: Optional[str] = Field(default=None)
     tags: list[str] = Field(default_factory=list)
     status: ContentStatus = Field(default=ContentStatus.DRAFT)
     hero_media: Optional[MediaReference] = Field(default=None)
     published_at: Optional[datetime] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)
+    word_count: int = Field(default=0, ge=0)
+    reading_time_minutes: int = Field(default=0, ge=0)
+    asset_count: int = Field(default=0, ge=0)
+    has_media: bool = Field(default=False)
 
 
 class ManifestPage(BaseModel):

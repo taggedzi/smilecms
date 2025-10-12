@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Iterable, Iterator, Sequence
+from math import ceil
+from typing import Iterable, Iterator, Optional, Sequence, Tuple
 
 from ..content.models import ContentDocument, ContentMeta
 from .models import ManifestItem, ManifestPage
@@ -27,7 +28,7 @@ class ManifestGenerator:
 
         pages: list[ManifestPage] = []
         for index, chunk in enumerate(chunks, start=1):
-            items = [self._to_item(document.meta) for document in chunk]
+            items = [self._to_item(document) for document in chunk]
             page_id = f"{prefix}-{index:03d}"
             pages.append(
                 ManifestPage(
@@ -53,16 +54,25 @@ class ManifestGenerator:
         return pages
 
     @staticmethod
-    def _to_item(meta: ContentMeta) -> ManifestItem:
+    def _to_item(document: ContentDocument) -> ManifestItem:
+        meta = document.meta
+        excerpt, word_count = _summarize(document)
+        reading_time = _reading_time_minutes(word_count)
+        asset_count = len(document.assets) + (1 if meta.hero_media else 0)
         return ManifestItem(
             slug=meta.slug,
             title=meta.title,
             summary=meta.summary,
+            excerpt=excerpt,
             tags=meta.tags,
             status=meta.status,
             hero_media=meta.hero_media,
             published_at=meta.published_at,
             updated_at=meta.updated_at,
+            word_count=word_count,
+            reading_time_minutes=reading_time,
+            asset_count=asset_count,
+            has_media=asset_count > 0,
         )
 
 
@@ -87,3 +97,43 @@ def _sort_key(meta: ContentMeta) -> tuple[datetime, str, str]:
     if timestamp is None:
         timestamp = datetime.min.replace(tzinfo=timezone.utc)
     return (timestamp, meta.title.lower(), meta.slug)
+
+
+def _summarize(document: ContentDocument) -> Tuple[Optional[str], int]:
+    summary = document.meta.summary
+    plain = _extract_plain_text(document.body)
+    if summary:
+        excerpt = summary
+    else:
+        excerpt = _truncate(plain, 240) if plain else None
+    word_count = len(plain.split()) if plain else 0
+    return excerpt, word_count
+
+
+def _extract_plain_text(body: str) -> str:
+    import re
+
+    text_parts: list[str] = []
+    for line in body.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        line = re.sub(r"!\[[^\]]*\]\([^)]+\)", "", line)
+        line = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", line)
+        line = re.sub(r"`([^`]+)`", r"\1", line)
+        line = line.lstrip("#>*-1234567890. ").strip()
+        text_parts.append(line)
+    return " ".join(text_parts)
+
+
+def _truncate(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    truncated = text[:limit].rsplit(" ", 1)[0]
+    return f"{truncated}…"
+
+
+def _reading_time_minutes(word_count: int) -> int:
+    if word_count == 0:
+        return 0
+    return max(1, ceil(word_count / 200))

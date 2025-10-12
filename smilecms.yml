@@ -4,3 +4,16 @@ media_dir: "media"
 output_dir: "site"
 templates_dir: "web"
 cache_dir: ".cache"
+media_processing:
+  source_dir: "media/raw"
+  output_dir: "media/derived"
+  profiles:
+    - name: "thumb"
+      width: 320
+      height: 320
+      format: "webp"
+      quality: 75
+    - name: "large"
+      width: 1920
+      format: "jpg"
+      quality: 85
