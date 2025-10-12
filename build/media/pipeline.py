@@ -10,6 +10,7 @@ from ..content import ContentDocument, MediaReference
 from .models import MediaDerivativeTask, MediaPlan
 
 MediaRole = Literal["hero", "asset"]
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".tiff", ".bmp"}
 
 
 def collect_media_plan(documents: Iterable[ContentDocument], config: Config) -> MediaPlan:
@@ -26,6 +27,9 @@ def collect_media_plan(documents: Iterable[ContentDocument], config: Config) -> 
         for role, reference in _iter_references(document):
             rel_path = _normalize_media_path(reference.path)
             reference.path = rel_path
+            if not _is_image_extension(rel_path):
+                plan.add_static_asset(rel_path)
+                continue
             for profile in profiles:
                 key = (rel_path, profile.name)
                 task = seen.get(key)
@@ -62,3 +66,7 @@ def _destination_path(output_root: Path, rel_path: str, profile: DerivativeProfi
 def _normalize_media_path(path: str) -> str:
     normalized = path.replace("\\", "/").lstrip("/")
     return normalized
+
+
+def _is_image_extension(path: str) -> bool:
+    return Path(path).suffix.lower() in IMAGE_EXTENSIONS

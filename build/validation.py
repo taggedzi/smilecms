@@ -24,7 +24,7 @@ class DocumentValidationError(ValueError):
 
 def validate_document(document: ContentDocument) -> None:
     """Validate a content document against the canonical JSON schema."""
-    data = document.model_dump(mode="json")
+    data = document.model_dump(mode="json", exclude_none=True)
     validator = _get_content_validator()
     errors = sorted(validator.iter_errors(data), key=lambda err: err.path)
     if errors:
