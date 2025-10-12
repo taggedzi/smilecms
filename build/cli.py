@@ -3,6 +3,7 @@ from rich.console import Console
 
 from .config import Config, load_config
 from .ingest import load_documents
+from .manifests import ManifestGenerator, write_manifest_pages
 from .validation import DocumentValidationError
 
 console = Console()
@@ -19,9 +20,15 @@ def build(config_path: str = "smilecms.yml") -> None:
         raise typer.Exit(code=1)
 
     count = len(documents)
+    generator = ManifestGenerator()
+    pages = generator.build_pages(documents, prefix="content")
+    manifest_dir = config.output_dir / "manifests"
+    written = write_manifest_pages(pages, manifest_dir)
+
+    console.print(f"[bold green]Loaded[/] {count} document(s).")
     console.print(
-        f"[bold green]Loaded[/] {count} document{'s' if count != 1 else ''} "
-        f"from {config.content_dir}"
+        f"[bold green]Generated[/] {len(written)} manifest page(s) "
+        f"under {manifest_dir}"
     )
 
 @app.command()

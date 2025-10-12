@@ -1,0 +1,38 @@
+"""Pydantic models describing manifest structures."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+from ..content.models import ContentStatus, MediaReference
+
+
+def utc_now() -> datetime:
+    return datetime.now(tz=timezone.utc)
+
+
+class ManifestItem(BaseModel):
+    """Slim document representation for client consumption."""
+
+    slug: str = Field(...)
+    title: str = Field(...)
+    summary: Optional[str] = Field(default=None)
+    tags: list[str] = Field(default_factory=list)
+    status: ContentStatus = Field(default=ContentStatus.DRAFT)
+    hero_media: Optional[MediaReference] = Field(default=None)
+    published_at: Optional[datetime] = Field(default=None)
+    updated_at: Optional[datetime] = Field(default=None)
+
+
+class ManifestPage(BaseModel):
+    """Chunked payload distributed to the front-end."""
+
+    id: str = Field(description="Stable identifier for the page (e.g., 'posts-001').")
+    page: int = Field(ge=1)
+    total_pages: int = Field(ge=1)
+    total_items: int = Field(ge=0)
+    items: list[ManifestItem] = Field(default_factory=list)
+    generated_at: datetime = Field(default_factory=utc_now)
