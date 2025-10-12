@@ -27,8 +27,7 @@
       "type": "article",
       "limit": 6,
       "filters": {
-        "status": "published",
-        "tagsAny": ["blog", "article", "journal"]
+        "status": "published"
       },
       "empty": {
         "message": "No articles yet. Stay tuned for fresh updates."
