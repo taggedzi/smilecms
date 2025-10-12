@@ -1,4 +1,14 @@
 const TEMPLATE_CACHE = new Map();
+const TEMPLATE_SOURCES = [
+  "./templates/header.html",
+  "./templates/nav.html",
+  "./templates/hero.html",
+  "./templates/section.html",
+  "./templates/tile-article.html",
+  "./templates/tile-gallery.html",
+  "./templates/tile-audio.html",
+  "./templates/footer.html",
+];
 
 export async function initializeRenderer({
   manifestUrl,
@@ -10,6 +20,7 @@ export async function initializeRenderer({
   renderLoading(main, "Loading content…");
 
   try {
+    await loadTemplates();
     const [manifest, siteConfig] = await Promise.all([
       fetchJson(manifestUrl),
       fetchJson(siteConfigUrl),
@@ -351,6 +362,30 @@ function useTemplate(id) {
   }
   TEMPLATE_CACHE.set(id, template.content || template);
   return TEMPLATE_CACHE.get(id);
+}
+
+async function loadTemplates() {
+  if (document.getElementById("tmpl-site-header")) {
+    return;
+  }
+
+  const host = document.getElementById("template-host") || document.body;
+  const parser = new DOMParser();
+
+  await Promise.all(
+    TEMPLATE_SOURCES.map(async (path) => {
+      const response = await fetch(path, { cache: "no-cache" });
+      if (!response.ok) {
+        throw new Error(`Failed to load template ${path}`);
+      }
+      const html = await response.text();
+      const doc = parser.parseFromString(html, "text/html");
+      doc.querySelectorAll("template").forEach((template) => {
+        const imported = document.importNode(template, true);
+        host.appendChild(imported);
+      });
+    })
+  );
 }
 
 function filterItems(items, filters = {}) {
