@@ -1,7 +1,10 @@
 from pathlib import Path
 
 from build.config import Config
+import pytest
+
 from build.ingest import load_documents
+from build.validation import DocumentValidationError
 
 
 def _write(path: Path, body: str) -> None:
@@ -34,3 +37,17 @@ def test_returns_empty_when_directory_missing(tmp_path: Path) -> None:
     config = Config(content_dir=tmp_path / "missing")
     documents = load_documents(config)
     assert documents == []
+
+
+def test_invalid_document_raises_validation_error(tmp_path: Path) -> None:
+    content = tmp_path / "content"
+    _write(
+        content / "posts" / "bad.md",
+        "---\nslug: \"Bad Slug\"\ntitle: Invalid\n---\nBody",
+    )
+
+    config = Config(content_dir=content)
+    with pytest.raises(DocumentValidationError) as excinfo:
+        load_documents(config)
+
+    assert "bad.md" in str(excinfo.value)

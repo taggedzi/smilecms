@@ -1,6 +1,9 @@
 import typer
 from rich.console import Console
-from .config import load_config, Config
+
+from .config import Config, load_config
+from .ingest import load_documents
+from .validation import DocumentValidationError
 
 console = Console()
 app = typer.Typer(help="SmileCMS static publishing toolkit.")
@@ -9,7 +12,17 @@ app = typer.Typer(help="SmileCMS static publishing toolkit.")
 def build(config_path: str = "smilecms.yml") -> None:
     """Run a full rebuild of site artifacts."""
     config = _load(config_path)
-    console.print(f"[bold green]TODO[/]: run build pipeline for {config.project_name}")
+    try:
+        documents = load_documents(config)
+    except DocumentValidationError as error:
+        console.print(f"[bold red]Validation failed[/]: {error}")
+        raise typer.Exit(code=1)
+
+    count = len(documents)
+    console.print(
+        f"[bold green]Loaded[/] {count} document{'s' if count != 1 else ''} "
+        f"from {config.content_dir}"
+    )
 
 @app.command()
 def preview(config_path: str = "smilecms.yml") -> None:

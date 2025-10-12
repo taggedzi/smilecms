@@ -19,7 +19,7 @@
           "minLength": 1
         },
         "summary": {
-          "type": "string"
+          "type": ["string", "null"]
         },
         "tags": {
           "type": "array",
@@ -33,18 +33,21 @@
           "enum": ["draft", "published", "archived"]
         },
         "hero_media": {
-          "$ref": "#/$defs/media"
+          "oneOf": [
+            { "$ref": "#/$defs/media" },
+            { "type": "null" }
+          ]
         },
         "canonical_url": {
-          "type": "string",
+          "type": ["string", "null"],
           "format": "uri"
         },
         "published_at": {
-          "type": "string",
+          "type": ["string", "null"],
           "format": "date-time"
         },
         "updated_at": {
-          "type": "string",
+          "type": ["string", "null"],
           "format": "date-time"
         }
       },

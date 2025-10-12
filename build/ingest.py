@@ -7,6 +7,7 @@ from typing import Iterable
 
 from .config import Config
 from .content import ContentDocument, load_markdown_document
+from .validation import validate_document
 
 SUPPORTED_SUFFIXES = {".md", ".markdown", ".mdx"}
 
@@ -20,6 +21,7 @@ def load_documents(config: Config) -> list[ContentDocument]:
     documents: list[ContentDocument] = []
     for path in _iter_content_files(root):
         document = load_markdown_document(path)
+        validate_document(document)
         documents.append(document)
     return documents
 
