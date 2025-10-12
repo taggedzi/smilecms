@@ -24,7 +24,8 @@ def collect_media_plan(documents: Iterable[ContentDocument], config: Config) -> 
 
     for document in documents:
         for role, reference in _iter_references(document):
-            rel_path = reference.path
+            rel_path = _normalize_media_path(reference.path)
+            reference.path = rel_path
             for profile in profiles:
                 key = (rel_path, profile.name)
                 task = seen.get(key)
@@ -56,3 +57,8 @@ def _destination_path(output_root: Path, rel_path: str, profile: DerivativeProfi
     suffix = profile.format
     parent = output_root / profile.name / original.parent
     return parent / f"{stem}.{suffix}"
+
+
+def _normalize_media_path(path: str) -> str:
+    normalized = path.replace("\\", "/").lstrip("/")
+    return normalized

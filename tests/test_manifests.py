@@ -1,7 +1,13 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
-from build.content.models import ContentDocument, ContentMeta, ContentStatus, MediaReference
+from build.content.models import (
+    ContentDocument,
+    ContentMeta,
+    ContentStatus,
+    MediaReference,
+    MediaVariant,
+)
 from build.manifests import ManifestGenerator, chunk_documents, write_manifest_pages
 
 
@@ -101,3 +107,29 @@ def test_manifest_writer_serializes_json(tmp_path: Path) -> None:
     assert '"slug": "single"' in data
     assert '"asset_count": 1' in data
     assert '"has_media": true' in data
+
+
+def test_manifest_includes_media_variants() -> None:
+    variant = MediaVariant(
+        profile="thumb",
+        path="thumb/images/sample.webp",
+        width=120,
+        height=90,
+        format="webp",
+        quality=75,
+    )
+    hero_media = MediaReference(path="images/sample.jpg", variants=[variant])
+    doc = _document(
+        "featured",
+        title="Featured",
+        body="Featured document body.",
+        summary="Featured summary",
+    )
+    doc.meta.hero_media = hero_media
+
+    generator = ManifestGenerator(page_size=1)
+    page = generator.build_pages([doc], prefix="posts")[0]
+
+    hero = page.items[0].hero_media
+    assert hero is not None
+    assert hero.variants and hero.variants[0].profile == "thumb"

@@ -4,7 +4,7 @@ from rich.console import Console
 from .config import Config, load_config
 from .ingest import load_documents
 from .manifests import ManifestGenerator, write_manifest_pages
-from .media import collect_media_plan
+from .media import apply_variants_to_documents, collect_media_plan, process_media_plan
 from .validation import DocumentValidationError
 
 console = Console()
@@ -26,6 +26,8 @@ def build(config_path: str = "smilecms.yml") -> None:
     manifest_dir = config.output_dir / "manifests"
     written = write_manifest_pages(pages, manifest_dir)
     media_plan = collect_media_plan(documents, config)
+    variants_map = process_media_plan(media_plan, config)
+    apply_variants_to_documents(documents, variants_map)
 
     console.print(f"[bold green]Loaded[/] {count} document(s).")
     console.print(
@@ -33,8 +35,8 @@ def build(config_path: str = "smilecms.yml") -> None:
         f"under {manifest_dir}"
     )
     console.print(
-        f"[bold green]Planned[/] {len(media_plan.tasks)} media derivative task(s) "
-        f"across {media_plan.asset_count} asset(s)."
+        f"[bold green]Processed[/] {len(variants_map)} media asset(s) "
+        f"across {len(media_plan.tasks)} task(s)."
     )
 
 @app.command()
