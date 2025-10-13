@@ -19,6 +19,7 @@
   align-items: center;
   justify-content: center;
   padding: 0 var(--space-xl);
+  position: relative;
 }
 
 .site-main {
