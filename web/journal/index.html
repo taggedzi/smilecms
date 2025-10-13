@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Journal Archives · SmileCMS</title>
+    <link rel="stylesheet" href="../styles/tokens.css" />
+    <link rel="stylesheet" href="../styles/base.css" />
+    <link rel="stylesheet" href="../styles/layout.css" />
+    <link rel="stylesheet" href="../styles/typography.css" />
+    <link rel="stylesheet" href="../styles/components.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div id="app-shell" class="app-shell" data-theme="dark">
+      <header class="site-header" id="site-header" aria-live="polite"></header>
+      <nav class="site-nav" id="site-nav" aria-label="Primary"></nav>
+      <main id="main" class="journal-main" tabindex="-1">
+        <section class="loading-state" aria-live="polite">
+          <p>Loading journal entries…</p>
+        </section>
+      </main>
+      <footer class="site-footer" id="site-footer"></footer>
+    </div>
+    <div id="template-host" hidden></div>
+    <script type="module" src="../js/journal.js"></script>
+  </body>
+</html>

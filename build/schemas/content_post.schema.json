@@ -32,6 +32,10 @@
           "type": "string",
           "enum": ["draft", "published", "archived"]
         },
+        "content_type": {
+          "type": "string",
+          "enum": ["article", "gallery", "audio", "video", "other"]
+        },
         "hero_media": {
           "oneOf": [
             { "$ref": "#/$defs/media" },

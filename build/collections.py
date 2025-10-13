@@ -10,7 +10,13 @@ from typing import Any
 import yaml
 
 from .config import Config
-from .content import ContentDocument, ContentMeta, ContentStatus, MediaReference
+from .content import (
+    ContentDocument,
+    ContentMeta,
+    ContentStatus,
+    ContentType,
+    MediaReference,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +42,8 @@ def load_gallery_documents(config: Config) -> list[ContentDocument]:
         summary = data.get("summary")
         description = data.get("description") or ""
         tags = _coerce_tags(data.get("tags"))
+        if "gallery" not in tags:
+            tags.append("gallery")
         status = _parse_status(data.get("status"), default=ContentStatus.PUBLISHED)
         published_at = _parse_datetime(data.get("published_at"))
         updated_at = _parse_datetime(data.get("updated_at"))
@@ -71,6 +79,7 @@ def load_gallery_documents(config: Config) -> list[ContentDocument]:
             summary=summary,
             tags=tags,
             status=status,
+            content_type=ContentType.GALLERY,
             hero_media=hero_reference,
             published_at=published_at,
             updated_at=updated_at,
@@ -111,6 +120,8 @@ def load_music_documents(config: Config) -> list[ContentDocument]:
             for tag in _coerce_tags(data.get("genre")):
                 if tag not in tags:
                     tags.append(tag)
+        if "audio" not in tags:
+            tags.append("audio")
         status = _parse_status(data.get("status"), default=ContentStatus.PUBLISHED)
         published_at = _parse_datetime(data.get("published_at"))
         updated_at = _parse_datetime(data.get("updated_at"))
@@ -147,6 +158,7 @@ def load_music_documents(config: Config) -> list[ContentDocument]:
             summary=summary,
             tags=tags,
             status=status,
+            content_type=ContentType.AUDIO,
             hero_media=hero_reference,
             published_at=published_at,
             updated_at=updated_at,

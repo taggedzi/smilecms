@@ -201,9 +201,17 @@ function renderSections(container, sections, items, mediaBasePath) {
       });
     }
 
-    const filteredItems = filterItems(items, sectionConfig.filters).slice(
+    const itemsForSection = items.filter((item) => {
+      const itemType = item.content_type ?? "article";
+      if (sectionConfig.type) {
+        return itemType === sectionConfig.type;
+      }
+      return true;
+    });
+
+    const filteredItems = filterItems(itemsForSection, sectionConfig.filters).slice(
       0,
-      sectionConfig.limit ?? items.length
+      sectionConfig.limit ?? itemsForSection.length
     );
 
     if (!filteredItems.length) {
@@ -256,7 +264,7 @@ function renderArticleTile(item) {
   }
   if (link) {
     link.textContent = item.title ?? item.slug;
-    link.href = item.canonical_url ?? `/posts/${item.slug}/`;
+    link.href = item.canonical_url ?? `./posts/${item.slug}/`;
   }
   if (excerpt) {
     excerpt.textContent = item.excerpt ?? item.summary ?? "";

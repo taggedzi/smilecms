@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -15,6 +15,16 @@ class ContentStatus(str, Enum):
     DRAFT = "draft"
     PUBLISHED = "published"
     ARCHIVED = "archived"
+
+
+class ContentType(str, Enum):
+    """High-level type/category for a document."""
+
+    ARTICLE = "article"
+    GALLERY = "gallery"
+    AUDIO = "audio"
+    VIDEO = "video"
+    OTHER = "other"
 
 
 class MediaVariant(BaseModel):
@@ -59,6 +69,7 @@ class ContentMeta(BaseModel):
     summary: Optional[str] = Field(default=None, description="Short summary.")
     tags: list[str] = Field(default_factory=list, description="Free-form tags.")
     status: ContentStatus = Field(default=ContentStatus.DRAFT)
+    content_type: ContentType = Field(default=ContentType.ARTICLE)
     hero_media: Optional[MediaReference] = Field(
         default=None, description="Primary media asset for the document."
     )
@@ -81,6 +92,12 @@ class ContentMeta(BaseModel):
         if not cleaned:
             raise ValueError("slug cannot be empty")
         return cleaned
+
+    @field_validator("published_at", "updated_at")
+    def _ensure_timezone(cls, value: Optional[datetime]) -> Optional[datetime]:
+        if value is not None and value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
 
 
 class ContentDocument(BaseModel):

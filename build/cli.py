@@ -3,6 +3,7 @@ import time
 import typer
 from rich.console import Console
 
+from .articles import write_article_pages
 from .config import Config, load_config
 from .ingest import load_documents
 from .manifests import ManifestGenerator, write_manifest_pages
@@ -84,6 +85,11 @@ def build(config_path: str = "smilecms.yml") -> None:
     else:
         console.print(
             f"[bold yellow]Static bundle[/]: no template assets found at {config.templates_dir}"
+        )
+    article_pages = write_article_pages(documents, config)
+    if article_pages:
+        console.print(
+            f"[bold green]Articles[/]: rendered {len(article_pages)} page(s) in {config.output_dir / 'posts'}"
         )
     if report.warnings:
         console.print("[bold yellow]Warnings:[/]")

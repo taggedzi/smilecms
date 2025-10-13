@@ -62,6 +62,7 @@ class ManifestGenerator:
         return ManifestItem(
             slug=meta.slug,
             title=meta.title,
+            content_type=meta.content_type,
             summary=meta.summary,
             excerpt=excerpt,
             tags=meta.tags,

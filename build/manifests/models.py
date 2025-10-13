@@ -7,7 +7,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from ..content.models import ContentStatus, MediaReference
+from ..content.models import ContentStatus, ContentType, MediaReference
 
 
 def utc_now() -> datetime:
@@ -19,6 +19,7 @@ class ManifestItem(BaseModel):
 
     slug: str = Field(...)
     title: str = Field(...)
+    content_type: ContentType = Field(default=ContentType.ARTICLE)
     summary: Optional[str] = Field(default=None)
     excerpt: Optional[str] = Field(default=None)
     tags: list[str] = Field(default_factory=list)

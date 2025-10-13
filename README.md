@@ -17,6 +17,8 @@ Allowing support for:
 ## Content Layout
 
 - Articles live under `content/` as Markdown. Assets referenced by articles should be stored in `content/media/` and referenced with paths like `media/hero-image.jpg`; the build will resolve them and emit derivatives under `site/media/derived/media/...`.
+- Inside article bodies you can embed local assets with shortcodes: `[Caption](img:media/example.jpg)`, `[Track Title](audio:audio/example.mp3)`, or `[Clip Title](video:media/example.mp4)`. These resolve to the processed assets in the static bundle.
+- The journal archive lives at `/journal/` in the generated site. It loads the latest manifest so new posts appear automatically and supports search / sort without additional configuration.
 - Galleries belong in `media/image_gallery_raw/<collection-slug>/`. Each folder needs a `meta.yml` describing the collection (`title`, optional `summary`, `tags`, `status`, `published_at`, `hero`). Image files in the folder become gallery assets, and the first image (or the `hero` entry) is used for the tile preview.
 - Music tracks live in `media/music_collection/<track-slug>/` with a `meta.yml` that mirrors the gallery structure and additionally supports `audio`, `duration`, and optional asset metadata. The primary audio file is published as-is while artwork/videos in the same folder are exposed as supplementary assets.
 
