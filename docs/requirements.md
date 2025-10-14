@@ -31,7 +31,10 @@ Source formats:
 
 - Markdown or MDX for prose content, coupled with front-matter YAML.
 - JSON/YAML descriptors for collections and global config.
-- Raw media files under `/media/raw/` with optional sidecar metadata.
+- Raw media files organized under dedicated roots:
+  - `/content/media/` for article assets
+  - `/media/image_gallery_raw/` for gallery collections and sidecars
+  - `/media/music_collection/` for audio tracks and artwork
 
 ## 4. Build Pipeline Requirements (Python)
 

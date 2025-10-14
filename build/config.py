@@ -25,7 +25,7 @@ def _default_profiles() -> list["DerivativeProfile"]:
 class MediaProcessingConfig(BaseModel):
     """Configuration for media derivative generation."""
 
-    source_dir: Path = Field(default=Path("media/raw"))
+    source_dir: Path = Field(default=Path("content/media"))
     output_dir: Path = Field(default=Path("media/derived"))
     profiles: list[DerivativeProfile] = Field(default_factory=_default_profiles)
 

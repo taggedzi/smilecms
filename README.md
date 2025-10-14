@@ -40,13 +40,14 @@ All source content stays in the repository so the build is deterministic:
 | Type                | Source directory                               | Output |
 | ------------------- | ---------------------------------------------- | ------ |
 | Journal posts       | `content/posts/*.md`                           | `site/posts/<slug>/index.html` |
-| Post media          | `content/media/`                               | `media/derived/...` (generated) |
-| Galleries           | `media/image_gallery_raw/<collection>/`        | `site/data/gallery/*.json[l]` + `media/derived/gallery/...` |
+| Post media          | `content/media/` *(required)*                  | `media/derived/...` (generated) |
+| Galleries           | `media/image_gallery_raw/<collection>/` *(required)* | `site/data/gallery/*.json[l]` + `media/derived/gallery/...` |
+| Music catalog       | `media/music_collection/<track>/` *(required)* | `site/data/...` (future audio manifests) + `media/derived/...` |
 | Static front-end    | `web/`                                         | Copied into `site/` during build |
 
-- **Journal entries** use Markdown with YAML front matter. Shortcodes like `[Caption](img:media/example.jpg)` embed local assets and are resolved to generated derivatives (`/media/derived/...`) during the build.
-- **Galleries** keep raw images and sidecar metadata together. The build pipeline enriches sidecars, generates derivative sizes (`thumb`, `large` by default), and publishes JSON/JSONL datasets that power `/gallery/`.
-- **Music catalog** follows the same conventions under `media/music_collection/` (metadata + media). Support exists in the pipeline even if the front-end hasn’t been wired yet.
+- **Journal entries** use Markdown with YAML front matter. All referenced media must live under `content/media/`; shortcodes like `[Caption](img:media/example.jpg)` embed those assets and are resolved to generated derivatives (`/media/derived/...`) during the build.
+- **Galleries** keep raw images and sidecar metadata together under `media/image_gallery_raw/…`. The build pipeline enriches sidecars, generates derivative sizes (`thumb`, `large` by default), and publishes JSON/JSONL datasets that power `/gallery/`.
+- **Music catalog** follows the same conventions under `media/music_collection/` (metadata + media). Assets outside that hierarchy are rejected so each track remains self-contained, even though the front-end is still catching up.
 
 See [`docs/content-workflows.md`](docs/content-workflows.md) for step-by-step instructions covering authoring, media handling, ML enrichment, and deployment.
 

@@ -28,10 +28,13 @@ def collect_media_plan(documents: Iterable[ContentDocument], config: Config) -> 
             reference.path = rel_path
             source_path = _resolve_source_path(rel_path, config)
             if source_path is None:
+                allowed = ", ".join(prefix for prefix, _ in config.media_mounts)
                 logger.warning(
-                    "Unable to resolve media source for '%s' referenced by '%s'.",
+                    "Unable to resolve media source for '%s' referenced by '%s'. "
+                    "Valid prefixes: %s.",
                     rel_path,
                     document.slug,
+                    allowed or "none",
                 )
                 continue
 
@@ -88,5 +91,4 @@ def _resolve_source_path(rel_path: str, config: Config) -> Path | None:
     for mount_prefix, base_dir in config.media_mounts:
         if prefix == mount_prefix:
             return base_dir.joinpath(*remainder)
-    # Fallback to legacy location under media_processing source dir.
-    return config.media_processing.source_dir / Path(rel_path)
+    return None

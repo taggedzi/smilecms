@@ -65,7 +65,7 @@ python -m http.server 8000 --directory site
 ### File layout
 
 - Each entry lives in `content/posts/<slug>.md` with YAML front matter.
-- Shared images/audio/video that belong to the article go in `content/media/`. They are referenced with relative paths such as `media/my-image.jpg`.
+- Shared images/audio/video that belong to the article **must** go in `content/media/`. They are referenced with relative paths such as `media/my-image.jpg`. Paths outside this directory will be rejected during the build.
 - The build pipeline generates derivatives and stores them under `media/derived/` (no manual copying required).
 
 ### Front matter template
@@ -130,7 +130,7 @@ media/image_gallery_raw/<collection-slug>/
 
 - Raw images sit next to their `.json` sidecars. When the pipeline discovers a new file it will create a sidecar with baseline metadata (title from stem, timestamps, etc.).
 - `meta.yml` can be JSON or YAML and accepts the fields defined in `build/gallery/models.py` (`title`, `summary`, `tags`, `sort_order`, etc.). Missing fields are auto-filled.
-- Drop new images into the collection folder and rerun `smilecms build`; derivatives and metadata refresh automatically.
+- Drop new images into the collection folder and rerun `smilecms build`; derivatives and metadata refresh automatically. Assets placed outside `media/image_gallery_raw/` will not be picked up.
 
 ### Optional ML enrichment
 
@@ -155,7 +155,15 @@ media/image_gallery_raw/<collection-slug>/
 
 ---
 
-## 5. Deployment Checklist
+## 5. Music Tracks
+
+- Store each track inside `media/music_collection/<slug>/` with its metadata file (default `meta.yml`).
+- The build treats that folder as the sole source for audio and related artwork; references outside the directory will be marked missing during planning.
+- Audio derivatives aren’t generated yet, but the pipeline copies referenced files into `media/derived/audio/...` so the front-end can link to them once implemented.
+
+---
+
+## 6. Deployment Checklist
 
 - Ensure the latest build completed without blocking errors (`smilecms build` exit code 0).
 - Inspect `site/report.json` or the console summary for warnings (missing media, gallery errors).
@@ -164,7 +172,7 @@ media/image_gallery_raw/<collection-slug>/
 
 ---
 
-## 6. Further Reading
+## 7. Further Reading
 
 - [`README.md`](../README.md) – quickstart and high-level overview.
 - [`docs/frontend.md`](frontend.md) – layout and styling notes for the web front end.
