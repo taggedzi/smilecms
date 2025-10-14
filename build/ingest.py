@@ -8,12 +8,16 @@ from typing import Iterable, List
 from .collections import load_gallery_documents, load_music_documents
 from .config import Config
 from .content import ContentDocument, load_markdown_document
+from .gallery import GalleryWorkspace
 from .validation import validate_document
 
 SUPPORTED_SUFFIXES = {".md", ".markdown", ".mdx"}
 
 
-def load_documents(config: Config) -> list[ContentDocument]:
+def load_documents(
+    config: Config,
+    gallery_workspace: GalleryWorkspace | None = None,
+) -> list[ContentDocument]:
     """Load all supported content documents from the configured content directory."""
     root = config.content_dir
 
@@ -24,7 +28,7 @@ def load_documents(config: Config) -> list[ContentDocument]:
             validate_document(document)
             documents.append(document)
 
-    for document in load_gallery_documents(config):
+    for document in load_gallery_documents(config, workspace=gallery_workspace):
         validate_document(document)
         documents.append(document)
 

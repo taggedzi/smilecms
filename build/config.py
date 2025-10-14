@@ -35,14 +35,48 @@ class MediaProcessingConfig(BaseModel):
 
 
 class GalleryConfig(BaseModel):
-    """Configuration for gallery collection ingestion."""
+    """Configuration for gallery collection ingestion and publication."""
 
     source_dir: Path = Field(default=Path("media/image_gallery_raw"))
-    metadata_filename: str = Field(default="meta.yml")
+    metadata_filename: str = Field(
+        default="collection.json",
+        description="Filename for the collection-level sidecar stored inside each collection.",
+    )
+    image_sidecar_extension: str = Field(
+        default=".json",
+        description="Extension used for image sidecars (same stem as image file).",
+    )
+    data_subdir: str = Field(
+        default="data/gallery",
+        description="Path (relative to site output) for exported gallery data files.",
+    )
+    llm_enabled: bool = Field(
+        default=True,
+        description="Toggle automatic LLM-based metadata cleanup.",
+    )
+    llm_prompt_path: Path | None = Field(
+        default=None,
+        description="Optional path to a custom prompt template used for metadata cleanup.",
+    )
+    profile_map: dict[str, str] = Field(
+        default_factory=lambda: {"thumbnail": "thumb", "web": "large", "download": "large"},
+        description="Mapping from semantic derivative roles to configured profile names.",
+    )
 
-    @field_validator("source_dir", mode="before")
-    def _ensure_path(cls, value: Any) -> Path:
+    @field_validator("source_dir", "llm_prompt_path", mode="before")
+    def _ensure_path(cls, value: Any) -> Path | None:
+        if value is None:
+            return None
         return Path(value)
+
+    @field_validator("image_sidecar_extension")
+    def _normalize_extension(cls, value: str) -> str:
+        text = value.strip()
+        if not text:
+            return ".json"
+        if not text.startswith("."):
+            text = f".{text}"
+        return text.lower()
 
 
 class MusicConfig(BaseModel):

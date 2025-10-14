@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from build.config import Config, DerivativeProfile, MediaProcessingConfig
+from build.config import (
+    Config,
+    DerivativeProfile,
+    GalleryConfig,
+    MediaProcessingConfig,
+)
 from build.content.models import ContentDocument, ContentMeta, ContentStatus, MediaReference
 from build.media import apply_variants_to_documents, collect_media_plan, process_media_plan
 from PIL import Image
@@ -29,7 +34,10 @@ def test_collect_media_plan_deduplicates_assets(tmp_path: Path) -> None:
             DerivativeProfile(name="large", width=1920, format="jpg", quality=85),
         ],
     )
-    config = Config(media_processing=media_config)
+    config = Config(
+        media_processing=media_config,
+        gallery=GalleryConfig(source_dir=media_config.source_dir / "gallery"),
+    )
 
     docs = [
         _doc("alpha", ["gallery/photo.jpg"]),
@@ -39,7 +47,7 @@ def test_collect_media_plan_deduplicates_assets(tmp_path: Path) -> None:
     plan = collect_media_plan(docs, config)
 
     assert len(plan.tasks) == 4  # two profiles per asset
-    assert plan.static_assets == set()
+    assert plan.static_assets == {}
     thumb_tasks = [task for task in plan.tasks if task.profile.name == "thumb"]
     assert len(thumb_tasks) == 2
     photo_task = next(task for task in plan.tasks if task.media_path == "gallery/photo.jpg" and task.profile.name == "thumb")
@@ -57,7 +65,10 @@ def test_collect_media_plan_handles_empty_profiles(tmp_path: Path) -> None:
         output_dir=tmp_path / "derived",
         profiles=[],
     )
-    config = Config(media_processing=media_config)
+    config = Config(
+        media_processing=media_config,
+        gallery=GalleryConfig(source_dir=media_config.source_dir / "gallery"),
+    )
     docs = [_doc("alpha", ["gallery/photo.jpg"])]
 
     plan = collect_media_plan(docs, config)
@@ -80,7 +91,10 @@ def test_process_media_plan_generates_variants(tmp_path: Path) -> None:
             DerivativeProfile(name="large", width=1920, format="jpg", quality=85),
         ],
     )
-    config = Config(media_processing=media_config)
+    config = Config(
+        media_processing=media_config,
+        gallery=GalleryConfig(source_dir=media_config.source_dir / "gallery"),
+    )
 
     docs = [_doc("alpha", ["gallery/photo.png"], hero_path="gallery/photo.png")]
 
@@ -126,13 +140,16 @@ def test_process_media_plan_copies_static_assets(tmp_path: Path) -> None:
             DerivativeProfile(name="thumb", width=160, height=160, format="webp", quality=70),
         ],
     )
-    config = Config(media_processing=media_config)
+    config = Config(
+        media_processing=media_config,
+        gallery=GalleryConfig(source_dir=media_config.source_dir / "gallery"),
+    )
 
     docs = [_doc("alpha", ["gallery/song.mp3"], hero_path="gallery/song.mp3")]
 
     plan = collect_media_plan(docs, config)
     assert len(plan.tasks) == 0
-    assert plan.static_assets == {"gallery/song.mp3"}
+    assert plan.static_assets == {"gallery/song.mp3": raw_dir / "gallery" / "song.mp3"}
 
     result = process_media_plan(plan, config)
     apply_variants_to_documents(docs, result.variants)

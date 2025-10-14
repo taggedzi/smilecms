@@ -426,6 +426,7 @@ def _render_site_nav(
 ) -> str:
     navigation = site_config.get("navigation")
     items_markup: list[str] = []
+    any_active = False
 
     if isinstance(navigation, list):
         for entry in navigation:
@@ -437,6 +438,8 @@ def _render_site_nav(
             href_raw = str(entry.get("href") or "").strip()
             href = _normalize_nav_href(href_raw)
             active = bool(entry.get("active")) or _href_matches_current(href, current_path)
+            if active:
+                any_active = True
             aria_current = ' aria-current="page"' if active else ""
             label_html = html.escape(label)
             href_html = html.escape(href or "/")
@@ -461,12 +464,16 @@ def _render_site_nav(
             )
     )
 
+        any_active = True
+
+    data_open = "true" if any_active else "false"
+
     parts = [
         '<button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">',
         '  <span class="nav-toggle__label">Menu</span>',
         '  <span class="nav-toggle__icon" aria-hidden="true"></span>',
         "</button>",
-        '<ul class="nav-list" id="nav-menu" role="menubar" data-open="false">',
+        f'<ul class="nav-list" id="nav-menu" role="menubar" data-open="{data_open}">',
         *items_markup,
         "</ul>",
     ]

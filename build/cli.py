@@ -5,6 +5,9 @@ from rich.console import Console
 
 from .articles import write_article_pages
 from .config import Config, load_config
+from .gallery import apply_derivatives as apply_gallery_derivatives
+from .gallery import export_datasets as export_gallery_datasets
+from .gallery import prepare_workspace as prepare_gallery_workspace
 from .ingest import load_documents
 from .manifests import ManifestGenerator, write_manifest_pages
 from .media import apply_variants_to_documents, collect_media_plan, process_media_plan
@@ -25,10 +28,11 @@ app = typer.Typer(help="SmileCMS static publishing toolkit.")
 def build(config_path: str = "smilecms.yml") -> None:
     """Run a full rebuild of site artifacts."""
     config = _load(config_path)
+    gallery_workspace = prepare_gallery_workspace(config)
     reset_directory(config.output_dir)
     reset_directory(config.media_processing.output_dir)
     try:
-        documents = load_documents(config)
+        documents = load_documents(config, gallery_workspace=gallery_workspace)
     except DocumentValidationError as error:
         console.print(f"[bold red]Validation failed[/]: {error}")
         raise typer.Exit(code=1)
@@ -40,6 +44,7 @@ def build(config_path: str = "smilecms.yml") -> None:
     media_plan = collect_media_plan(documents, config)
     media_result = process_media_plan(media_plan, config)
     apply_variants_to_documents(documents, media_result.variants)
+    updated_gallery = apply_gallery_derivatives(gallery_workspace, media_result, config)
 
     generator = ManifestGenerator()
     pages = generator.build_pages(documents, prefix="content")
@@ -74,6 +79,13 @@ def build(config_path: str = "smilecms.yml") -> None:
         f"({media_stats.tasks_skipped} skipped)"
     )
     console.print(
+        f"[bold green]Gallery[/]: {gallery_workspace.collection_count()} collection(s) "
+        f"with {gallery_workspace.image_count()} image(s); "
+        f"{len(gallery_workspace.collection_writes)} collection sidecar(s) "
+        f"and {len(gallery_workspace.image_writes)} image sidecar(s) updated; "
+        f"{updated_gallery} derivative mapping(s) refreshed"
+    )
+    console.print(
         f"[bold green]Report[/]: {report_path} "
         f"(duration {duration:.2f}s)"
     )
@@ -91,10 +103,22 @@ def build(config_path: str = "smilecms.yml") -> None:
         console.print(
             f"[bold green]Articles[/]: rendered {len(article_pages)} page(s) in {config.output_dir / 'posts'}"
         )
-    if report.warnings:
+    export_gallery_datasets(gallery_workspace, config)
+    if gallery_workspace.data_writes:
+        console.print(
+            f"[bold green]Gallery data[/]: wrote {len(gallery_workspace.data_writes)} file(s) to "
+            f"{config.output_dir / config.gallery.data_subdir}"
+        )
+    warnings = list(report.warnings)
+    warnings.extend(gallery_workspace.warnings)
+    if warnings:
         console.print("[bold yellow]Warnings:[/]")
-        for warning in report.warnings:
+        for warning in warnings:
             console.print(f"- {warning}")
+    if gallery_workspace.errors:
+        console.print("[bold red]Gallery errors:[/]")
+        for error in gallery_workspace.errors:
+            console.print(f"- {error}")
 
 @app.command()
 def preview(config_path: str = "smilecms.yml") -> None:

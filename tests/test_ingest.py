@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from build.config import Config
+from build.config import Config, GalleryConfig, MusicConfig
 import pytest
 
 from build.ingest import load_documents
@@ -24,7 +24,11 @@ def test_load_documents_from_nested_directories(tmp_path: Path) -> None:
     )
     _write(content / "notes" / "ignore.txt", "Plain text")
 
-    config = Config(content_dir=content)
+    config = Config(
+        content_dir=content,
+        gallery=GalleryConfig(source_dir=tmp_path / "gallery"),
+        music=MusicConfig(source_dir=tmp_path / "music"),
+    )
     documents = sorted(load_documents(config), key=lambda doc: doc.slug)
 
     slugs = [doc.slug for doc in documents]
@@ -34,7 +38,11 @@ def test_load_documents_from_nested_directories(tmp_path: Path) -> None:
 
 
 def test_returns_empty_when_directory_missing(tmp_path: Path) -> None:
-    config = Config(content_dir=tmp_path / "missing")
+    config = Config(
+        content_dir=tmp_path / "missing",
+        gallery=GalleryConfig(source_dir=tmp_path / "gallery"),
+        music=MusicConfig(source_dir=tmp_path / "music"),
+    )
     documents = load_documents(config)
     assert documents == []
 
@@ -46,7 +54,11 @@ def test_invalid_document_raises_validation_error(tmp_path: Path) -> None:
         "---\nslug: \"Bad Slug\"\ntitle: Invalid\n---\nBody",
     )
 
-    config = Config(content_dir=content)
+    config = Config(
+        content_dir=content,
+        gallery=GalleryConfig(source_dir=tmp_path / "gallery"),
+        music=MusicConfig(source_dir=tmp_path / "music"),
+    )
     with pytest.raises(DocumentValidationError) as excinfo:
         load_documents(config)
 
