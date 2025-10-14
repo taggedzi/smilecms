@@ -25,19 +25,46 @@ from .reporting import (
     build_media_stats,
     write_report,
 )
-from .staging import reset_directory, stage_static_site
+from .staging import StagingResult, reset_directory, stage_static_site
+from .state import BuildTracker
 from .validation import DocumentValidationError
 
 console = Console()
 app = typer.Typer(help="SmileCMS static publishing toolkit.")
 
 @app.command()
-def build(config_path: str = "smilecms.yml") -> None:
+def build(
+    config_path: str = typer.Option("smilecms.yml", "--config", "-c", help="Path to configuration file."),
+    force: bool = typer.Option(False, "--force", help="Ignore incremental cache and perform a full rebuild."),
+) -> None:
     """Run a full rebuild of site artifacts."""
     config = _load(config_path)
+    tracker = BuildTracker(config, Path(config_path))
+    fingerprints = tracker.compute_fingerprints()
+    change_summary = tracker.summarize_changes(fingerprints)
+
+    if force:
+        console.print("[bold yellow]Force rebuild[/]: clearing output directories before regenerating.")
+        reset_directory(config.output_dir)
+        reset_directory(config.media_processing.output_dir)
+    else:
+        config.output_dir.mkdir(parents=True, exist_ok=True)
+        config.media_processing.output_dir.mkdir(parents=True, exist_ok=True)
+        if change_summary.first_run:
+            console.print(
+                "[bold yellow]Incremental build[/]: initializing cache; no previous state detected."
+            )
+        elif change_summary.changed_keys:
+            categories = ", ".join(sorted(change_summary.changed_keys))
+            console.print(
+                f"[bold green]Incremental build[/]: changes detected in {categories}."
+            )
+        else:
+            console.print(
+                "[bold blue]Incremental build[/]: no input changes detected; reusing cached artifacts."
+            )
+
     gallery_workspace = prepare_gallery_workspace(config)
-    reset_directory(config.output_dir)
-    reset_directory(config.media_processing.output_dir)
     try:
         documents = load_documents(config, gallery_workspace=gallery_workspace)
     except DocumentValidationError as error:
@@ -78,13 +105,25 @@ def build(config_path: str = "smilecms.yml") -> None:
         f"[bold green]Manifests[/]: {manifest_stats.pages} page(s) with {manifest_stats.items} item(s); "
         f"written {len(written)} file(s) to {manifest_dir}"
     )
-    console.print(
+
+    media_line = (
         f"[bold green]Media[/]: {media_stats.assets_processed}/{media_stats.assets_planned} asset(s) "
-        f"produced {media_stats.variants_generated} variant(s), "
-        f"copied {media_stats.assets_copied} asset(s); "
-        f"{media_stats.tasks_processed}/{media_stats.tasks_planned} image task(s) completed "
-        f"({media_stats.tasks_skipped} skipped)"
+        f"produced {media_stats.variants_generated} variant(s); "
+        f"{media_stats.assets_copied} copied"
     )
+    if media_stats.assets_reused:
+        media_line += f", {media_stats.assets_reused} reused"
+    media_line += ". "
+    media_line += (
+        f"{media_stats.tasks_processed}/{media_stats.tasks_planned} image task(s) rendered"
+    )
+    if media_stats.tasks_reused:
+        media_line += f", {media_stats.tasks_reused} reused"
+    media_line += f" ({media_stats.tasks_skipped} skipped)"
+    if media_stats.artifacts_pruned:
+        media_line += f"; removed {media_stats.artifacts_pruned} stale file(s)"
+    console.print(media_line)
+
     console.print(
         f"[bold green]Gallery[/]: {gallery_workspace.collection_count()} collection(s) "
         f"with {gallery_workspace.image_count()} image(s); "
@@ -96,32 +135,47 @@ def build(config_path: str = "smilecms.yml") -> None:
         f"[bold green]Report[/]: {report_path} "
         f"(duration {duration:.2f}s)"
     )
-    staged = stage_static_site(config)
-    if staged:
+
+    previous_templates = tracker.previous_template_paths or None
+    stage_result: StagingResult = stage_static_site(
+        config,
+        previous_template_paths=previous_templates,
+    )
+    if stage_result.total:
         console.print(
-            f"[bold green]Static bundle[/]: staged {len(staged)} item(s) into {config.output_dir}"
+            f"[bold green]Static bundle[/]: staged {stage_result.total} item(s) into {config.output_dir}"
         )
     else:
         console.print(
             f"[bold yellow]Static bundle[/]: no template assets found at {config.templates_dir}"
         )
+    if stage_result.removed_templates:
+        console.print(
+            f"[bold yellow]Static bundle[/]: removed {len(stage_result.removed_templates)} stale template asset(s)"
+        )
+
     article_pages = write_article_pages(documents, config)
     if article_pages:
         console.print(
             f"[bold green]Articles[/]: rendered {len(article_pages)} page(s) in {config.output_dir / 'posts'}"
         )
+
     export_gallery_datasets(gallery_workspace, config)
     if gallery_workspace.data_writes:
         console.print(
             f"[bold green]Gallery data[/]: wrote {len(gallery_workspace.data_writes)} file(s) to "
             f"{config.output_dir / config.gallery.data_subdir}"
         )
+
     music_result = export_music_catalog(documents, config)
     if music_result.written:
         console.print(
             f"[bold green]Music catalog[/]: exported {music_result.tracks} track(s); "
             f"wrote {len(music_result.written)} file(s) to {config.output_dir / config.music.data_subdir}"
         )
+
+    tracker.persist(fingerprints, stage_result.template_paths)
+
     warnings = list(report.warnings)
     warnings.extend(gallery_workspace.warnings)
     warnings.extend(music_result.warnings)

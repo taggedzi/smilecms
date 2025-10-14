@@ -43,7 +43,7 @@ Source formats:
 - Split large manifests into paginated or chunked JSON files to keep client payloads small.
 - Produce search indexes (optional) and feed files (RSS/Atom/JSON Feed).
 - Emit diagnostic logs and a report summarizing new/changed content, build duration, and warnings.
-- Support incremental builds to rebuild only altered content where feasible.
+- Support incremental builds to rebuild only altered content where feasible (reuse cached derivatives and prune stale artifacts instead of wiping outputs).
 - Provide unit/integration tests for content parsing and manifest generation.
 
 ## 5. Front-End Architecture (Static HTML/JS)

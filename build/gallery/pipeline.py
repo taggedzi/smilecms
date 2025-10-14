@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from datetime import datetime, timezone
@@ -155,6 +156,7 @@ def export_datasets(workspace: GalleryWorkspace, config: Config) -> None:
     """Write JSON and JSONL datasets consumed by the gallery front-end."""
     data_root = config.output_dir / config.gallery.data_subdir
     data_root.mkdir(parents=True, exist_ok=True)
+    existing_files = {path for path in data_root.glob("**/*") if path.is_file()}
     timestamp = datetime.now(tz=timezone.utc).isoformat()
 
     collections_payload: dict[str, object] = {
@@ -182,16 +184,32 @@ def export_datasets(workspace: GalleryWorkspace, config: Config) -> None:
                 global_handle.write(line)
                 global_handle.write("\n")
             workspace.record_data_write(path)
+            existing_files.discard(path)
 
     workspace.record_data_write(global_jsonl_path)
+    existing_files.discard(global_jsonl_path)
 
     collections_path = data_root / "collections.json"
     write_json(collections_path, collections_payload)  # type: ignore[arg-type]
     workspace.record_data_write(collections_path)
+    existing_files.discard(collections_path)
 
     manifest_path = data_root / "manifest.json"
     write_json(manifest_path, manifest_payload)  # type: ignore[arg-type]
     workspace.record_data_write(manifest_path)
+    existing_files.discard(manifest_path)
+
+    for leftover in sorted(existing_files, key=lambda item: len(item.parts), reverse=True):
+        with contextlib.suppress(FileNotFoundError):
+            leftover.unlink()
+
+    for directory in sorted(
+        (path for path in data_root.glob("**/*") if path.is_dir()),
+        key=lambda item: len(item.parts),
+        reverse=True,
+    ):
+        with contextlib.suppress(OSError):
+            directory.rmdir()
 
 
 def _load_collection(directory: Path, config: Config) -> GalleryCollectionEntry:

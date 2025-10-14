@@ -10,11 +10,15 @@ Turn the existing JSON build report into an HTML/Markdown dashboard so admins ca
 
 Add an environment check that confirms optional extras (e.g., .[ml]) are installed and needed models are cached before the pipeline runs, instead of relying on operators to remember those steps (README.md:19).
 
+Add a site crawler to veryify links, file placement, and functionality.
+
+Extract EXIF data from image if availble for display in front end. (or strip exif data if privacy/security wanted)
+
 ## Build & CLI Loop
 
 ~~Finish the placeholder `preview` and `clean` commands so maintainers can serve `site/` and purge artifacts without dropping to raw `http.server` or manual deletes (build/cli.py:132, build/cli.py:135, README.md:31).~~
 
-Introduce change detection/incremental rebuilds to avoid wiping `site/` and `media/derived/` every time, matching the stated requirement while speeding large galleries considerably (build/cli.py:33, docs/requirements.md:46).
+~~Introduce change detection/incremental rebuilds to avoid wiping `site/` and `media/derived/` every time, matching the stated requirement while speeding large galleries considerably (build/cli.py:33, docs/requirements.md:46).~~
 
 Add a --watch/--serve loop that rebuilds on file changes while keeping the local preview running, streamlining the repeated smilecms build routine in the docs (README.md:30, docs/content-workflows.md:48).
 

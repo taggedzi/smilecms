@@ -3,9 +3,23 @@
 from __future__ import annotations
 
 import shutil
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from .config import Config
+
+
+@dataclass
+class StagingResult:
+    """Summary of staged template and media assets."""
+
+    staged_paths: list[Path] = field(default_factory=list)
+    template_paths: list[Path] = field(default_factory=list)
+    removed_templates: list[Path] = field(default_factory=list)
+
+    @property
+    def total(self) -> int:
+        return len(self.staged_paths)
 
 
 def reset_directory(path: Path) -> None:
@@ -15,17 +29,22 @@ def reset_directory(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
 
-def stage_static_site(config: Config) -> list[Path]:
+def stage_static_site(
+    config: Config,
+    *,
+    previous_template_paths: set[Path] | None = None,
+) -> StagingResult:
     """Copy web assets and media derivatives into the output directory.
 
-    Returns a list of destination paths that were staged.
+    Returns details about staged and removed assets.
     """
-    staged: list[Path] = []
+    result = StagingResult()
 
     template_root = config.templates_dir
     output_root = config.output_dir
     output_root.mkdir(parents=True, exist_ok=True)
 
+    current_template_paths: set[Path] = set()
     if template_root.exists():
         for item in template_root.iterdir():
             destination = output_root / item.name
@@ -34,7 +53,22 @@ def stage_static_site(config: Config) -> list[Path]:
             else:
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(item, destination)
-            staged.append(destination)
+            result.staged_paths.append(destination)
+            result.template_paths.append(destination)
+            current_template_paths.add(destination)
+    elif previous_template_paths:
+        # Template root removed; clean up any previously staged assets.
+        for candidate in previous_template_paths:
+            if candidate.exists():
+                _delete_path(candidate)
+                result.removed_templates.append(candidate)
+
+    # Remove stale template assets that no longer exist in the source directory.
+    if previous_template_paths:
+        for orphan in sorted(previous_template_paths - current_template_paths, key=lambda p: len(p.parts), reverse=True):
+            if orphan.exists():
+                _delete_path(orphan)
+                result.removed_templates.append(orphan)
 
     derived_source = config.media_processing.output_dir
     if derived_source.exists():
@@ -58,14 +92,21 @@ def stage_static_site(config: Config) -> list[Path]:
             if derived_destination.exists():
                 shutil.rmtree(derived_destination)
             shutil.copytree(derived_source_abs, derived_destination)
-            staged.append(derived_destination)
+            result.staged_paths.append(derived_destination)
         else:
-            staged.append(derived_source_abs)
+            result.staged_paths.append(derived_source_abs)
 
-    return staged
+    return result
 
 
 def _copytree(source: Path, destination: Path) -> None:
     if destination.exists():
         shutil.rmtree(destination)
     shutil.copytree(source, destination)
+
+
+def _delete_path(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(path, ignore_errors=True)
+    else:
+        path.unlink(missing_ok=True)

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Set
 
 from PIL import Image
 
@@ -21,23 +22,32 @@ logger = logging.getLogger(__name__)
 class MediaProcessingResult:
     variants: Dict[str, list[MediaVariant]] = field(default_factory=dict)
     processed_tasks: int = 0
+    reused_tasks: int = 0
     skipped_tasks: int = 0
     warnings: list[str] = field(default_factory=list)
     missing_sources: list[str] = field(default_factory=list)
     unsupported_media: list[str] = field(default_factory=list)
     copied_assets: int = 0
+    reused_assets: int = 0
+    pruned_artifacts: int = 0
 
-    def add_task_variant(self, media_path: str, variant: MediaVariant) -> None:
+    def add_task_variant(self, media_path: str, variant: MediaVariant, *, reused: bool = False) -> None:
         self.variants.setdefault(media_path, []).append(variant)
-        self.processed_tasks += 1
+        if reused:
+            self.reused_tasks += 1
+        else:
+            self.processed_tasks += 1
 
-    def add_static_variant(self, media_path: str, variant: MediaVariant) -> None:
+    def add_static_variant(self, media_path: str, variant: MediaVariant, *, reused: bool = False) -> None:
         variants = self.variants.setdefault(media_path, [])
         # Avoid duplicate entries when multiple references share the same asset.
         if any(existing.profile == variant.profile and existing.path == variant.path for existing in variants):
             return
         variants.append(variant)
-        self.copied_assets += 1
+        if reused:
+            self.reused_assets += 1
+        else:
+            self.copied_assets += 1
 
     @property
     def processed_assets(self) -> int:
@@ -52,6 +62,7 @@ def process_media_plan(plan: MediaPlan, config: Config) -> MediaProcessingResult
     """Execute derivative tasks and return processing details."""
     result = MediaProcessingResult()
     derived_root = config.media_processing.output_dir
+    expected_files: Set[Path] = set()
 
     for task in plan.tasks:
         source = task.source
@@ -70,13 +81,17 @@ def process_media_plan(plan: MediaPlan, config: Config) -> MediaProcessingResult
 
         destination = task.destination
         destination.parent.mkdir(parents=True, exist_ok=True)
+
+        if _is_cached(source, destination):
+            variant = _load_existing_variant(destination, task.profile, derived_root)
+            result.add_task_variant(task.media_path, variant, reused=True)
+            expected_files.add(destination.resolve())
+            continue
+
         variant = _process_image(source, destination, task.profile)
-        try:
-            relative = destination.relative_to(derived_root)
-            variant.path = relative.as_posix()
-        except ValueError:
-            variant.path = destination.as_posix()
+        variant.path = _relative_variant_path(destination, derived_root)
         result.add_task_variant(task.media_path, variant)
+        expected_files.add(destination.resolve())
 
     for rel_path, source in plan.static_assets.items():
         destination = derived_root / rel_path
@@ -86,16 +101,32 @@ def process_media_plan(plan: MediaPlan, config: Config) -> MediaProcessingResult
             result.missing_sources.append(source.as_posix())
             continue
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, destination)
-        variant = MediaVariant(
-            profile="original",
-            path=rel_path,
-            width=None,
-            height=None,
-            format=destination.suffix.lstrip(".").lower() or None,
-            quality=None,
-        )
-        result.add_static_variant(rel_path, variant)
+        if _is_cached(source, destination):
+            variant = MediaVariant(
+                profile="original",
+                path=rel_path,
+                width=None,
+                height=None,
+                format=destination.suffix.lstrip(".").lower() or None,
+                quality=None,
+            )
+            result.add_static_variant(rel_path, variant, reused=True)
+        else:
+            shutil.copy2(source, destination)
+            variant = MediaVariant(
+                profile="original",
+                path=rel_path,
+                width=None,
+                height=None,
+                format=destination.suffix.lstrip(".").lower() or None,
+                quality=None,
+            )
+            result.add_static_variant(rel_path, variant)
+        expected_files.add(destination.resolve())
+
+    pruned = _prune_stale_artifacts(derived_root, expected_files)
+    if pruned:
+        result.pruned_artifacts = pruned
 
     return result
 
@@ -146,6 +177,64 @@ def _process_image(source: Path, destination: Path, profile: DerivativeProfile) 
         format=profile.format.lower(),
         quality=profile.quality,
     )
+
+
+def _is_cached(source: Path, destination: Path) -> bool:
+    if not destination.exists():
+        return False
+    try:
+        return destination.stat().st_mtime_ns >= source.stat().st_mtime_ns and destination.stat().st_size > 0
+    except FileNotFoundError:
+        return False
+
+
+def _load_existing_variant(destination: Path, profile: DerivativeProfile, derived_root: Path) -> MediaVariant:
+    width = height = None
+    with Image.open(destination) as image:
+        width, height = image.size
+    return MediaVariant(
+        profile=profile.name,
+        path=_relative_variant_path(destination, derived_root),
+        width=width,
+        height=height,
+        format=profile.format.lower(),
+        quality=profile.quality,
+    )
+
+
+def _relative_variant_path(destination: Path, derived_root: Path) -> str:
+    try:
+        relative = destination.relative_to(derived_root)
+        return relative.as_posix()
+    except ValueError:
+        return destination.as_posix()
+
+
+def _prune_stale_artifacts(root: Path, keep: Set[Path]) -> int:
+    if not root.exists():
+        return 0
+
+    keep_resolved = {path.resolve() for path in keep}
+    removed = 0
+
+    for existing in root.rglob("*"):
+        existing_resolved = existing.resolve()
+        if existing.is_file() and existing_resolved not in keep_resolved:
+            with contextlib.suppress(FileNotFoundError):
+                existing.unlink()
+                removed += 1
+
+    # Clean up empty directories from leaf to root.
+    directories = sorted(
+        (path for path in root.rglob("*") if path.is_dir()),
+        key=lambda item: len(item.parts),
+        reverse=True,
+    )
+    for directory in directories:
+        with contextlib.suppress(OSError):
+            directory.rmdir()
+
+    return removed
 
 
 def _calculate_target_size(size: tuple[int, int], profile: DerivativeProfile) -> tuple[int, int] | None:

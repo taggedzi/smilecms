@@ -6,9 +6,10 @@ import html
 import json
 import logging
 import re
+import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Set
 
 from .config import Config
 from .content import ContentDocument, ContentStatus, MediaReference, MediaVariant
@@ -52,6 +53,9 @@ _INLINE_SCRIPT = """<script>
 def write_article_pages(documents: Iterable[ContentDocument], config: Config) -> list[Path]:
     """Render published articles into static HTML pages."""
     output_root = config.output_dir / "posts"
+    output_root.mkdir(parents=True, exist_ok=True)
+    existing_dirs: Set[Path] = {path for path in output_root.iterdir() if path.is_dir()}
+    current_dirs: Set[Path] = set()
     base_template = _load_base_template(config)
     site_config = _load_site_config(config)
     written: list[Path] = []
@@ -75,6 +79,9 @@ def write_article_pages(documents: Iterable[ContentDocument], config: Config) ->
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(html_text, encoding="utf-8")
         written.append(destination)
+        current_dirs.add(destination.parent)
+
+    _prune_stale_article_dirs(existing_dirs - current_dirs)
 
     return written
 
@@ -819,3 +826,9 @@ def _markdown_to_html(text: str) -> str:
     flush_paragraph()
 
     return "\n".join(html_parts)
+
+
+def _prune_stale_article_dirs(stale_dirs: Set[Path]) -> None:
+    for directory in sorted(stale_dirs, key=lambda item: len(item.parts), reverse=True):
+        if directory.exists():
+            shutil.rmtree(directory, ignore_errors=True)

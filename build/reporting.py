@@ -30,11 +30,14 @@ class ManifestStats(BaseModel):
 class MediaStats(BaseModel):
     tasks_planned: int
     tasks_processed: int
+    tasks_reused: int
     tasks_skipped: int
     assets_planned: int
     assets_processed: int
     assets_copied: int
+    assets_reused: int
     variants_generated: int
+    artifacts_pruned: int
     warnings: list[str] = Field(default_factory=list)
     missing_sources: list[str] = Field(default_factory=list)
     unsupported_media: list[str] = Field(default_factory=list)
@@ -80,11 +83,14 @@ def build_media_stats(plan: MediaPlan, result: MediaProcessingResult) -> MediaSt
     return MediaStats(
         tasks_planned=len(plan.tasks),
         tasks_processed=result.processed_tasks,
+        tasks_reused=result.reused_tasks,
         tasks_skipped=result.skipped_tasks,
         assets_planned=plan.asset_count,
         assets_processed=result.processed_assets,
         assets_copied=result.copied_assets,
+        assets_reused=result.reused_assets,
         variants_generated=result.variants_generated,
+        artifacts_pruned=result.pruned_artifacts,
         warnings=list(result.warnings),
         missing_sources=list(result.missing_sources),
         unsupported_media=list(result.unsupported_media),
