@@ -19,7 +19,17 @@ const state = {
   dom: {},
   modal: null,
   lastFocus: null,
+  activeImageId: null,
+  routeListenerAttached: false,
+  collectionRequestToken: 0,
 };
+
+const ROUTE_KEYS = Object.freeze({
+  collection: "collection",
+  image: "image",
+});
+
+let isSyncingRoute = false;
 
 document.addEventListener("DOMContentLoaded", () => {
   initializeGallery().catch((error) => {
@@ -44,6 +54,15 @@ async function initializeGallery() {
     const collections = (collectionsPayload?.collections ?? []).map(normalizeCollection);
     state.collections = collections;
     renderCollectionList(main, collections);
+    await syncRouteFromLocation({ initialLoad: true });
+    if (!state.routeListenerAttached) {
+      window.addEventListener("popstate", () => {
+        syncRouteFromLocation().catch((popError) => {
+          console.error("[gallery] failed to sync on popstate", popError);
+        });
+      });
+      state.routeListenerAttached = true;
+    }
   } catch (error) {
     console.error("[gallery] failed to load collections", error);
     renderError(main, "We couldn't load the gallery right now. Please try again soon.");
@@ -141,19 +160,43 @@ function createCollectionCard(collection) {
   return card;
 }
 
-async function openCollection(collection) {
+async function openCollection(collection, options = {}) {
+  const { skipRouteUpdate = false, imageId = null } = options;
   const main = document.getElementById("main");
   if (!main) return;
+
+  const requestToken = ++state.collectionRequestToken;
+
+  if (state.modal) {
+    closeModal({ skipRoute: true });
+  }
+  state.activeImageId = null;
 
   renderLoading(main, `Loading "${collection.title}"...`);
 
   try {
     const records = await fetchCollectionRecords(collection);
+    if (requestToken !== state.collectionRequestToken) {
+      return;
+    }
     state.currentCollection = collection;
     state.items = records.map(normalizeRecord);
     applyFilters({ query: "", sort: "newest" });
     renderCollectionView(main, collection);
     renderFilteredItems();
+
+    if (!skipRouteUpdate) {
+      updateRoute({ collectionId: collection.id, imageId: null });
+    }
+
+    if (imageId) {
+      const target =
+        state.items.find((item) => item.id === imageId) ||
+        state.filteredItems.find((item) => item.id === imageId);
+      if (target) {
+        openModal(target, { skipRouteUpdate });
+      }
+    }
   } catch (error) {
     console.error("[gallery] failed to load collection", error);
     renderError(main, "This collection failed to load. Please return to collections and try again.");
@@ -265,12 +308,7 @@ function renderCollectionView(main, collection) {
   });
 
   header.querySelector("[data-gallery-back]").addEventListener("click", () => {
-    state.currentCollection = null;
-    state.items = [];
-    state.filteredItems = [];
-    state.renderedCount = 0;
-    destroyObserver();
-    renderCollectionList(main, state.collections);
+    returnToCollections();
   });
 
   state.dom = {
@@ -383,6 +421,135 @@ function destroyObserver() {
   if (state.observer) {
     state.observer.disconnect();
     state.observer = null;
+  }
+}
+
+function returnToCollections(options = {}) {
+  const { replace = false, skipRouteUpdate = false } = options;
+  const main = document.getElementById("main");
+  if (!main) return;
+
+  state.collectionRequestToken += 1;
+  state.currentCollection = null;
+  state.items = [];
+  state.filteredItems = [];
+  state.renderedCount = 0;
+  state.dom = {};
+  state.sentinel = null;
+  state.activeImageId = null;
+  destroyObserver();
+
+  if (state.modal) {
+    closeModal({ skipRoute: true });
+  }
+
+  renderCollectionList(main, state.collections);
+
+  if (!skipRouteUpdate) {
+    updateRoute({ collectionId: null, imageId: null }, { replace });
+  }
+}
+
+function normalizeRoute(route = {}) {
+  const collectionId =
+    typeof route.collectionId === "string" && route.collectionId.trim()
+      ? route.collectionId.trim()
+      : null;
+  const imageId =
+    typeof route.imageId === "string" && route.imageId.trim() ? route.imageId.trim() : null;
+  return { collectionId, imageId };
+}
+
+function getRouteFromLocation() {
+  try {
+    const url = new URL(window.location.href);
+    return normalizeRoute({
+      collectionId: url.searchParams.get(ROUTE_KEYS.collection),
+      imageId: url.searchParams.get(ROUTE_KEYS.image),
+    });
+  } catch {
+    return normalizeRoute();
+  }
+}
+
+function routesEqual(a, b) {
+  return a.collectionId === b.collectionId && a.imageId === b.imageId;
+}
+
+function updateRoute(route, options = {}) {
+  if (typeof window === "undefined" || !window.history || !window.history.pushState) return;
+  const { replace = false } = options;
+  const nextRoute = normalizeRoute(route);
+  const currentRoute = getRouteFromLocation();
+  if (routesEqual(currentRoute, nextRoute)) return;
+
+  const url = new URL(window.location.href);
+  if (nextRoute.collectionId) {
+    url.searchParams.set(ROUTE_KEYS.collection, nextRoute.collectionId);
+  } else {
+    url.searchParams.delete(ROUTE_KEYS.collection);
+  }
+  if (nextRoute.imageId) {
+    url.searchParams.set(ROUTE_KEYS.image, nextRoute.imageId);
+  } else {
+    url.searchParams.delete(ROUTE_KEYS.image);
+  }
+
+  const target = `${url.pathname}${url.search}${url.hash}`;
+  const method = replace ? "replaceState" : "pushState";
+  window.history[method]({ gallery: true, route: nextRoute }, "", target);
+}
+
+async function syncRouteFromLocation(options = {}) {
+  if (isSyncingRoute) return;
+  if (!state.collections.length) return;
+  const { initialLoad = false } = options;
+  isSyncingRoute = true;
+  try {
+    const route = getRouteFromLocation();
+    const main = document.getElementById("main");
+    if (!main) return;
+
+    if (!route.collectionId) {
+      if (state.currentCollection) {
+        returnToCollections({ skipRouteUpdate: true, replace: true });
+      } else if (state.modal) {
+        closeModal({ skipRoute: true });
+      }
+      return;
+    }
+
+    const collection = state.collections.find((item) => item.id === route.collectionId);
+    if (!collection) {
+      console.warn(`[gallery] unknown collection "${route.collectionId}" in URL`);
+      returnToCollections({ skipRouteUpdate: true, replace: true });
+      if (!initialLoad) {
+        updateRoute({ collectionId: null, imageId: null }, { replace: true });
+      }
+      return;
+    }
+
+    if (!state.currentCollection || state.currentCollection.id !== collection.id) {
+      await openCollection(collection, { skipRouteUpdate: true, imageId: route.imageId });
+      return;
+    }
+
+    if (route.imageId) {
+      if (state.activeImageId !== route.imageId) {
+        const record =
+          state.items.find((item) => item.id === route.imageId) ||
+          state.filteredItems.find((item) => item.id === route.imageId);
+        if (record) {
+          openModal(record, { skipRouteUpdate: true });
+        } else if (state.modal && state.activeImageId !== null) {
+          closeModal({ skipRoute: true });
+        }
+      }
+    } else if (state.modal && state.activeImageId !== null) {
+      closeModal({ skipRoute: true });
+    }
+  } finally {
+    isSyncingRoute = false;
   }
 }
 
@@ -555,7 +722,8 @@ function attachThemeToggle(header) {
   });
 }
 
-function openModal(record) {
+function openModal(record, options = {}) {
+  const { skipRouteUpdate = false } = options;
   if (!state.modal) {
     state.modal = createModal();
     document.body.appendChild(state.modal.root);
@@ -598,6 +766,7 @@ function openModal(record) {
   dialog.scrollTop = 0;
   state.lastFocus = document.activeElement;
   dialog.focus({ preventScroll: true });
+  state.activeImageId = record.id;
 
   const handleKey = (event) => {
     if (event.key === "Escape") {
@@ -607,9 +776,19 @@ function openModal(record) {
 
   root.addEventListener("keydown", handleKey, { once: false });
   state.modal.handleKey = handleKey;
+
+  if (!skipRouteUpdate) {
+    updateRoute({ collectionId: state.currentCollection?.id || null, imageId: record.id });
+  }
 }
 
-function closeModal() {
+function closeModal(options) {
+  let skipRouteUpdate = false;
+  if (options instanceof Event) {
+    options.preventDefault?.();
+  } else if (options && typeof options === "object") {
+    skipRouteUpdate = Boolean(options.skipRoute);
+  }
   if (!state.modal) return;
   const { root, handleKey, closeButton } = state.modal;
   root.classList.remove("is-open");
@@ -622,6 +801,10 @@ function closeModal() {
     state.lastFocus.focus();
   } else {
     closeButton.focus();
+  }
+  state.activeImageId = null;
+  if (!skipRouteUpdate) {
+    updateRoute({ collectionId: state.currentCollection?.id || null, imageId: null }, { replace: true });
   }
 }
 

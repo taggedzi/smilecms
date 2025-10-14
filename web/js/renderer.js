@@ -303,8 +303,15 @@ function renderGalleryTile(item, mediaBasePath) {
     tags.textContent = formatTags(item.tags);
   }
   if (link) {
-    link.textContent = item.title ?? item.slug;
-    link.href = item.canonical_url ?? `/gallery/${item.slug}/`;
+    const slug = item.slug || item.collection_id;
+    link.textContent = item.title ?? slug ?? "View gallery";
+    if (slug) {
+      const base = item.canonical_url || "/gallery/";
+      const separator = base.includes("?") ? "&" : "?";
+      link.href = `${base}${separator}collection=${encodeURIComponent(slug)}`;
+    } else {
+      link.href = item.canonical_url || "/gallery/";
+    }
   }
 
   return node;
