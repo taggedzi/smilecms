@@ -10,6 +10,7 @@ from typing import Iterable
 
 from ..config import Config
 from ..media.processor import MediaProcessingResult
+from .inference import TaggingSession, ml_timestamp
 from .llm import clean_metadata
 from .metadata import generate_collection_defaults, generate_image_metadata
 from .models import (
@@ -41,6 +42,15 @@ def prepare_workspace(
         return workspace
 
     run_llm = config.gallery.llm_enabled if run_llm_cleanup is None else run_llm_cleanup
+    tagging_session: TaggingSession | None = None
+    if auto_generate and config.gallery.tagging_enabled:
+        candidate = TaggingSession(config)
+        if candidate.available:
+            tagging_session = candidate
+        else:
+            reason = candidate.failure_reason or "ML tagging unavailable."
+            workspace.add_warning(f"Gallery tagging skipped: {reason}")
+
     now = datetime.now(tz=timezone.utc)
 
     for collection_dir in sorted(p for p in root.iterdir() if p.is_dir()):
@@ -58,6 +68,16 @@ def prepare_workspace(
             for image_entry in collection.images:
                 if generate_image_metadata(image_entry, collection, now):
                     image_entry.mark_changed()
+            if tagging_session is not None:
+                for image_entry in collection.images:
+                    try:
+                        if _apply_tagging(image_entry, tagging_session, workspace, now):
+                            image_entry.mark_changed()
+                    except Exception as exc:  # pragma: no cover - defensive logging
+                        message = f"Failed to annotate {image_entry.source_path.name}: {exc}"
+                        logger.warning(message)
+                        workspace.add_warning(message)
+                        image_entry.warnings.append(message)
             if run_llm:
                 for image_entry in collection.images:
                     if clean_metadata(image_entry, now):
@@ -323,3 +343,105 @@ def _write_collection_jsonl(
 def _collection_jsonl_path(collection: GalleryCollectionEntry, data_root: Path) -> Path:
     filename = f"{collection.id}.jsonl"
     return data_root / filename
+
+
+def _apply_tagging(
+    image_entry: GalleryImageEntry,
+    session: TaggingSession,
+    workspace: GalleryWorkspace,
+    now: datetime,
+) -> bool:
+    """Apply ML-generated annotations to an image metadata payload."""
+    annotation = session.annotate(image_entry.source_path)
+    if annotation is None:
+        return False
+
+    metadata = image_entry.metadata
+    manual = metadata.manual_overrides or {}
+    source_hash = metadata.hash
+
+    def _has_placeholder_tags() -> bool:
+        candidates = list(metadata.tags or []) + list(metadata.tags_raw or [])
+        candidates.extend((metadata.tag_scores or {}).keys())
+        return any(str(tag).upper().startswith("LABEL_") for tag in candidates)
+
+    if (
+        metadata.ml_source_hash
+        and metadata.ml_model_signature
+        and session.model_signature
+        and source_hash
+        and metadata.ml_source_hash == source_hash
+        and metadata.ml_model_signature == session.model_signature
+        and not _has_placeholder_tags()
+    ):
+        return False
+
+    changed = False
+
+    def _set_text(field: str, value: str | None, allow_manual: bool = True) -> None:
+        nonlocal changed
+        if value is None:
+            return
+        if allow_manual and manual.get(field):
+            return
+        current = getattr(metadata, field)
+        if current != value:
+            setattr(metadata, field, value)
+            changed = True
+
+    _set_text("alt_raw", annotation.alt_text)
+    _set_text("alt_text", annotation.alt_text, allow_manual=False)
+    _set_text("description_raw", annotation.caption)
+    _set_text("description", annotation.caption)
+    _set_text("caption_raw", annotation.caption)
+    _set_text("caption", annotation.caption)
+
+    if annotation.tags:
+        tags = list(annotation.tags)
+        if not manual.get("tags_raw") and metadata.tags_raw != tags:
+            metadata.tags_raw = tags
+            changed = True
+        if not manual.get("tags") and metadata.tags != tags:
+            metadata.tags = tags
+            changed = True
+
+    scores = dict(annotation.tag_scores)
+    if metadata.tag_scores != scores:
+        metadata.tag_scores = scores
+        changed = True
+
+    if annotation.rating:
+        current_rating = getattr(metadata, "rating", None)
+        if current_rating != annotation.rating:
+            metadata.rating = annotation.rating
+            changed = True
+        if annotation.rating != "rating:safe":
+            note = f"Image flagged as {annotation.rating}"
+            if note not in metadata.notes:
+                metadata.notes.append(note)
+                changed = True
+            workspace.add_warning(
+                f"{metadata.collection_id}/{metadata.filename} flagged as {annotation.rating}"
+            )
+
+    if metadata.ai_confidence != annotation.confidence:
+        metadata.ai_confidence = annotation.confidence
+        changed = True
+
+    if source_hash and metadata.ml_source_hash != source_hash:
+        metadata.ml_source_hash = source_hash
+        changed = True
+
+    if session.model_signature and metadata.ml_model_signature != session.model_signature:
+        metadata.ml_model_signature = session.model_signature
+        changed = True
+
+    timestamp = ml_timestamp()
+    metadata.ml_generated_at = timestamp
+    changed = True
+    if metadata.last_generated_at != now:
+        metadata.last_generated_at = now
+        changed = True
+
+    image_entry.metadata = metadata
+    return changed

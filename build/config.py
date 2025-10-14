@@ -58,6 +58,35 @@ class GalleryConfig(BaseModel):
         default=None,
         description="Optional path to a custom prompt template used for metadata cleanup.",
     )
+    tagging_enabled: bool = Field(
+        default=True,
+        description="Enable ML-powered captioning and tagging for gallery images.",
+    )
+    caption_model: str = Field(
+        default="Salesforce/blip-image-captioning-base",
+        description="Hugging Face model identifier used for image caption generation.",
+    )
+    tagger_model: str = Field(
+        default="SmilingWolf/wd-swinv2-tagger-v3",
+        description="Hugging Face model identifier used for WD14-compatible tagging.",
+    )
+    tagger_general_threshold: float = Field(
+        default=0.35,
+        description="Minimum probability for general tags to be accepted.",
+    )
+    tagger_character_threshold: float = Field(
+        default=0.85,
+        description="Minimum probability for character tags to be accepted.",
+    )
+    tagging_max_tags: int = Field(
+        default=48,
+        ge=1,
+        description="Maximum number of tags to store from the ML tagging stage.",
+    )
+    tagging_device: str | None = Field(
+        default=None,
+        description="Optional torch device string (e.g. 'cuda', 'cpu') for ML inference.",
+    )
     profile_map: dict[str, str] = Field(
         default_factory=lambda: {"thumbnail": "thumb", "web": "large", "download": "large"},
         description="Mapping from semantic derivative roles to configured profile names.",
@@ -77,6 +106,16 @@ class GalleryConfig(BaseModel):
         if not text.startswith("."):
             text = f".{text}"
         return text.lower()
+
+    @field_validator("tagger_general_threshold", "tagger_character_threshold", mode="before")
+    def _normalize_threshold(cls, value: Any) -> float:
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            raise ValueError("Tagger thresholds must be numeric values between 0 and 1.") from None
+        if numeric < 0 or numeric > 1:
+            raise ValueError("Tagger thresholds must be between 0 and 1.")
+        return numeric
 
 
 class MusicConfig(BaseModel):

@@ -263,22 +263,28 @@
 .gallery-modal__dialog {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  padding: clamp(1.5rem, 5vw, 3rem);
-  overflow-y: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(1rem, 3vh, 2rem) clamp(1.5rem, 5vw, 3rem);
+  overflow: auto;
+  box-sizing: border-box;
+  min-height: 100%;
 }
 
 .gallery-modal__panel {
   background: var(--color-surface);
   color: var(--color-text);
   max-width: min(960px, 95vw);
+  max-height: calc(100vh - clamp(2rem, 6vh, 4rem));
   width: 100%;
+  margin: clamp(0.5rem, 3vh, 2rem) 0;
   border-radius: var(--gallery-card-radius);
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border);
   overflow: hidden;
   display: grid;
+  grid-template-rows: auto 1fr;
   gap: 0;
 }
 
@@ -288,12 +294,18 @@
   justify-content: space-between;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  background: var(--color-surface);
+  z-index: 2;
 }
 
 .gallery-modal__content {
   display: grid;
   gap: 0;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .gallery-modal__image {
@@ -303,6 +315,7 @@
   justify-content: center;
   padding: clamp(1rem, 3vw, 2rem);
   border-right: 1px solid var(--color-border);
+  min-height: 0;
 }
 
 .gallery-modal__image img {
@@ -316,6 +329,8 @@
   padding: clamp(1.25rem, 3vw, 2rem);
   display: grid;
   gap: 1rem;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .gallery-modal__details dl {

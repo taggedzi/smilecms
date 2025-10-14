@@ -38,6 +38,10 @@ def _default_derived() -> dict[str, str | None]:
     }
 
 
+def _default_tag_scores() -> dict[str, float]:
+    return {}
+
+
 class GalleryCollectionMetadata(BaseModel):
     """Collection-level metadata stored next to raw assets."""
 
@@ -157,6 +161,13 @@ class GalleryImageMetadata(BaseModel):
         default_factory=_default_tags,
         description="Original generated tags before cleaning.",
     )
+    tag_scores: dict[str, float] = Field(
+        default_factory=_default_tag_scores,
+        description="Raw probability scores from the ML tagging model.",
+    )
+    rating: str | None = Field(
+        default=None, description="Highest-rated classification label reported by the tagger."
+    )
     width: int | None = Field(default=None, ge=1, description="Pixel width of the source asset.")
     height: int | None = Field(
         default=None, ge=1, description="Pixel height of the source asset."
@@ -178,6 +189,17 @@ class GalleryImageMetadata(BaseModel):
     )
     ai_confidence: float | None = Field(
         default=None, description="Confidence score returned by the ML tagging model."
+    )
+    ml_model_signature: str | None = Field(
+        default=None,
+        description="Identifier describing the ML models used for the last tagging pass.",
+    )
+    ml_source_hash: str | None = Field(
+        default=None,
+        description="Checksum of the source asset when ML metadata was produced.",
+    )
+    ml_generated_at: datetime | None = Field(
+        default=None, description="Timestamp when ML metadata was last generated."
     )
     llm_revision: int = Field(
         default=0, ge=0, description="Incremented whenever the LLM cleanup modifies content."
@@ -265,6 +287,7 @@ class GalleryImageMetadata(BaseModel):
         "modified_at",
         "llm_updated_at",
         "last_generated_at",
+        "ml_generated_at",
         mode="before",
     )
     @classmethod
@@ -293,6 +316,8 @@ class GalleryImageRecord(BaseModel):
     tags: list[str] = Field(default_factory=_default_tags)
     captured_at: datetime | None = None
     created_at: datetime | None = None
+    rating: str | None = None
+    ai_confidence: float | None = None
     width: int | None = None
     height: int | None = None
     src: str | None = None
@@ -319,6 +344,8 @@ class GalleryImageRecord(BaseModel):
             caption=metadata.caption,
             description=metadata.description,
             tags=list(metadata.tags),
+            rating=metadata.rating,
+            ai_confidence=metadata.ai_confidence,
             captured_at=metadata.captured_at,
             created_at=metadata.created_at,
             width=metadata.width,

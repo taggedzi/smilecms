@@ -336,7 +336,6 @@ function createGalleryCard(record, index) {
   meta.innerHTML = `
     <h3>${escapeHtml(record.title)}</h3>
     ${record.caption ? `<p>${escapeHtml(record.caption)}</p>` : ""}
-    ${record.tags.length ? `<div class="gallery-tag-list">${record.tags.map((tag) => `<span class="pill pill--light">#${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
   `;
 
   article.appendChild(media);
@@ -519,14 +518,14 @@ function renderSiteChrome(siteConfig) {
   if (nav) {
     const list = document.createElement("ul");
     list.className = "nav-list";
-    list.dataset.open = "true";
-    navigation.forEach((item) => {
-      const li = document.createElement("li");
-      li.innerHTML = `<a class="nav-link" href="${escapeHtml(item.href || "#")}" ${
-        item.label?.toLowerCase() === "gallery" ? 'aria-current="page"' : ""
-      }>${escapeHtml(item.label || "Link")}</a>`;
-      list.appendChild(li);
-    });
+  list.dataset.open = "true";
+  navigation.forEach((item) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<a class="nav-link" href="${escapeHtml(item.href || "#")}" ${
+      item.label?.toLowerCase() === "gallery" ? 'aria-current="page"' : ""
+    }>${escapeHtml(item.label || "Link")}</a>`;
+    list.appendChild(li);
+  });
     nav.innerHTML = "";
     nav.appendChild(list);
   }
@@ -596,6 +595,7 @@ function openModal(record) {
 
   root.classList.add("is-open");
   root.removeAttribute("hidden");
+  dialog.scrollTop = 0;
   state.lastFocus = document.activeElement;
   dialog.focus({ preventScroll: true });
 

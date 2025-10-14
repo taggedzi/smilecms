@@ -54,3 +54,7 @@ Desktop.ini
 *.swp
 *.swo
 *.orig
+
+
+ build/lib/ 
+ build/bdist.*

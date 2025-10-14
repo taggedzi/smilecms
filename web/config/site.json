@@ -5,18 +5,18 @@
   },
   "mediaBasePath": "/media/derived",
   "navigation": [
-    { "label": "Home", "href": "#home", "active": true },
-    { "label": "Gallery", "href": "#gallery" },
+    { "label": "Home", "href": "/", "active": true },
+    { "label": "Gallery", "href": "/gallery/" },
     { "label": "Journal", "href": "/journal/" },
-    { "label": "Audio", "href": "#audio" }
+    { "label": "Audio", "href": "/#audio" }
   ],
   "hero": {
     "eyebrow": "Curated Collections",
     "title": "Artistry in Motion",
     "subtitle": "Explore evolving galleries, reflective writing, and ambient audio journeys—crafted with SmileCMS.",
     "actions": [
-      { "label": "View Galleries", "href": "#gallery" },
-      { "label": "Read Journal", "href": "#journal" }
+      { "label": "View Galleries", "href": "/gallery/" },
+      { "label": "Read Journal", "href": "/journal/" }
     ]
   },
   "sections": [
@@ -50,7 +50,7 @@
         "message": "Upload images to see galleries appear here."
       },
       "actions": [
-        { "label": "View Gallery Index", "href": "/journal/" }
+        { "label": "View Gallery Index", "href": "/gallery/" }
       ]
     },
     {
@@ -67,7 +67,7 @@
         "message": "No audio tracks yet. Share your sounds."
       },
       "actions": [
-        { "label": "Listen More", "href": "/audio/" }
+        { "label": "Listen More", "href": "/#audio" }
       ]
     }
   ],

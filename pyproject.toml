@@ -19,6 +19,10 @@ dev = [
   "mypy>=1.10",
   "ruff>=0.4"
 ]
+ml = [
+  "transformers>=4.41",
+  "torch>=2.3"
+]
 
 [project.scripts]
 smilecms = "build.cli:app"
@@ -27,6 +31,9 @@ smilecms = "build.cli:app"
 where = ["."]
 include = ["build*"]
 exclude = ["content*", "media*", "site*", "web*"]
+
+[tool.setuptools.package-data]
+"build.schemas" = ["*.json"]
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
