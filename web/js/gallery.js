@@ -752,14 +752,38 @@ function openModal(record, options = {}) {
     imageEl.alt = record.alt || record.title;
   }
 
-  downloadLink.href = ensureRelativeAsset(record.download);
+  const downloadHref = resolveDownloadAsset(record);
+  if (downloadHref) {
+    downloadLink.href = downloadHref;
+    downloadLink.removeAttribute("aria-disabled");
+  } else {
+    downloadLink.removeAttribute("href");
+    downloadLink.setAttribute("aria-disabled", "true");
+  }
   const fallbackName = (() => {
     const source = record.download || record.original || record.src || "";
     const parts = source.split("/");
     return parts[parts.length - 1] || `${record.id}.jpg`;
   })();
   downloadLink.download = record.filename || fallbackName;
-  openLink.href = ensureRelativeAsset(record.original || record.src);
+
+  const { href: originalHref, fallback: originalFallback } = resolveOriginalAsset(record);
+  if (originalHref) {
+    openLink.href = originalHref;
+    openLink.removeAttribute("aria-disabled");
+    if (originalFallback) {
+      openLink.dataset.assetQuality = "derived";
+      openLink.title = "Original file unavailable; opening generated image instead.";
+    } else {
+      openLink.dataset.assetQuality = "original";
+      openLink.title = "Open original media in a new tab.";
+    }
+  } else {
+    openLink.removeAttribute("href");
+    openLink.setAttribute("aria-disabled", "true");
+    openLink.dataset.assetQuality = "unavailable";
+    openLink.title = "Original media is not available.";
+  }
 
   root.classList.add("is-open");
   root.removeAttribute("hidden");
@@ -917,6 +941,43 @@ function debounce(fn, delay) {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), delay);
   };
+}
+
+function resolveDownloadAsset(record) {
+  return (
+    normalizeAssetCandidate(record.download, { skipGallery: true }) ||
+    normalizeAssetCandidate(record.src, { skipGallery: true }) ||
+    normalizeAssetCandidate(record.original, { skipGallery: true }) ||
+    ""
+  );
+}
+
+function resolveOriginalAsset(record) {
+  const candidates = [
+    { value: record.original_url, skipGallery: false, fallback: false },
+    { value: record.original, skipGallery: true, fallback: false },
+    { value: record.download, skipGallery: false, fallback: true },
+    { value: record.src, skipGallery: false, fallback: true },
+  ];
+
+  for (const candidate of candidates) {
+    const href = normalizeAssetCandidate(candidate.value, { skipGallery: candidate.skipGallery });
+    if (href) {
+      return { href, fallback: candidate.fallback };
+    }
+  }
+
+  return { href: "", fallback: true };
+}
+
+function normalizeAssetCandidate(value, { skipGallery = false } = {}) {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (skipGallery && /^gallery\//.test(trimmed)) {
+    return "";
+  }
+  return ensureRelativeAsset(trimmed);
 }
 
 function ensureRelativeAsset(path) {
