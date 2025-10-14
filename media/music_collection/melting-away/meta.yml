@@ -32,5 +32,3 @@ download: true
 assets:
   cover.png:
     alt_text: "Waterfall in a desert."
-  melting-away.mp4:
-    title: "Visualizer"

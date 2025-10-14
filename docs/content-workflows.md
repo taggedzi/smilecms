@@ -185,6 +185,7 @@ assets:
 
 - `download` accepts `true` (use the primary audio), a specific filename, or an object `{ enabled: true, path: "alt.wav" }`. The referenced file must live beside `meta.yml`.
 - Optional `download_meta` can provide alt/title data for the download asset.
+- Drop an optional `lyrics.md` in the same folder to surface song lyrics in the music modal; if the file is missing the catalog simply shows the description (ideal for instrumentals).
 - All images/videos in the folder automatically become supporting media; the first image is used as cover art on the catalog page.
 - After running `smilecms build`, the catalog lives at `/music/` with searchable, infinite-scroll tiles and deep links (`/music/?track=<slug>`). Copy any track URL to share the exact modal view.
 - The build exports datasets to `site/data/music/manifest.json` and `site/data/music/tracks.jsonl`, which power the front-end catalog.

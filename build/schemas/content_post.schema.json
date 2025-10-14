@@ -78,6 +78,9 @@
       "items": {
         "$ref": "#/$defs/media"
       }
+    },
+    "lyrics": {
+      "type": ["string", "null"]
     }
   },
   "$defs": {

@@ -130,11 +130,14 @@ def _build_track_record(document: ContentDocument) -> Tuple[dict | None, list[st
         if download_path:
             download_filename = Path(download_path).name
 
+    lyrics_text = document.lyrics or ""
+
     search_chunks = [
         meta.title or "",
         meta.summary or "",
         document.body or "",
         " ".join(meta.tags or []),
+        lyrics_text,
     ]
     search_text = " ".join(chunk for chunk in search_chunks if chunk).lower()
 
@@ -159,6 +162,7 @@ def _build_track_record(document: ContentDocument) -> Tuple[dict | None, list[st
         },
         "cover": cover_payload,
         "extras": extras,
+        "lyrics": lyrics_text or None,
         "search": search_text,
     }
 

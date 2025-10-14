@@ -121,6 +121,7 @@ class ContentDocument(BaseModel):
     body: str = Field(description="Raw markdown body.")
     source_path: str = Field(description="Path to the source file.")
     assets: list[MediaReference] = Field(default_factory=list, description="Linked media assets.")
+    lyrics: Optional[str] = Field(default=None, description="Optional lyrics associated with the document.")
 
     @property
     def slug(self) -> str:

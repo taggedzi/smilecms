@@ -174,11 +174,14 @@ def load_music_documents(config: Config) -> list[ContentDocument]:
             download_path=download_path,
         )
 
+        lyrics_text = _read_lyrics_file(directory)
+
         document = ContentDocument(
             meta=meta,
             body=description,
             source_path=str(meta_path if meta_path.exists() else directory),
             assets=assets,
+            lyrics=lyrics_text,
         )
         documents.append(document)
 
@@ -268,6 +271,17 @@ def _parse_download_directive(value: Any) -> tuple[bool, str | None]:
             path_value = None
         return enabled_flag, path_value
     return False, None
+
+
+def _read_lyrics_file(directory: Path) -> str | None:
+    lyrics_path = directory / "lyrics.md"
+    if not lyrics_path.exists():
+        return None
+    try:
+        return lyrics_path.read_text(encoding="utf-8").strip()
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning("Failed to read lyrics file at %s: %s", lyrics_path, exc)
+        return None
     return []
 
 

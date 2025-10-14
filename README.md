@@ -47,7 +47,7 @@ All source content stays in the repository so the build is deterministic:
 
 - **Journal entries** use Markdown with YAML front matter. All referenced media must live under `content/media/`; shortcodes like `[Caption](img:media/example.jpg)` embed those assets and are resolved to generated derivatives (`/media/derived/...`) during the build.
 - **Galleries** keep raw images and sidecar metadata together under `media/image_gallery_raw/…`. The build pipeline enriches sidecars, generates derivative sizes (`thumb`, `large` by default), and publishes JSON/JSONL datasets that power `/gallery/`.
-- **Music catalog** follows the same conventions under `media/music_collection/` (metadata + media). Assets outside that hierarchy are rejected so each track remains self-contained, even though the front-end is still catching up.
+- **Music catalog** follows the same conventions under `media/music_collection/` (metadata + media). Assets outside that hierarchy are rejected so each track remains self-contained; optionally add a `lyrics.md` file beside `meta.yml` to surface song lyrics inside the catalog modal.
 
 See [`docs/content-workflows.md`](docs/content-workflows.md) for step-by-step instructions covering authoring, media handling, ML enrichment, and deployment.
 

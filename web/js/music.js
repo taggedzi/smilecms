@@ -74,6 +74,7 @@ function parseTrackPayload(text) {
         const search = typeof record.search === "string" ? record.search : "";
         const title = record.title || record.slug || "";
         const description = record.description || record.summary || "";
+        const lyrics = typeof record.lyrics === "string" ? record.lyrics.trim() : "";
         const summary = record.summary || truncate(description, 180);
         const sortDate = record.published_at ? Date.parse(record.published_at) : 0;
         const tags = Array.isArray(record.tags) ? record.tags : [];
@@ -82,6 +83,7 @@ function parseTrackPayload(text) {
           record.summary,
           description,
           tags.join(" "),
+          lyrics,
         ]
           .filter(Boolean)
           .join(" ")
@@ -93,6 +95,7 @@ function parseTrackPayload(text) {
           sortDate,
           tags,
           searchIndex: searchIndex || search || "",
+          lyrics,
         };
       } catch (error) {
         console.warn("[music] failed to parse track record", error);
@@ -373,7 +376,20 @@ function openModal(track, options = {}) {
     document.body.appendChild(state.modal.root);
   }
 
-  const { root, dialog, titleEl, subtitleEl, audioEl, coverEl, tagsEl, metaEl, descriptionEl, downloadLink } =
+  const {
+    root,
+    dialog,
+    titleEl,
+    subtitleEl,
+    audioEl,
+    coverEl,
+    tagsEl,
+    metaEl,
+    descriptionEl,
+    lyricsSection,
+    lyricsBody,
+    downloadLink,
+  } =
     state.modal;
 
   titleEl.textContent = track.title;
@@ -411,6 +427,14 @@ function openModal(track, options = {}) {
 
   descriptionEl.textContent =
     track.description?.trim() || track.summary?.trim() || "No description available for this track.";
+
+  if (track.lyrics && lyricsSection && lyricsBody) {
+    lyricsBody.textContent = track.lyrics;
+    lyricsSection.removeAttribute("hidden");
+  } else if (lyricsSection && lyricsBody) {
+    lyricsSection.setAttribute("hidden", "true");
+    lyricsBody.textContent = "";
+  }
 
   const audioSrc = track.audio?.src ? resolveMediaPath(track.audio.src) : null;
   if (audioSrc) {
@@ -546,10 +570,25 @@ function createModal() {
   const descriptionEl = document.createElement("div");
   descriptionEl.className = "music-modal__description";
 
+  const lyricsSection = document.createElement("section");
+  lyricsSection.className = "music-modal__lyrics";
+  lyricsSection.setAttribute("hidden", "true");
+
+  const lyricsHeading = document.createElement("h3");
+  lyricsHeading.className = "music-modal__lyrics-heading";
+  lyricsHeading.textContent = "Lyrics";
+
+  const lyricsBody = document.createElement("div");
+  lyricsBody.className = "music-modal__lyrics-body";
+
+  lyricsSection.appendChild(lyricsHeading);
+  lyricsSection.appendChild(lyricsBody);
+
   body.appendChild(media);
   body.appendChild(metaEl);
   body.appendChild(tagsEl);
   body.appendChild(descriptionEl);
+  body.appendChild(lyricsSection);
 
   const footer = document.createElement("footer");
   footer.className = "music-modal__footer";
@@ -591,6 +630,8 @@ function createModal() {
     tagsEl,
     metaEl,
     descriptionEl,
+    lyricsSection,
+    lyricsBody,
     downloadLink,
     closeButton,
     handleKey: null,

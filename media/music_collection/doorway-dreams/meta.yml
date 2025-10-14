@@ -15,5 +15,3 @@ download: true
 assets:
   doorway-dreams-cover.png:
     alt_text: "Abstract neon doorway artwork."
-  doorway-dreams-video.mp4:
-    title: "Visualizer"
