@@ -27,11 +27,12 @@ python -m venv .venv
 .venv\Scripts\activate  # or `source .venv/bin/activate`
 pip install -e .        # add extras like `.[dev]` or `.[ml]` when needed
 
-smilecms build          # full rebuild using smilecms.yml
-python -m http.server 8000 --directory site  # preview at http://localhost:8000/
+smilecms build            # full rebuild using smilecms.yml
+smilecms preview --port 8000  # serve ./site at http://127.0.0.1:8000/
+smilecms clean            # remove generated artifacts (add --cache to drop .cache/)
 ```
 
-The `smilecms build` command resets the output directories, generates media derivatives, writes manifests, renders article pages, exports gallery datasets, and stages the static `web/` assets into `site/`.
+The `smilecms build` command resets the output directories, generates media derivatives, writes manifests, renders article pages, exports gallery datasets, and stages the static `web/` assets into `site/`. Use `smilecms clean` to remove generated artifacts (`site/`, `media/derived/`, and optionally `.cache/`) before a fresh build.
 
 ## Content Layout & Workflows
 
@@ -58,7 +59,7 @@ See [`docs/content-workflows.md`](docs/content-workflows.md) for step-by-step in
 3. Inspect the console summary or `site/report.json` for warnings (missing media, gallery tagging failures).
 4. Deploy the entire `site/` directory to your static host/CDN. It already contains HTML, CSS/JS, JSON manifests, and media derivatives.
 
-For a quick local preview of the production bundle, start a static server inside `site/` and visit `http://localhost:8000/`.
+For a quick local preview of the production bundle, run `smilecms preview` and visit `http://localhost:8000/`.
 
 ## Additional Documentation
 
