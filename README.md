@@ -13,19 +13,56 @@ Allowing support for:
 
 ## Requirements
 
+- Python **3.11+**
+- Recommended tools (installed via extras):
+  - `pip install -e .[dev]` for formatting (`ruff`), typing (`mypy`), and testing (`pytest`).
+  - `pip install -e .[ml]` to enable automatic gallery captioning/tagging (CPU-compatible Hugging Face models).
+- Optional external binaries:
+  - Image processing relies on Pillow only; ffmpeg is *not* required today.
 
-## Content Layout
+## Quick Start
 
-- Articles live under `content/` as Markdown. Assets referenced by articles should be stored in `content/media/` and referenced with paths like `media/hero-image.jpg`; the build will resolve them and emit derivatives under `site/media/derived/media/...`.
-- Inside article bodies you can embed local assets with shortcodes: `[Caption](img:media/example.jpg)`, `[Track Title](audio:audio/example.mp3)`, or `[Clip Title](video:media/example.mp4)`. These resolve to the processed assets in the static bundle.
-- The journal archive lives at `/journal/` in the generated site. It loads the latest manifest so new posts appear automatically and supports search / sort without additional configuration.
-- Galleries belong in `media/image_gallery_raw/<collection-slug>/`. Each folder keeps a `collection.json` describing the collection (`title`, optional `summary`, `tags`, `sort_order`, `cover_image_id`). Image files sit alongside machine-maintained sidecars (`<image>.json`) that capture generated metadata, ML tags, and per-run LLM clean-ups. The build orchestrator refreshes these sidecars automatically, emits media derivatives, and writes searchable datasets to `site/data/gallery/`. The shipped front-end at `/gallery/` streams those JSONL files to render the infinite-scroll experience.
-- Music tracks live in `media/music_collection/<track-slug>/` with a `meta.yml` that mirrors the gallery structure and additionally supports `audio`, `duration`, and optional asset metadata. The primary audio file is published as-is while artwork/videos in the same folder are exposed as supplementary assets.
+```bash
+python -m venv .venv
+.venv\Scripts\activate  # or `source .venv/bin/activate`
+pip install -e .        # add extras like `.[dev]` or `.[ml]` when needed
+
+smilecms build          # full rebuild using smilecms.yml
+python -m http.server 8000 --directory site  # preview at http://localhost:8000/
+```
+
+The `smilecms build` command resets the output directories, generates media derivatives, writes manifests, renders article pages, exports gallery datasets, and stages the static `web/` assets into `site/`.
+
+## Content Layout & Workflows
+
+All source content stays in the repository so the build is deterministic:
+
+| Type                | Source directory                               | Output |
+| ------------------- | ---------------------------------------------- | ------ |
+| Journal posts       | `content/posts/*.md`                           | `site/posts/<slug>/index.html` |
+| Post media          | `content/media/`                               | `media/derived/...` (generated) |
+| Galleries           | `media/image_gallery_raw/<collection>/`        | `site/data/gallery/*.json[l]` + `media/derived/gallery/...` |
+| Static front-end    | `web/`                                         | Copied into `site/` during build |
+
+- **Journal entries** use Markdown with YAML front matter. Shortcodes like `[Caption](img:media/example.jpg)` embed local assets and are resolved to generated derivatives (`/media/derived/...`) during the build.
+- **Galleries** keep raw images and sidecar metadata together. The build pipeline enriches sidecars, generates derivative sizes (`thumb`, `large` by default), and publishes JSON/JSONL datasets that power `/gallery/`.
+- **Music catalog** follows the same conventions under `media/music_collection/` (metadata + media). Support exists in the pipeline even if the front-end hasn’t been wired yet.
+
+See [`docs/content-workflows.md`](docs/content-workflows.md) for step-by-step instructions covering authoring, media handling, ML enrichment, and deployment.
 
 ## Build & Deploy
 
-1. Install dependencies into your environment (`pip install -e .` or `pip install .`).
-2. Run `python -m build build` from the project root. The command regenerates manifests, media derivatives, and stages the web assets.
-3. Deploy the contents of the `site/` directory to your hosting provider. That folder now contains everything required to serve SmileCMS (HTML, CSS/JS, templates, manifests, and media derivatives).
+1. Install the project (see **Quick Start**).
+2. Run `smilecms build` (or `python -m build.cli build`) from the project root. Configuration defaults come from `smilecms.yml`.
+3. Inspect the console summary or `site/report.json` for warnings (missing media, gallery tagging failures).
+4. Deploy the entire `site/` directory to your static host/CDN. It already contains HTML, CSS/JS, JSON manifests, and media derivatives.
 
-For a quick local preview of the production bundle, start a static server inside `site/` (for example, `python -m http.server 8000`) and open `http://localhost:8000/`.
+For a quick local preview of the production bundle, start a static server inside `site/` and visit `http://localhost:8000/`.
+
+## Additional Documentation
+
+- [`docs/content-workflows.md`](docs/content-workflows.md) — authoring pipeline, build loop, and deployment checklists for journal entries and galleries.
+- [`docs/frontend.md`](docs/frontend.md) — layout, design, and front-end module overview.
+- [`docs/requirements.md`](docs/requirements.md) — product requirements and technical goals.
+
+Keep the docs in sync with pipeline changes so future contributors can pick up the project without guesswork.
