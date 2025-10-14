@@ -8,7 +8,7 @@
     { "label": "Home", "href": "/", "active": true },
     { "label": "Gallery", "href": "/gallery/" },
     { "label": "Journal", "href": "/journal/" },
-    { "label": "Audio", "href": "/#audio" }
+    { "label": "Music", "href": "/music/" }
   ],
   "hero": {
     "eyebrow": "Curated Collections",
@@ -16,7 +16,8 @@
     "subtitle": "Explore evolving galleries, reflective writing, and ambient audio journeys—crafted with SmileCMS.",
     "actions": [
       { "label": "View Galleries", "href": "/gallery/" },
-      { "label": "Read Journal", "href": "/journal/" }
+      { "label": "Read Journal", "href": "/journal/" },
+      { "label": "Listen More", "href": "/music/" }
     ]
   },
   "sections": [
@@ -67,7 +68,7 @@
         "message": "No audio tracks yet. Share your sounds."
       },
       "actions": [
-        { "label": "Listen More", "href": "/#audio" }
+        { "label": "Listen More", "href": "/music/" }
       ]
     }
   ],

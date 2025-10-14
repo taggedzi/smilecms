@@ -85,6 +85,14 @@ class ContentMeta(BaseModel):
     duration: Optional[float] = Field(
         default=None, description="Duration in seconds for audio/video items.", ge=0
     )
+    download_enabled: Optional[bool] = Field(
+        default=None,
+        description="Whether a direct download link should be exposed for this item.",
+    )
+    download_path: Optional[str] = Field(
+        default=None,
+        description="Relative path (within media mounts) to the downloadable asset.",
+    )
 
     @field_validator("slug")
     def _normalize_slug(cls, value: str) -> str:
@@ -98,6 +106,12 @@ class ContentMeta(BaseModel):
         if value is not None and value.tzinfo is None:
             return value.replace(tzinfo=timezone.utc)
         return value
+
+    @field_validator("download_path")
+    def _normalize_download_path(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        return value.strip()
 
 
 class ContentDocument(BaseModel):

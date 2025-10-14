@@ -11,6 +11,7 @@ status: published
 published_at: 2025-08-12T09:00:00
 duration: 186
 audio: doorway-dreams.mp3
+download: true
 assets:
   doorway-dreams-cover.png:
     alt_text: "Abstract neon doorway artwork."

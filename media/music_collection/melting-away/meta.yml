@@ -28,6 +28,7 @@ status: published
 published_at: 2025-08-30T19:18:00
 duration: 270
 audio: melting-away.mp3
+download: true
 assets:
   cover.png:
     alt_text: "Waterfall in a desert."

@@ -123,6 +123,10 @@ class MusicConfig(BaseModel):
 
     source_dir: Path = Field(default=Path("media/music_collection"))
     metadata_filename: str = Field(default="meta.yml")
+    data_subdir: str = Field(
+        default="data/music",
+        description="Path (relative to site output) for exported music datasets.",
+    )
 
     @field_validator("source_dir", mode="before")
     def _ensure_path(cls, value: Any) -> Path:

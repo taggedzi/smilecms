@@ -124,10 +124,26 @@ def load_music_documents(config: Config) -> list[ContentDocument]:
             logger.warning("Music track '%s' has no audio file; skipping.", slug)
             continue
 
+        audio_rel_path = _media_path("audio", slug, audio_path.name)
         hero_reference = _build_media_reference(
-            _media_path("audio", slug, audio_path.name),
+            audio_rel_path,
             data.get("audio_meta", {}),
         )
+
+        download_enabled, download_name = _parse_download_directive(data.get("download"))
+        download_meta_entry = data.get("download_meta", {})
+        download_path: str | None = None
+        if download_enabled:
+            selected_name = download_name or audio_path.name
+            candidate_path = directory / selected_name
+            if not candidate_path.exists():
+                logger.warning(
+                    "Download asset '%s' declared for track '%s' but file is missing. Falling back to primary audio.",
+                    selected_name,
+                    slug,
+                )
+                selected_name = audio_path.name
+            download_path = _media_path("audio", slug, selected_name)
 
         assets: list[MediaReference] = []
         for file_path in directory.iterdir():
@@ -140,6 +156,8 @@ def load_music_documents(config: Config) -> list[ContentDocument]:
             rel_path = _media_path("audio", slug, file_path.name)
             meta_entry = asset_meta.get(file_path.name, {}) if isinstance(asset_meta, dict) else {}
             assets.append(_build_media_reference(rel_path, meta_entry))
+        if download_path and download_path != audio_rel_path:
+            assets.append(_build_media_reference(download_path, download_meta_entry))
 
         meta = ContentMeta(
             slug=slug,
@@ -152,6 +170,8 @@ def load_music_documents(config: Config) -> list[ContentDocument]:
             published_at=published_at,
             updated_at=updated_at,
             duration=duration,
+            download_enabled=download_enabled,
+            download_path=download_path,
         )
 
         document = ContentDocument(
@@ -224,7 +244,30 @@ def _coerce_tags(value: Any) -> list[str]:
             if tag not in seen:
                 seen.add(tag)
                 result.append(tag)
-        return result
+    return result
+
+
+def _parse_download_directive(value: Any) -> tuple[bool, str | None]:
+    if value is None:
+        return False, None
+    if isinstance(value, bool):
+        return value, None
+    if isinstance(value, str):
+        cleaned = value.strip()
+        return (bool(cleaned), cleaned or None)
+    if isinstance(value, dict):
+        enabled = value.get("enabled", value.get("allow", value.get("allowed", False)))
+        try:
+            enabled_flag = bool(enabled)
+        except Exception:  # pragma: no cover - defensive
+            enabled_flag = False
+        path_value = value.get("path") or value.get("file") or value.get("name")
+        if isinstance(path_value, str):
+            path_value = path_value.strip() or None
+        else:
+            path_value = None
+        return enabled_flag, path_value
+    return False, None
     return []
 
 

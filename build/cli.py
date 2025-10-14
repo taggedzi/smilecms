@@ -11,6 +11,7 @@ from .gallery import prepare_workspace as prepare_gallery_workspace
 from .ingest import load_documents
 from .manifests import ManifestGenerator, write_manifest_pages
 from .media import apply_variants_to_documents, collect_media_plan, process_media_plan
+from .music import export_music_catalog
 from .reporting import (
     assemble_report,
     build_document_stats,
@@ -109,8 +110,15 @@ def build(config_path: str = "smilecms.yml") -> None:
             f"[bold green]Gallery data[/]: wrote {len(gallery_workspace.data_writes)} file(s) to "
             f"{config.output_dir / config.gallery.data_subdir}"
         )
+    music_result = export_music_catalog(documents, config)
+    if music_result.written:
+        console.print(
+            f"[bold green]Music catalog[/]: exported {music_result.tracks} track(s); "
+            f"wrote {len(music_result.written)} file(s) to {config.output_dir / config.music.data_subdir}"
+        )
     warnings = list(report.warnings)
     warnings.extend(gallery_workspace.warnings)
+    warnings.extend(music_result.warnings)
     if warnings:
         console.print("[bold yellow]Warnings:[/]")
         for warning in warnings:

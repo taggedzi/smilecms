@@ -683,17 +683,67 @@ function renderSiteChrome(siteConfig) {
   }
 
   if (nav) {
+    nav.innerHTML = "";
+    const currentPath = window.location.pathname.replace(/index\.html$/, "");
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "nav-toggle";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-controls", "nav-menu");
+    toggle.innerHTML = `
+      <span class="nav-toggle__label">Menu</span>
+      <span class="nav-toggle__icon" aria-hidden="true"></span>
+    `;
+
     const list = document.createElement("ul");
     list.className = "nav-list";
-  list.dataset.open = "true";
-  navigation.forEach((item) => {
-    const li = document.createElement("li");
-    li.innerHTML = `<a class="nav-link" href="${escapeHtml(item.href || "#")}" ${
-      item.label?.toLowerCase() === "gallery" ? 'aria-current="page"' : ""
-    }>${escapeHtml(item.label || "Link")}</a>`;
-    list.appendChild(li);
-  });
-    nav.innerHTML = "";
+    list.id = "nav-menu";
+    list.setAttribute("role", "menubar");
+    list.dataset.open = "false";
+
+    const normalizedCurrent = normalizeNavPath(currentPath);
+
+    navigation.forEach((item) => {
+      const href = item.href || "#";
+      const label = item.label || "Link";
+      const li = document.createElement("li");
+      li.setAttribute("role", "none");
+
+      const link = document.createElement("a");
+      link.className = "nav-link";
+      link.setAttribute("role", "menuitem");
+      link.href = href;
+      link.textContent = label;
+
+      const normalizedHref = normalizeNavPath(href);
+      if (
+        normalizedHref === normalizedCurrent ||
+        item.active ||
+        label.toLowerCase() === "gallery"
+      ) {
+        link.setAttribute("aria-current", "page");
+      }
+
+      li.appendChild(link);
+      list.appendChild(li);
+    });
+
+    toggle.addEventListener("click", () => {
+      const expanded = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", String(!expanded));
+      list.dataset.open = String(!expanded);
+    });
+
+    list.addEventListener("click", (event) => {
+      const target = event.target;
+      if (target instanceof HTMLElement && target.matches(".nav-link")) {
+        toggle.setAttribute("aria-expanded", "false");
+        list.dataset.open = "false";
+      }
+    });
+
+    nav.appendChild(toggle);
     nav.appendChild(list);
   }
 
@@ -986,6 +1036,13 @@ function ensureRelativeAsset(path) {
   if (path.startsWith("/")) return path;
   if (path.startsWith("../")) return path;
   return `../${path.replace(/^\.\//, "")}`;
+}
+
+function normalizeNavPath(path) {
+  if (typeof path !== "string" || !path) return "/";
+  const trimmed = path.replace(/index\.html$/, "");
+  if (!trimmed || trimmed === ".") return "/";
+  return trimmed.endsWith("/") ? trimmed : `${trimmed}/`;
 }
 
 function escapeHtml(value) {

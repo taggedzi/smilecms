@@ -159,7 +159,35 @@ media/image_gallery_raw/<collection-slug>/
 
 - Store each track inside `media/music_collection/<slug>/` with its metadata file (default `meta.yml`).
 - The build treats that folder as the sole source for audio and related artwork; references outside the directory will be marked missing during planning.
-- Audio derivatives aren’t generated yet, but the pipeline copies referenced files into `media/derived/audio/...` so the front-end can link to them once implemented.
+- Audio assets are copied into `media/derived/audio/...` so the music catalog and download links work without additional setup.
+
+Example `meta.yml`:
+
+```yaml
+title: "Melting Away [House Mix]"
+summary: "A house song about melting away with God."
+description: |
+  Long-form description (Markdown allowed) that powers the modal view.
+tags: [Progressive House, Cinematic EDM, Uplifting]
+status: published
+published_at: 2025-08-30T19:18:00Z
+duration: 270           # seconds
+audio: melting-away.mp3 # primary audio file (required)
+download: true          # or `download: alt-master.wav` for a custom file
+audio_meta:
+  mime_type: audio/mpeg
+assets:
+  cover.png:
+    alt_text: "Waterfall in a desert."
+  visualizer.mp4:
+    title: "Visualizer"
+```
+
+- `download` accepts `true` (use the primary audio), a specific filename, or an object `{ enabled: true, path: "alt.wav" }`. The referenced file must live beside `meta.yml`.
+- Optional `download_meta` can provide alt/title data for the download asset.
+- All images/videos in the folder automatically become supporting media; the first image is used as cover art on the catalog page.
+- After running `smilecms build`, the catalog lives at `/music/` with searchable, infinite-scroll tiles and deep links (`/music/?track=<slug>`). Copy any track URL to share the exact modal view.
+- The build exports datasets to `site/data/music/manifest.json` and `site/data/music/tracks.jsonl`, which power the front-end catalog.
 
 ---
 

@@ -57,6 +57,12 @@
         "duration": {
           "type": ["number", "null"],
           "minimum": 0
+        },
+        "download_enabled": {
+          "type": ["boolean", "null"]
+        },
+        "download_path": {
+          "type": ["string", "null"]
         }
       },
       "additionalProperties": false
