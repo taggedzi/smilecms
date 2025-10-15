@@ -133,6 +133,8 @@ media/image_gallery_raw/<collection-slug>/
 - `meta.yml` can be JSON or YAML and accepts the fields defined in `build/gallery/models.py` (`title`, `summary`, `tags`, `sort_order`, etc.). Missing fields are auto-filled.
 - Drop new images into the collection folder and rerun `smilecms build`; derivatives and metadata refresh automatically. Assets placed outside `media/image_gallery_raw/` will not be picked up.
 
+**Tip:** Give each asset a unique filename (stem). If you drop both `painting.png` and `painting.jpg` into a collection, the single sidecar (`painting.json`) can only reference one of them. The other file will be reported as an orphan during `smilecms audit media`. Remove the unwanted duplicate (or create a second image/sidecar pair) and update the remaining sidecar to resolve the warning.
+
 ### Optional ML enrichment
 
 - Install the `[ml]` extra (`pip install -e .[ml]`) to enable automatic captioning and tagging via Hugging Face models. Without it the rest of the pipeline still runs, but `tags`/`captions` stay untouched unless manually edited.
