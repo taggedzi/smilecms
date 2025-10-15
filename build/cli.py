@@ -1,67 +1,114 @@
+"""CLI entrypoints for SmileCMS build tooling."""
+
 import contextlib
+from dataclasses import dataclass
 import functools
 import shutil
 import time
 import webbrowser
+from enum import Enum
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import TYPE_CHECKING
-from enum import Enum
+from typing import TYPE_CHECKING, Annotated, Iterable, cast
 
 import typer
 from rich.console import Console
 
 from .articles import write_article_pages
-from .config import Config, load_config
+from .config import Config, MediaProcessingConfig, load_config
+from .feeds import generate_feeds
 from .gallery import apply_derivatives as apply_gallery_derivatives
 from .gallery import export_datasets as export_gallery_datasets
 from .gallery import prepare_workspace as prepare_gallery_workspace
 from .ingest import load_documents
 from .manifests import ManifestGenerator, write_manifest_pages
-from .feeds import generate_feeds
-from .verify import verify_site
 from .media import (
     MediaAuditResult,
-    audit_media,
     apply_variants_to_documents,
+    audit_media,
     collect_media_plan,
     process_media_plan,
 )
-from .scaffold import ScaffoldError, ScaffoldResult, normalize_slug, scaffold_content
-
-if TYPE_CHECKING:
-    from .media.audit import ReferenceUsage
-from .music import export_music_catalog
+from .music import MusicExportResult, export_music_catalog
 from .reporting import (
+    BuildReport,
     assemble_report,
     build_document_stats,
     build_manifest_stats,
     build_media_stats,
     write_report,
 )
+from .scaffold import ScaffoldError, ScaffoldResult, normalize_slug, scaffold_content
 from .staging import StagingResult, reset_directory, stage_static_site
-from .state import BuildTracker
+from .state import BuildTracker, ChangeSummary
 from .validation import DocumentValidationError, IssueSeverity, lint_workspace
+from .verify import verify_site
+
+if TYPE_CHECKING:
+    from .gallery import GalleryWorkspace
+    from .media.audit import ReferenceUsage
+    from .content import ContentDocument
 
 console = Console()
 app = typer.Typer(help="SmileCMS static publishing toolkit.")
 audit_app = typer.Typer(help="Audit workspace content and media.")
 app.add_typer(audit_app, name="audit")
 
-
 class NewContentType(str, Enum):
+    """Kinds of content that can be scaffolded from the CLI."""
+
     POST = "post"
     GALLERY = "gallery"
     TRACK = "track"
 
 
+ConfigPathOption = Annotated[
+    str,
+    typer.Option("--config", "-c", help="Path to configuration file."),
+]
+TitleOption = Annotated[
+    str | None,
+    typer.Option("--title", "-t", help="Override the default title derived from the slug."),
+]
+ForceFlag = Annotated[
+    bool,
+    typer.Option("--force", "-f", help="Overwrite existing files if they already exist."),
+]
+
+
+@dataclass(slots=True)
+class BuildOutputs:
+    """Aggregate results from the main build pipeline."""
+
+    report: BuildReport
+    manifest_paths: list[Path]
+    feed_paths: list[Path]
+    gallery_updates: int
+    report_path: Path
+
+
+@dataclass(slots=True)
+class StageArtifacts:
+    """Outputs collected while staging ancillary assets."""
+
+    stage_result: StagingResult
+    article_pages: list[Path]
+    music_result: MusicExportResult
+
+
 @app.command()
 def new(  # noqa: PLR0913
-    kind: NewContentType = typer.Argument(..., help="Content type to scaffold."),
-    slug: str = typer.Argument(..., help="Slug identifier used for files and directories."),
-    title: str | None = typer.Option(None, "--title", "-t", help="Override the default title derived from the slug."),
-    config_path: str = typer.Option("smilecms.yml", "--config", "-c", help="Path to configuration file."),
-    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing files if they already exist."),
+    kind: Annotated[
+        NewContentType,
+        typer.Argument(..., help="Content type to scaffold."),
+    ],
+    slug: Annotated[
+        str,
+        typer.Argument(..., help="Slug identifier used for files and directories."),
+    ],
+    title: TitleOption = None,
+    config_path: ConfigPathOption = "smilecms.yml",
+    force: ForceFlag = False,
 ) -> None:
     """Create a new post, gallery, or track using the recommended layout."""
     try:
@@ -70,7 +117,7 @@ def new(  # noqa: PLR0913
         console.print(f"[bold red]Cannot scaffold[/]: {exc}")
         raise typer.Exit(code=1) from exc
 
-    config = _load(config_path)
+    config: Config = _load(config_path)
 
     try:
         result = scaffold_content(
@@ -93,11 +140,14 @@ def new(  # noqa: PLR0913
 
 @app.command()
 def lint(
-    config_path: str = typer.Option("smilecms.yml", "--config", "-c", help="Path to configuration file."),
-    strict: bool = typer.Option(False, "--strict", help="Treat warnings as errors."),
+    config_path: ConfigPathOption = "smilecms.yml",
+    strict: Annotated[
+        bool,
+        typer.Option("--strict", help="Treat warnings as errors."),
+    ] = False,
 ) -> None:
     """Run lightweight checks for common content issues."""
-    config = _load(config_path)
+    config: Config = _load(config_path)
     report = lint_workspace(config)
 
     if not report.issues:
@@ -123,124 +173,275 @@ def lint(
 
 @app.command()
 def build(
-    config_path: str = typer.Option("smilecms.yml", "--config", "-c", help="Path to configuration file."),
-    force: bool = typer.Option(False, "--force", help="Ignore incremental cache and perform a full rebuild."),
+    config_path: ConfigPathOption = "smilecms.yml",
+    force: ForceFlag = False,
 ) -> None:
     """Run a full rebuild of site artifacts."""
-    config = _load(config_path)
+    config: Config = _load(config_path)
     tracker = BuildTracker(config, Path(config_path))
     fingerprints = tracker.compute_fingerprints()
     change_summary = tracker.summarize_changes(fingerprints)
 
+    _prepare_output_directories(config, change_summary, force)
+
+    gallery_workspace: "GalleryWorkspace" = prepare_gallery_workspace(config)
+    documents = _load_build_documents(config, gallery_workspace)
+
+    outputs = _generate_site_artifacts(config, documents, gallery_workspace)
+
+    _print_primary_summary(outputs, config, gallery_workspace)
+
+    stage_artifacts = _stage_static_assets(config, tracker, documents, gallery_workspace)
+
+    _print_stage_summary(config, outputs, stage_artifacts, gallery_workspace)
+
+    tracker.persist(fingerprints, stage_artifacts.stage_result.template_paths)
+
+    _print_accumulated_warnings(outputs.report, gallery_workspace, stage_artifacts.music_result)
+
+
+def _prepare_output_directories(config: Config, change_summary: ChangeSummary, force: bool) -> None:
     if force:
-        console.print("[bold yellow]Force rebuild[/]: clearing output directories before regenerating.")
+        console.print(
+            "[bold yellow]Force rebuild[/]: clearing output directories before regenerating."
+        )
         reset_directory(config.output_dir)
         reset_directory(config.media_processing.output_dir)
-    else:
-        config.output_dir.mkdir(parents=True, exist_ok=True)
-        config.media_processing.output_dir.mkdir(parents=True, exist_ok=True)
-        if change_summary.first_run:
-            console.print(
-                "[bold yellow]Incremental build[/]: initializing cache; no previous state detected."
-            )
-        elif change_summary.changed_keys:
-            categories = ", ".join(sorted(change_summary.changed_keys))
-            console.print(
-                f"[bold green]Incremental build[/]: changes detected in {categories}."
-            )
-        else:
-            console.print(
-                "[bold blue]Incremental build[/]: no input changes detected; reusing cached artifacts."
-            )
+        return
 
-    gallery_workspace = prepare_gallery_workspace(config)
+    config.output_dir.mkdir(parents=True, exist_ok=True)
+    config.media_processing.output_dir.mkdir(parents=True, exist_ok=True)
+
+    if change_summary.first_run:
+        console.print(
+            "[bold yellow]Incremental build[/]: initializing cache; no previous state detected."
+        )
+        return
+
+    if change_summary.changed_keys:
+        categories = ", ".join(sorted(change_summary.changed_keys))
+        console.print(
+            "[bold green]Incremental build[/]: changes detected in "
+            f"{categories}."
+        )
+        return
+
+    console.print(
+        "[bold blue]Incremental build[/]: no input changes detected; "
+        "reusing cached artifacts."
+    )
+
+
+def _load_build_documents(
+    config: Config,
+    gallery_workspace: "GalleryWorkspace",
+) -> Iterable["ContentDocument"]:
     try:
-        documents = load_documents(config, gallery_workspace=gallery_workspace)
+        return load_documents(config, gallery_workspace=gallery_workspace)
     except DocumentValidationError as error:
         console.print(f"[bold red]Validation failed[/]: {error}")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from error
 
+
+def _generate_site_artifacts(
+    config: Config,
+    documents: Iterable["ContentDocument"],
+    gallery_workspace: "GalleryWorkspace",
+) -> BuildOutputs:
     start = time.perf_counter()
-
-    document_stats = build_document_stats(documents)
 
     media_plan = collect_media_plan(documents, config)
     media_result = process_media_plan(media_plan, config)
     apply_variants_to_documents(documents, media_result.variants)
     updated_gallery = apply_gallery_derivatives(gallery_workspace, media_result, config)
 
-    generator = ManifestGenerator()
-    pages = generator.build_pages(documents, prefix="content")
-    manifest_dir = config.output_dir / "manifests"
-    written = write_manifest_pages(pages, manifest_dir)
-    manifest_stats = build_manifest_stats(pages)
+    pages = ManifestGenerator().build_pages(documents, prefix="content")
+    manifest_paths = write_manifest_pages(pages, config.output_dir / "manifests")
 
-    feed_paths = generate_feeds(config, pages)
-    media_stats = build_media_stats(media_plan, media_result)
-
-    duration = time.perf_counter() - start
     report = assemble_report(
         project=config.project_name,
-        duration_seconds=duration,
-        documents=document_stats,
-        manifests=manifest_stats,
-        media=media_stats,
+        duration_seconds=time.perf_counter() - start,
+        documents=build_document_stats(documents),
+        manifests=build_manifest_stats(pages),
+        media=build_media_stats(media_plan, media_result),
     )
     report_path = write_report(report, config.output_dir)
 
-    console.print(
-        f"[bold green]Documents[/]: {document_stats.total} "
-        f"(published {document_stats.published}, drafts {document_stats.drafts}, archived {document_stats.archived})"
-    )
-    console.print(
-        f"[bold green]Manifests[/]: {manifest_stats.pages} page(s) with {manifest_stats.items} item(s); "
-        f"written {len(written)} file(s) to {manifest_dir}"
+    return BuildOutputs(
+        report=report,
+        manifest_paths=manifest_paths,
+        feed_paths=generate_feeds(config, pages),
+        gallery_updates=updated_gallery,
+        report_path=report_path,
     )
 
-    if feed_paths:
-        feed_locations = ", ".join(_display_path(path) for path in feed_paths)
-        console.print(f"[bold green]Feeds[/]: generated syndication feeds at {feed_locations}")
 
+def _print_primary_summary(
+    outputs: BuildOutputs,
+    config: Config,
+    gallery_workspace: "GalleryWorkspace",
+) -> None:
+    report = outputs.report
+    documents = report.documents
+    manifests = report.manifests
+
+    console.print(
+        "[bold green]Documents[/]: "
+        f"{documents.total} "
+        f"(published {documents.published}, "
+        f"drafts {documents.drafts}, "
+        f"archived {documents.archived})"
+    )
+    console.print(
+        "[bold green]Manifests[/]: "
+        f"{manifests.pages} page(s) with {manifests.items} item(s); "
+        f"written {len(outputs.manifest_paths)} file(s) to "
+        f"{_display_path(config.output_dir / 'manifests')}"
+    )
+
+    if outputs.feed_paths:
+        feed_locations = ", ".join(_display_path(path) for path in outputs.feed_paths)
+        console.print(
+            "[bold green]Feeds[/]: generated syndication feeds at "
+            f"{feed_locations}"
+        )
+
+    stats = report.media
     media_line = (
-        f"[bold green]Media[/]: {media_stats.assets_processed}/{media_stats.assets_planned} asset(s) "
-        f"produced {media_stats.variants_generated} variant(s); "
-        f"{media_stats.assets_copied} copied"
+        "[bold green]Media[/]: "
+        f"{stats.assets_processed}/{stats.assets_planned} asset(s) produced "
+        f"{stats.variants_generated} variant(s); "
+        f"{stats.assets_copied} copied"
     )
-    if media_stats.assets_reused:
-        media_line += f", {media_stats.assets_reused} reused"
+    if stats.assets_reused:
+        media_line += f", {stats.assets_reused} reused"
     media_line += ". "
     media_line += (
-        f"{media_stats.tasks_processed}/{media_stats.tasks_planned} image task(s) rendered"
+        f"{stats.tasks_processed}/{stats.tasks_planned} image task(s) rendered"
     )
-    if media_stats.tasks_reused:
-        media_line += f", {media_stats.tasks_reused} reused"
-    media_line += f" ({media_stats.tasks_skipped} skipped)"
-    if media_stats.artifacts_pruned:
-        media_line += f"; removed {media_stats.artifacts_pruned} stale file(s)"
+    if stats.tasks_reused:
+        media_line += f", {stats.tasks_reused} reused"
+    media_line += f" ({stats.tasks_skipped} skipped)"
+    if stats.artifacts_pruned:
+        media_line += f"; removed {stats.artifacts_pruned} stale file(s)"
     console.print(media_line)
 
     console.print(
-        f"[bold green]Gallery[/]: {gallery_workspace.collection_count()} collection(s) "
-        f"with {gallery_workspace.image_count()} image(s); "
+        "[bold green]Gallery[/]: "
+        f"{gallery_workspace.collection_count()} collection(s) with "
+        f"{gallery_workspace.image_count()} image(s); "
         f"{len(gallery_workspace.collection_writes)} collection sidecar(s) "
         f"and {len(gallery_workspace.image_writes)} image sidecar(s) updated; "
-        f"{updated_gallery} derivative mapping(s) refreshed"
+        f"{outputs.gallery_updates} derivative mapping(s) refreshed"
     )
+
+
+def _stage_static_assets(
+    config: Config,
+    tracker: BuildTracker,
+    documents: Iterable["ContentDocument"],
+    gallery_workspace: "GalleryWorkspace",
+) -> StageArtifacts:
+    previous_templates = tracker.previous_template_paths or None
+    stage_result = stage_static_site(
+        config,
+        previous_template_paths=previous_templates,
+    )
+    article_pages = write_article_pages(documents, config)
+    export_gallery_datasets(gallery_workspace, config)
+    music_result = export_music_catalog(documents, config)
+    return StageArtifacts(
+        stage_result=stage_result,
+        article_pages=article_pages,
+        music_result=music_result,
+    )
+
+
+def _print_stage_summary(
+    config: Config,
+    outputs: BuildOutputs,
+    stage_artifacts: StageArtifacts,
+    gallery_workspace: "GalleryWorkspace",
+) -> None:
+    stage_result = stage_artifacts.stage_result
+    if stage_result.total:
+        console.print(
+            "[bold green]Static bundle[/]: "
+            f"staged {stage_result.total} item(s) into {_display_path(config.output_dir)}"
+        )
+    else:
+        console.print(
+            "[bold yellow]Static bundle[/]: "
+            f"no template assets found at {_display_path(config.templates_dir)}"
+        )
+    if stage_result.removed_templates:
+        console.print(
+            "[bold yellow]Static bundle[/]: "
+            f"removed {len(stage_result.removed_templates)} stale template asset(s)"
+        )
+
+    if stage_artifacts.article_pages:
+        console.print(
+            "[bold green]Articles[/]: "
+            f"rendered {len(stage_artifacts.article_pages)} page(s) in "
+            f"{_display_path(config.output_dir / 'posts')}"
+        )
+
+    if gallery_workspace.data_writes:
+        console.print(
+            "[bold green]Gallery data[/]: "
+            f"wrote {len(gallery_workspace.data_writes)} file(s) to "
+            f"{_display_path(config.output_dir / config.gallery.data_subdir)}"
+        )
+
+    if stage_artifacts.music_result.written:
+        console.print(
+            "[bold green]Music catalog[/]: "
+            f"exported {stage_artifacts.music_result.tracks} track(s); wrote "
+            f"{len(stage_artifacts.music_result.written)} file(s) to "
+            f"{_display_path(config.output_dir / config.music.data_subdir)}"
+        )
+
+    console.print(
+        "[bold green]Report[/]: "
+        f"{_display_path(outputs.report_path)} "
+        f"(duration {outputs.report.duration_seconds:.2f}s)"
+    )
+
+
+def _print_accumulated_warnings(
+    report: BuildReport,
+    gallery_workspace: "GalleryWorkspace",
+    music_result: MusicExportResult,
+) -> None:
+    warnings = list(report.warnings)
+    warnings.extend(gallery_workspace.warnings)
+    warnings.extend(music_result.warnings)
+    if warnings:
+        console.print("[bold yellow]Warnings:[/]")
+        for warning in warnings:
+            console.print(f"- {warning}")
+    if gallery_workspace.errors:
+        console.print("[bold red]Gallery errors:[/]")
+        for error in gallery_workspace.errors:
+            console.print(f"- {error}")
 
 
 @app.command()
 def verify(
-    config_path: str = typer.Option("smilecms.yml", "--config", "-c", help="Path to configuration file."),
-    report_path: str | None = typer.Option(
-        None,
-        "--report",
-        "-r",
-        help="Optional path to write a text report summarizing verification findings.",
-    ),
+    config_path: ConfigPathOption = "smilecms.yml",
+    report_path: Annotated[
+        str | None,
+        typer.Option(
+            "--report",
+            "-r",
+            help="Optional path to write a text report summarizing verification findings.",
+        ),
+    ] = None,
 ) -> None:
     """Scan the generated site bundle for missing links or assets."""
-    config = _load(config_path)
-    output_dir = config.output_dir
+    config: Config = _load(config_path)
+    output_dir = Path(config.output_dir)
 
     if not output_dir.exists():
         console.print(f"[bold red]Site directory not found[/]: {_display_path(output_dir)}")
@@ -262,77 +463,21 @@ def verify(
 
     exit_code = 1 if report.error_count > 0 else 0
     raise typer.Exit(code=exit_code)
-    console.print(
-        f"[bold green]Report[/]: {report_path} "
-        f"(duration {duration:.2f}s)"
-    )
-
-    previous_templates = tracker.previous_template_paths or None
-    stage_result: StagingResult = stage_static_site(
-        config,
-        previous_template_paths=previous_templates,
-    )
-    if stage_result.total:
-        console.print(
-            f"[bold green]Static bundle[/]: staged {stage_result.total} item(s) into {config.output_dir}"
-        )
-    else:
-        console.print(
-            f"[bold yellow]Static bundle[/]: no template assets found at {config.templates_dir}"
-        )
-    if stage_result.removed_templates:
-        console.print(
-            f"[bold yellow]Static bundle[/]: removed {len(stage_result.removed_templates)} stale template asset(s)"
-        )
-
-    article_pages = write_article_pages(documents, config)
-    if article_pages:
-        console.print(
-            f"[bold green]Articles[/]: rendered {len(article_pages)} page(s) in {config.output_dir / 'posts'}"
-        )
-
-    export_gallery_datasets(gallery_workspace, config)
-    if gallery_workspace.data_writes:
-        console.print(
-            f"[bold green]Gallery data[/]: wrote {len(gallery_workspace.data_writes)} file(s) to "
-            f"{config.output_dir / config.gallery.data_subdir}"
-        )
-
-    music_result = export_music_catalog(documents, config)
-    if music_result.written:
-        console.print(
-            f"[bold green]Music catalog[/]: exported {music_result.tracks} track(s); "
-            f"wrote {len(music_result.written)} file(s) to {config.output_dir / config.music.data_subdir}"
-        )
-
-    tracker.persist(fingerprints, stage_result.template_paths)
-
-    warnings = list(report.warnings)
-    warnings.extend(gallery_workspace.warnings)
-    warnings.extend(music_result.warnings)
-    if warnings:
-        console.print("[bold yellow]Warnings:[/]")
-        for warning in warnings:
-            console.print(f"- {warning}")
-    if gallery_workspace.errors:
-        console.print("[bold red]Gallery errors:[/]")
-        for error in gallery_workspace.errors:
-            console.print(f"- {error}")
 
 
 @audit_app.command("media")
 def audit_media_command(
-    config_path: str = typer.Option(
-        "smilecms.yml", "--config", "-c", help="Path to configuration file."
-    ),
-    json_output: bool = typer.Option(
-        False,
-        "--json",
-        help="Emit machine-readable JSON instead of human formatted output.",
-    ),
+    config_path: ConfigPathOption = "smilecms.yml",
+    json_output: Annotated[
+        bool,
+        typer.Option(
+            "--json",
+            help="Emit machine-readable JSON instead of human formatted output.",
+        ),
+    ] = False,
 ) -> None:
     """Inspect media references and files for missing or misplaced assets."""
-    config = _load(config_path)
+    config: Config = _load(config_path)
     documents = load_documents(config)
     result = audit_media(documents, config)
     if json_output:
@@ -343,17 +488,29 @@ def audit_media_command(
 
 @app.command()
 def preview(
-    config_path: str = typer.Option("smilecms.yml", "--config", "-c", help="Path to configuration file."),
-    host: str = typer.Option("127.0.0.1", "--host", help="Host interface to bind the preview server."),
-    port: int = typer.Option(8000, "--port", "-p", help="Port for the preview server."),
-    open_browser: bool = typer.Option(False, "--open-browser/--no-open-browser", help="Automatically open the site in a browser after starting."),
+    config_path: ConfigPathOption = "smilecms.yml",
+    host: Annotated[
+        str,
+        typer.Option("--host", help="Host interface to bind the preview server."),
+    ] = "127.0.0.1",
+    port: Annotated[
+        int,
+        typer.Option("--port", "-p", help="Port for the preview server."),
+    ] = 8000,
+    open_browser: Annotated[
+        bool,
+        typer.Option(
+            "--open-browser/--no-open-browser",
+            help="Automatically open the site in a browser after starting.",
+        ),
+    ] = False,
 ) -> None:
     """Serve the generated site directory with a simple HTTP server."""
-    config = _load(config_path)
+    config: Config = _load(config_path)
     if port < 0 or port > 65535:
-        raise typer.BadParameter("Port must be between 0 and 65535.", param_name="port")
+        raise typer.BadParameter("Port must be between 0 and 65535.")
 
-    output_dir = config.output_dir
+    output_dir = Path(config.output_dir)
     if not output_dir.exists():
         console.print(f"[bold red]Site output not found[/]: {output_dir}")
         console.print("Run 'smilecms build' to generate the static bundle before previewing.")
@@ -361,7 +518,8 @@ def preview(
 
     if not any(output_dir.iterdir()):
         console.print(
-            f"[bold yellow]Warning[/]: {output_dir} is empty. Run 'smilecms build' to populate the site."
+            "[bold yellow]Warning[/]: "
+            f"{output_dir} is empty. Run 'smilecms build' to populate the site."
         )
 
     handler = functools.partial(SimpleHTTPRequestHandler, directory=str(output_dir))
@@ -387,17 +545,24 @@ def preview(
 
 @app.command()
 def clean(
-    config_path: str = typer.Option("smilecms.yml", "--config", "-c", help="Path to configuration file."),
-    include_cache: bool = typer.Option(False, "--cache", help="Also remove the configured cache directory."),
+    config_path: ConfigPathOption = "smilecms.yml",
+    include_cache: Annotated[
+        bool,
+        typer.Option("--cache", help="Also remove the configured cache directory."),
+    ] = False,
 ) -> None:
     """Remove generated artifacts (site bundle, media derivatives, and optional cache)."""
-    config = _load(config_path)
+    config: Config = _load(config_path)
+    media_processing: MediaProcessingConfig = cast(
+        MediaProcessingConfig,
+        getattr(config, "media_processing"),
+    )
     targets: list[tuple[str, Path]] = [
-        ("site output", config.output_dir),
-        ("media derivatives", config.media_processing.output_dir),
+        ("site output", Path(config.output_dir)),
+        ("media derivatives", Path(media_processing.output_dir)),
     ]
     if include_cache:
-        targets.append(("cache", config.cache_dir))
+        targets.append(("cache", Path(config.cache_dir)))
 
     removed = 0
     for label, path in targets:
@@ -408,9 +573,8 @@ def clean(
         else:
             console.print(f"[bold yellow]Skipping[/]: {label} ({path}) not found")
 
-    console.print(
-        f"[bold green]Clean complete[/]: removed {removed} director{'y' if removed == 1 else 'ies'}."
-    )
+    noun = "directory" if removed == 1 else "directories"
+    console.print(f"[bold green]Clean complete[/]: removed {removed} {noun}.")
 
 
 def _print_scaffold_summary(kind: NewContentType, slug: str, result: ScaffoldResult) -> None:
@@ -497,10 +661,17 @@ def _media_audit_payload(result: MediaAuditResult) -> dict:
             "stray_assets": len(result.stray_files),
         },
         "missing_references": [
-            serialize_usage(path, result.missing_references[path]) for path in sorted(result.missing_references)
+            serialize_usage(
+                path,
+                result.missing_references[path],
+            )
+            for path in sorted(result.missing_references)
         ],
         "out_of_bounds_references": [
-            serialize_usage(path, result.out_of_bounds_references[path])
+            serialize_usage(
+                path,
+                result.out_of_bounds_references[path],
+            )
             for path in sorted(result.out_of_bounds_references)
         ],
         "orphan_assets": [
@@ -542,17 +713,20 @@ def _display_path(path: Path) -> str:
 def _print_verification_report(report) -> None:
     if not report.issues:
         console.print(
-            f"[bold green]Verification complete[/]: {report.scanned_files} HTML file(s) scanned; no issues found."
+            "[bold green]Verification complete[/]: "
+            f"{report.scanned_files} HTML file(s) scanned; no issues found."
         )
         return
 
     console.print(
-        f"[bold red]Verification issues[/]: {len(report.issues)} issue(s) detected across {report.scanned_files} file(s)."
+        "[bold red]Verification issues[/]: "
+        f"{len(report.issues)} issue(s) detected across {report.scanned_files} file(s)."
     )
     for issue in report.issues:
         color = "yellow" if issue.kind == "warning" else "red"
         console.print(
-            f"[bold {color}]{issue.kind}[/] {_display_path(issue.source)} -> {issue.target} :: {issue.message}"
+            f"[bold {color}]{issue.kind}[/] "
+            f"{_display_path(issue.source)} -> {issue.target} :: {issue.message}"
         )
 
 
@@ -569,7 +743,8 @@ def _render_verification_text(report, output_dir: Path) -> str:
     else:
         for issue in report.issues:
             lines.append(
-                f"- [{issue.kind}] {issue.source.resolve().as_posix()} -> {issue.target}: {issue.message}"
+                f"- [{issue.kind}] "
+                f"{issue.source.resolve().as_posix()} -> {issue.target}: {issue.message}"
             )
     lines.append("")
     return "\n".join(lines)
