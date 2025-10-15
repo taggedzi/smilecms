@@ -60,6 +60,32 @@ python -m http.server 8000 --directory site
 
 ---
 
+## 3. Scaffolding New Content
+
+Editors can bootstrap new entries without copying templates by hand. Run `smilecms new <post|gallery|track> <slug> [--title "Display Title"]` from the project root while your virtual environment is active.
+
+What the command expects:
+
+- A slug (letters/numbers/hyphens) that will be used for filenames and directories. It is normalized automatically (e.g. `My First Post` → `my-first-post`).
+- An optional title override. If omitted, the command derives a readable title from the slug.
+- By default, the command refuses to overwrite existing files; pass `--force` to regenerate scaffolds after double-checking that it is safe to do so.
+
+What the command provides (per content type):
+
+- **Posts** – creates `content/posts/<slug>.md` with the recommended front matter and body stub, plus `content/media/<slug>/` containing a `.gitkeep` placeholder so asset uploads have a dedicated folder. The front matter matches the template guidelines below, including `hero_media` and `assets` sections ready for editing.
+- **Galleries** – creates `media/image_gallery_raw/<slug>/meta.yml` (JSON formatted for compatibility with the pipeline) and drops a `.gitkeep` in the collection directory. The metadata includes timestamps, empty tags, and placeholders for hero/cover images. Editors then copy raw images into the same directory; sidecars are generated on the next build.
+- **Tracks** – creates `media/music_collection/<slug>/meta.yml` populated with the required fields (`audio`, `download`, `status`, etc.) and a `lyrics.md` stub. Editors add the audio file and supporting artwork to the same folder, then update metadata/lyrics as needed.
+
+After scaffolding:
+
+1. Add or replace media files as instructed by the notes printed in the CLI output.
+2. Update titles, summaries, tags, and descriptions in the generated metadata/front matter.
+3. Run `smilecms build` to ingest the new content; inspect the CLI summary for warnings about missing assets or metadata.
+
+The sections that follow dive into authoring expectations for each content type—the scaffolds emitted by `smilecms new` align with these requirements, so you can treat them as starting points rather than finished drafts.
+
+---
+
 ## 3. Journal Entries (Markdown + Media)
 
 ### File layout
@@ -90,6 +116,8 @@ assets:
 ---
 Markdown body starts here…
 ```
+
+Run `smilecms new post <slug> --title "Display Title"` to scaffold this front matter and a companion `content/media/<slug>/` asset folder.
 
 Notes:
 
@@ -129,6 +157,8 @@ media/image_gallery_raw/<collection-slug>/
 └── …
 ```
 
+Run `smilecms new gallery <slug> --title "Display Title"` to bootstrap the folder and collection metadata before dropping in raw images.
+
 - Raw images sit next to their `.json` sidecars. When the pipeline discovers a new file it will create a sidecar with baseline metadata (title from stem, timestamps, etc.).
 - `meta.yml` can be JSON or YAML and accepts the fields defined in `build/gallery/models.py` (`title`, `summary`, `tags`, `sort_order`, etc.). Missing fields are auto-filled.
 - Drop new images into the collection folder and rerun `smilecms build`; derivatives and metadata refresh automatically. Assets placed outside `media/image_gallery_raw/` will not be picked up.
@@ -163,6 +193,8 @@ media/image_gallery_raw/<collection-slug>/
 - Store each track inside `media/music_collection/<slug>/` with its metadata file (default `meta.yml`).
 - The build treats that folder as the sole source for audio and related artwork; references outside the directory will be marked missing during planning.
 - Audio assets are copied into `media/derived/audio/...` so the music catalog and download links work without additional setup.
+
+Run `smilecms new track <slug> --title "Display Title"` to scaffold the track directory, metadata file, and placeholder lyrics document before adding audio and artwork.
 
 Example `meta.yml`:
 

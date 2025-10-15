@@ -35,6 +35,8 @@ smilecms audit media      # surface missing/orphaned media (use --json for machi
 
 The `smilecms build` command incrementally regenerates the site: it reuses cached derivatives, prunes stale artifacts, writes manifests, renders article pages, exports gallery datasets, and stages the static `web/` assets into `site/`. Use `smilecms clean` (or `smilecms build --force`) to remove generated artifacts (`site/`, `media/derived/`, and optionally `.cache/`) before a fresh build.
 
+Use `smilecms new post|gallery|track <slug> --title "Display Title"` to scaffold content with the recommended metadata and directory layout before you start writing or dropping in media.
+
 ## Content Layout & Workflows
 
 All source content stays in the repository so the build is deterministic:

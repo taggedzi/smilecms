@@ -2,7 +2,7 @@
 
 ## Authoring Workflow
 
-Ship a smilecms new <post|gallery|track> command that scaffolds the recommended front matter and directory layout instead of asking editors to copy templates by hand (docs/content-workflows.md:71, docs/content-workflows.md:124).
+~~Ship a smilecms new <post|gallery|track> command that scaffolds the recommended front matter and directory layout instead of asking editors to copy templates by hand (docs/content-workflows.md:71, docs/content-workflows.md:124).~~
 
 Extend validate_document into a fast smilecms lint/doctor mode that flags missing alt_text, broken hero media, or draft content before a full build, codifying the manual checks described for authors (docs/content-workflows.md:83, build/validation.py:25).
 
@@ -22,7 +22,7 @@ Extract EXIF data from image if availble for display in front end. (or strip exi
 
 Add a --watch/--serve loop that rebuilds on file changes while keeping the local preview running, streamlining the repeated smilecms build routine in the docs (README.md:30, docs/content-workflows.md:48).
 
-Provide a smilecms media audit (or similar) to surface orphaned/out-of-bounds assets so editors don’t have to police the “assets must live under specific roots” rule manually (docs/content-workflows.md:68).
+~~Provide a smilecms media audit (or similar) to surface orphaned/out-of-bounds assets so editors don’t have to police the “assets must live under specific roots” rule manually (docs/content-workflows.md:68).~~
 
 ## Front-End Experience
 

@@ -6,6 +6,7 @@ import webbrowser
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import TYPE_CHECKING
+from enum import Enum
 
 import typer
 from rich.console import Console
@@ -24,6 +25,7 @@ from .media import (
     collect_media_plan,
     process_media_plan,
 )
+from .scaffold import ScaffoldError, ScaffoldResult, normalize_slug, scaffold_content
 
 if TYPE_CHECKING:
     from .media.audit import ReferenceUsage
@@ -43,6 +45,49 @@ console = Console()
 app = typer.Typer(help="SmileCMS static publishing toolkit.")
 audit_app = typer.Typer(help="Audit workspace content and media.")
 app.add_typer(audit_app, name="audit")
+
+
+class NewContentType(str, Enum):
+    POST = "post"
+    GALLERY = "gallery"
+    TRACK = "track"
+
+
+@app.command()
+def new(  # noqa: PLR0913
+    kind: NewContentType = typer.Argument(..., help="Content type to scaffold."),
+    slug: str = typer.Argument(..., help="Slug identifier used for files and directories."),
+    title: str | None = typer.Option(None, "--title", "-t", help="Override the default title derived from the slug."),
+    config_path: str = typer.Option("smilecms.yml", "--config", "-c", help="Path to configuration file."),
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing files if they already exist."),
+) -> None:
+    """Create a new post, gallery, or track using the recommended layout."""
+    try:
+        normalized_slug = normalize_slug(slug)
+    except ScaffoldError as exc:
+        console.print(f"[bold red]Cannot scaffold[/]: {exc}")
+        raise typer.Exit(code=1) from exc
+
+    config = _load(config_path)
+
+    try:
+        result = scaffold_content(
+            config=config,
+            kind=kind.value,
+            slug=normalized_slug,
+            title=title,
+            force=force,
+        )
+    except ScaffoldError as exc:
+        console.print(f"[bold red]Cannot scaffold[/]: {exc}")
+        raise typer.Exit(code=1) from exc
+
+    if normalized_slug != slug:
+        console.print(
+            f"[bold yellow]Note[/]: slug normalized to '{normalized_slug}'.",
+        )
+
+    _print_scaffold_summary(kind, normalized_slug, result)
 
 @app.command()
 def build(
@@ -292,6 +337,20 @@ def clean(
     console.print(
         f"[bold green]Clean complete[/]: removed {removed} director{'y' if removed == 1 else 'ies'}."
     )
+
+
+def _print_scaffold_summary(kind: NewContentType, slug: str, result: ScaffoldResult) -> None:
+    console.print(f"[bold green]Scaffold ready[/]: {kind.value} '{slug}'")
+
+    for path in result.created:
+        console.print(f"- {_display_path(path)} (new)")
+    for path in result.updated:
+        console.print(f"- {_display_path(path)} (updated)")
+
+    if result.notes:
+        console.print("[bold blue]Next steps[/]:")
+        for note in result.notes:
+            console.print(f"- {note}")
 
 
 def _print_media_audit(result: MediaAuditResult) -> None:
