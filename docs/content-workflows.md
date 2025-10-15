@@ -67,6 +67,7 @@ python -m http.server 8000 --directory site
 - Each entry lives in `content/posts/<slug>.md` with YAML front matter.
 - Shared images/audio/video that belong to the article **must** go in `content/media/`. They are referenced with relative paths such as `media/my-image.jpg`. Paths outside this directory will be rejected during the build.
 - The build pipeline generates derivatives and stores them under `media/derived/` (no manual copying required).
+- Run `smilecms audit media` to list missing references, orphaned uploads, or assets sitting outside the approved roots before committing.
 
 ### Front matter template
 

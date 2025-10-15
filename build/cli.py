@@ -5,6 +5,7 @@ import time
 import webbrowser
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 from rich.console import Console
@@ -16,7 +17,16 @@ from .gallery import export_datasets as export_gallery_datasets
 from .gallery import prepare_workspace as prepare_gallery_workspace
 from .ingest import load_documents
 from .manifests import ManifestGenerator, write_manifest_pages
-from .media import apply_variants_to_documents, collect_media_plan, process_media_plan
+from .media import (
+    MediaAuditResult,
+    audit_media,
+    apply_variants_to_documents,
+    collect_media_plan,
+    process_media_plan,
+)
+
+if TYPE_CHECKING:
+    from .media.audit import ReferenceUsage
 from .music import export_music_catalog
 from .reporting import (
     assemble_report,
@@ -31,6 +41,8 @@ from .validation import DocumentValidationError
 
 console = Console()
 app = typer.Typer(help="SmileCMS static publishing toolkit.")
+audit_app = typer.Typer(help="Audit workspace content and media.")
+app.add_typer(audit_app, name="audit")
 
 @app.command()
 def build(
@@ -188,6 +200,28 @@ def build(
         for error in gallery_workspace.errors:
             console.print(f"- {error}")
 
+
+@audit_app.command("media")
+def audit_media_command(
+    config_path: str = typer.Option(
+        "smilecms.yml", "--config", "-c", help="Path to configuration file."
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit machine-readable JSON instead of human formatted output.",
+    ),
+) -> None:
+    """Inspect media references and files for missing or misplaced assets."""
+    config = _load(config_path)
+    documents = load_documents(config)
+    result = audit_media(documents, config)
+    if json_output:
+        console.print_json(data=_media_audit_payload(result))
+        return
+    _print_media_audit(result)
+
+
 @app.command()
 def preview(
     config_path: str = typer.Option("smilecms.yml", "--config", "-c", help="Path to configuration file."),
@@ -258,6 +292,112 @@ def clean(
     console.print(
         f"[bold green]Clean complete[/]: removed {removed} director{'y' if removed == 1 else 'ies'}."
     )
+
+
+def _print_media_audit(result: MediaAuditResult) -> None:
+    summary_line = (
+        f"[bold green]Media audit[/]: discovered {result.total_assets} source asset(s); "
+        f"{result.valid_references}/{result.total_references} referenced path(s) resolved."
+    )
+    console.print(summary_line)
+
+    issues = 0
+
+    if result.out_of_bounds_references:
+        issues += 1
+        console.print("[bold red]Out-of-bounds references[/]:")
+        for path in sorted(result.out_of_bounds_references):
+            usage = result.out_of_bounds_references[path]
+            console.print(_format_reference_line(path, usage))
+
+    if result.missing_references:
+        issues += 1
+        console.print("[bold red]Missing referenced assets[/]:")
+        for path in sorted(result.missing_references):
+            usage = result.missing_references[path]
+            expected = usage.expected_path.as_posix() if usage.expected_path else "unknown location"
+            console.print(_format_reference_line(path, usage, suffix=f"expected: {expected}"))
+
+    if result.orphan_files:
+        issues += 1
+        console.print("[bold yellow]Orphaned assets[/]:")
+        for path in sorted(result.orphan_files):
+            location = _display_path(result.orphan_files[path])
+            console.print(f"- {path} (source: {location})")
+
+    if result.stray_files:
+        issues += 1
+        console.print("[bold yellow]Assets stored outside allowed roots[/]:")
+        for key in sorted(result.stray_files):
+            console.print(f"- {_display_path(result.stray_files[key])}")
+
+    if issues == 0:
+        console.print("[bold green]No media issues detected.[/]")
+
+
+def _media_audit_payload(result: MediaAuditResult) -> dict:
+    def serialize_usage(path: str, usage: "ReferenceUsage") -> dict:
+        payload: dict[str, object] = {
+            "path": path,
+            "documents": sorted(usage.documents),
+        }
+        if usage.roles:
+            payload["roles"] = sorted(usage.roles)
+        if usage.expected_path:
+            payload["expected_path"] = usage.expected_path.as_posix()
+        return payload
+
+    payload = {
+        "summary": {
+            "total_assets": result.total_assets,
+            "total_references": result.total_references,
+            "valid_references": result.valid_references,
+            "missing_references": len(result.missing_references),
+            "out_of_bounds_references": len(result.out_of_bounds_references),
+            "orphan_assets": len(result.orphan_files),
+            "stray_assets": len(result.stray_files),
+        },
+        "missing_references": [
+            serialize_usage(path, result.missing_references[path]) for path in sorted(result.missing_references)
+        ],
+        "out_of_bounds_references": [
+            serialize_usage(path, result.out_of_bounds_references[path])
+            for path in sorted(result.out_of_bounds_references)
+        ],
+        "orphan_assets": [
+            {
+                "path": path,
+                "source_path": _display_path(result.orphan_files[path]),
+            }
+            for path in sorted(result.orphan_files)
+        ],
+        "stray_assets": [
+            {
+                "path": _display_path(result.stray_files[key]),
+            }
+            for key in sorted(result.stray_files)
+        ],
+    }
+    return payload
+
+
+def _format_reference_line(path: str, usage: "ReferenceUsage", suffix: str | None = None) -> str:
+    details: list[str] = []
+    if usage.documents:
+        details.append(f"documents: {', '.join(sorted(usage.documents))}")
+    if usage.roles:
+        details.append(f"roles: {', '.join(sorted(usage.roles))}")
+    if suffix:
+        details.append(suffix)
+    detail_text = f" ({'; '.join(details)})" if details else ""
+    return f"- {path}{detail_text}"
+
+
+def _display_path(path: Path) -> str:
+    try:
+        return path.relative_to(Path.cwd()).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def _load(path: str) -> Config:
