@@ -22,7 +22,7 @@ export async function initializeRenderer({
   try {
     await loadTemplates();
     const [manifest, siteConfig] = await Promise.all([
-      fetchJson(manifestUrl),
+      loadManifest(manifestUrl),
       fetchJson(siteConfigUrl),
     ]);
 
@@ -80,6 +80,118 @@ async function fetchJson(url) {
     }
   }
   throw lastError ?? new Error("fetchJson requires at least one URL");
+}
+
+async function loadManifest(manifestSource) {
+  if (
+    manifestSource == null ||
+    (Array.isArray(manifestSource) && manifestSource.length === 0)
+  ) {
+    return { items: [] };
+  }
+
+  const candidates = Array.isArray(manifestSource)
+    ? manifestSource
+    : [manifestSource];
+  let lastError;
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      return await loadManifestFromCandidate(candidate);
+    } catch (error) {
+      lastError = error;
+      console.debug("[renderer] manifest candidate failed", candidate, error);
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  return { items: [] };
+}
+
+async function loadManifestFromCandidate(candidate) {
+  const firstPage = await fetchJson(candidate);
+  if (!firstPage || typeof firstPage !== "object") {
+    return firstPage;
+  }
+
+  const aggregatedItems = Array.isArray(firstPage.items)
+    ? [...firstPage.items]
+    : [];
+  const totalPages = Number(firstPage.total_pages ?? 1);
+  if (!Number.isFinite(totalPages) || totalPages <= 1) {
+    const reportedTotal = Number(firstPage.total_items);
+    const totalItems = Number.isFinite(reportedTotal)
+      ? Math.max(reportedTotal, aggregatedItems.length)
+      : aggregatedItems.length;
+    return {
+      ...firstPage,
+      items: aggregatedItems,
+      total_pages: totalPages > 0 ? totalPages : 1,
+      total_items: totalItems,
+    };
+  }
+
+  const baseId = firstPage.id;
+  if (typeof baseId !== "string" || !baseId) {
+    throw new Error(
+      "Manifest page missing id; cannot resolve additional chunks."
+    );
+  }
+
+  for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
+    const nextId = deriveManifestPageId(baseId, pageNumber);
+    const nextUrl = deriveManifestPageUrl(candidate, baseId, nextId);
+    if (!nextUrl) {
+      throw new Error(`Unable to resolve manifest URL for page ${nextId}.`);
+    }
+    const page = await fetchJson(nextUrl);
+    if (page && Array.isArray(page.items)) {
+      aggregatedItems.push(...page.items);
+    }
+  }
+
+  const reportedTotal = Number(firstPage.total_items);
+  const totalItems = Number.isFinite(reportedTotal)
+    ? Math.max(reportedTotal, aggregatedItems.length)
+    : aggregatedItems.length;
+
+  return {
+    ...firstPage,
+    page: 1,
+    items: aggregatedItems,
+    total_pages: totalPages,
+    total_items: totalItems,
+  };
+}
+
+function deriveManifestPageId(currentId, pageNumber) {
+  const match = currentId.match(/^(.*?)(\d+)$/);
+  if (!match) {
+    throw new Error(
+      `Cannot compute manifest id for page ${pageNumber} from "${currentId}".`
+    );
+  }
+  const [, prefix, digits] = match;
+  const width = digits.length;
+  return `${prefix}${String(pageNumber).padStart(width, "0")}`;
+}
+
+function deriveManifestPageUrl(sourceUrl, currentId, nextId) {
+  if (typeof sourceUrl !== "string") {
+    return null;
+  }
+  const marker = `${currentId}.json`;
+  if (sourceUrl.includes(marker)) {
+    return sourceUrl.replace(marker, `${nextId}.json`);
+  }
+  if (sourceUrl.includes(currentId)) {
+    return sourceUrl.replace(currentId, nextId);
+  }
+  return null;
 }
 
 function renderLoading(container, message) {
