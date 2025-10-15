@@ -49,6 +49,8 @@ smilecms build            # full rebuild using smilecms.yml
 smilecms build --config custom.yml  # point to an alternate config file
 ```
 
+Run `smilecms lint` to catch missing alt text, unpublished drafts, or broken hero media before kicking off a full build. Add `--strict` when you want warnings to fail the command (handy for CI or pre-commit hooks).
+
 Preview the generated site by serving the `site/` directory:
 
 ```bash

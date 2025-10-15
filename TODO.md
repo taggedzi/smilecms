@@ -4,7 +4,7 @@
 
 ~~Ship a smilecms new <post|gallery|track> command that scaffolds the recommended front matter and directory layout instead of asking editors to copy templates by hand (docs/content-workflows.md:71, docs/content-workflows.md:124).~~
 
-Extend validate_document into a fast smilecms lint/doctor mode that flags missing alt_text, broken hero media, or draft content before a full build, codifying the manual checks described for authors (docs/content-workflows.md:83, build/validation.py:25).
+~~Extend validate_document into a fast smilecms lint/doctor mode that flags missing alt_text, broken hero media, or draft content before a full build, codifying the manual checks described for authors (docs/content-workflows.md:83, build/validation.py:25) and document these features in the project.~~
 
 Turn the existing JSON build report into an HTML/Markdown dashboard so admins can review changes without opening site/report.json manually (build/reporting.py:121).
 

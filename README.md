@@ -31,11 +31,14 @@ smilecms build            # full rebuild using smilecms.yml
 smilecms preview --port 8000  # serve ./site at http://127.0.0.1:8000/
 smilecms clean            # remove generated artifacts (add --cache to drop .cache/)
 smilecms audit media      # surface missing/orphaned media (use --json for machine output)
+smilecms lint             # run fast content checks (add --strict to fail on warnings)
 ```
 
 The `smilecms build` command incrementally regenerates the site: it reuses cached derivatives, prunes stale artifacts, writes manifests, renders article pages, exports gallery datasets, and stages the static `web/` assets into `site/`. Use `smilecms clean` (or `smilecms build --force`) to remove generated artifacts (`site/`, `media/derived/`, and optionally `.cache/`) before a fresh build.
 
 Use `smilecms new post|gallery|track <slug> --title "Display Title"` to scaffold content with the recommended metadata and directory layout before you start writing or dropping in media.
+
+Run `smilecms lint` when editing to catch missing alt text, broken media references, and other authoring issues before committing a full build.
 
 ## Content Layout & Workflows
 

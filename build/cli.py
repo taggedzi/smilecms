@@ -39,7 +39,7 @@ from .reporting import (
 )
 from .staging import StagingResult, reset_directory, stage_static_site
 from .state import BuildTracker
-from .validation import DocumentValidationError
+from .validation import DocumentValidationError, IssueSeverity, lint_workspace
 
 console = Console()
 app = typer.Typer(help="SmileCMS static publishing toolkit.")
@@ -88,6 +88,36 @@ def new(  # noqa: PLR0913
         )
 
     _print_scaffold_summary(kind, normalized_slug, result)
+
+@app.command()
+def lint(
+    config_path: str = typer.Option("smilecms.yml", "--config", "-c", help="Path to configuration file."),
+    strict: bool = typer.Option(False, "--strict", help="Treat warnings as errors."),
+) -> None:
+    """Run lightweight checks for common content issues."""
+    config = _load(config_path)
+    report = lint_workspace(config)
+
+    if not report.issues:
+        console.print("[bold green]Lint clean[/]: no issues detected.")
+        raise typer.Exit()
+
+    for issue in sorted(report.issues, key=_lint_sort_key):
+        style = "red" if issue.severity is IssueSeverity.ERROR else "yellow"
+        location = issue.source_path
+        if issue.pointer:
+            location = f"{location} :: {issue.pointer}"
+        console.print(f"[bold {style}]{issue.severity.name}[/] {location} - {issue.message}")
+
+    console.print(
+        f"[bold blue]Summary[/]: {report.error_count} error(s), {report.warning_count} warning(s) "
+        f"across {report.document_count} document(s)."
+    )
+
+    exit_code = 0
+    if report.error_count > 0 or (strict and report.warning_count > 0):
+        exit_code = 1
+    raise typer.Exit(code=exit_code)
 
 @app.command()
 def build(
@@ -351,6 +381,12 @@ def _print_scaffold_summary(kind: NewContentType, slug: str, result: ScaffoldRes
         console.print("[bold blue]Next steps[/]:")
         for note in result.notes:
             console.print(f"- {note}")
+
+
+def _lint_sort_key(issue) -> tuple[int, str, str]:
+    severity_order = 0 if issue.severity is IssueSeverity.ERROR else 1
+    pointer = issue.pointer or ""
+    return (severity_order, issue.source_path, pointer)
 
 
 def _print_media_audit(result: MediaAuditResult) -> None:
