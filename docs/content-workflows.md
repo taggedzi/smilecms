@@ -60,6 +60,15 @@ python -m http.server 8000 --directory site
 
 > `smilecms preview` and `smilecms clean` are stubs today. Use the commands above for now.
 
+Before deploying, you can run a static integrity sweep to catch broken internal links or missing assets:
+
+```bash
+smilecms verify              # scans ./site for unresolved href/src references
+smilecms verify --report verify-report.txt  # write the findings to a text file
+```
+
+The verifier only runs on demand and never mutates the output bundle; it reports any missing targets so you can fix them (or suppress known cases) before publishing.
+
 ---
 
 ## 3. Scaffolding New Content

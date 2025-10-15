@@ -19,6 +19,7 @@ from .gallery import prepare_workspace as prepare_gallery_workspace
 from .ingest import load_documents
 from .manifests import ManifestGenerator, write_manifest_pages
 from .feeds import generate_feeds
+from .verify import verify_site
 from .media import (
     MediaAuditResult,
     audit_media,
@@ -225,6 +226,42 @@ def build(
         f"and {len(gallery_workspace.image_writes)} image sidecar(s) updated; "
         f"{updated_gallery} derivative mapping(s) refreshed"
     )
+
+
+@app.command()
+def verify(
+    config_path: str = typer.Option("smilecms.yml", "--config", "-c", help="Path to configuration file."),
+    report_path: str | None = typer.Option(
+        None,
+        "--report",
+        "-r",
+        help="Optional path to write a text report summarizing verification findings.",
+    ),
+) -> None:
+    """Scan the generated site bundle for missing links or assets."""
+    config = _load(config_path)
+    output_dir = config.output_dir
+
+    if not output_dir.exists():
+        console.print(f"[bold red]Site directory not found[/]: {_display_path(output_dir)}")
+        raise typer.Exit(code=1)
+
+    console.print(f"[bold blue]Verifying[/]: scanning HTML files under {_display_path(output_dir)}")
+    report = verify_site(output_dir)
+    _print_verification_report(report)
+
+    if report_path:
+        target = Path(report_path)
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(_render_verification_text(report, output_dir), encoding="utf-8")
+            console.print(f"[bold green]Report written[/]: {_display_path(target)}")
+        except OSError as exc:
+            console.print(f"[bold red]Failed to write report[/]: {exc}")
+            raise typer.Exit(code=1) from exc
+
+    exit_code = 1 if report.error_count > 0 else 0
+    raise typer.Exit(code=exit_code)
     console.print(
         f"[bold green]Report[/]: {report_path} "
         f"(duration {duration:.2f}s)"
@@ -500,6 +537,42 @@ def _display_path(path: Path) -> str:
         return path.relative_to(Path.cwd()).as_posix()
     except ValueError:
         return path.as_posix()
+
+
+def _print_verification_report(report) -> None:
+    if not report.issues:
+        console.print(
+            f"[bold green]Verification complete[/]: {report.scanned_files} HTML file(s) scanned; no issues found."
+        )
+        return
+
+    console.print(
+        f"[bold red]Verification issues[/]: {len(report.issues)} issue(s) detected across {report.scanned_files} file(s)."
+    )
+    for issue in report.issues:
+        color = "yellow" if issue.kind == "warning" else "red"
+        console.print(
+            f"[bold {color}]{issue.kind}[/] {_display_path(issue.source)} -> {issue.target} :: {issue.message}"
+        )
+
+
+def _render_verification_text(report, output_dir: Path) -> str:
+    lines = [
+        "SmileCMS site verification report",
+        f"Output directory: {output_dir.resolve().as_posix()}",
+        f"HTML files scanned: {report.scanned_files}",
+        f"Issues detected: {len(report.issues)}",
+        "",
+    ]
+    if not report.issues:
+        lines.append("No issues detected.")
+    else:
+        for issue in report.issues:
+            lines.append(
+                f"- [{issue.kind}] {issue.source.resolve().as_posix()} -> {issue.target}: {issue.message}"
+            )
+    lines.append("")
+    return "\n".join(lines)
 
 
 def _load(path: str) -> Config:

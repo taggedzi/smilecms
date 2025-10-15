@@ -42,6 +42,7 @@ Source formats:
 - Generate media derivatives (thumbnails, resized images, audio waveforms) and register them in manifests.
 - Split large manifests into paginated or chunked JSON files to keep client payloads small.
 - Produce search indexes (optional) and feed files (RSS/Atom/JSON Feed).
+- Offer an on-demand verification pass that checks generated HTML for broken internal links or missing assets before deployment.
 - Emit diagnostic logs and a report summarizing new/changed content, build duration, and warnings.
 - Support incremental builds to rebuild only altered content where feasible (reuse cached derivatives and prune stale artifacts instead of wiping outputs).
 - Provide unit/integration tests for content parsing and manifest generation.

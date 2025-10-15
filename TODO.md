@@ -10,7 +10,7 @@ Turn the existing JSON build report into an HTML/Markdown dashboard so admins ca
 
 Add an environment check that confirms optional extras (e.g., .[ml]) are installed and needed models are cached before the pipeline runs, instead of relying on operators to remember those steps (README.md:19).
 
-Add a site crawler to veryify links, file placement, and functionality.
+~~Add a site crawler to verify links, file placement, and functionality.~~
 
 Extract EXIF data from image if availble for display in front end. (or strip exif data if privacy/security wanted)
 
