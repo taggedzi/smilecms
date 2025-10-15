@@ -13,7 +13,7 @@
   "hero": {
     "eyebrow": "Curated Collections",
     "title": "Artistry in Motion",
-    "subtitle": "Explore evolving galleries, reflective writing, and ambient audio journeys—crafted with SmileCMS.",
+    "subtitle": "Explore evolving galleries, reflective writing, and ambient audio journeys\u2014crafted with SmileCMS.",
     "actions": [
       { "label": "View Galleries", "href": "/gallery/" },
       { "label": "Read Journal", "href": "/journal/" },
@@ -73,10 +73,13 @@
     }
   ],
   "footer": {
-    "copy": "© 2025 SmileCMS. Crafted with care.",
+    "copy": "\u00a9 2025 SmileCMS. Crafted with care.",
     "links": [
       { "label": "GitHub", "href": "https://github.com" },
-      { "label": "Contact", "href": "mailto:hello@example.com" }
+      { "label": "Contact", "href": "mailto:hello@example.com" },
+      { "label": "RSS Feed", "href": "/feed.xml" },
+      { "label": "Atom Feed", "href": "/atom.xml" },
+      { "label": "JSON Feed", "href": "/feed.json" }
     ]
   }
 }

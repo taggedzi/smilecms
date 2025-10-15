@@ -18,6 +18,7 @@ from .gallery import export_datasets as export_gallery_datasets
 from .gallery import prepare_workspace as prepare_gallery_workspace
 from .ingest import load_documents
 from .manifests import ManifestGenerator, write_manifest_pages
+from .feeds import generate_feeds
 from .media import (
     MediaAuditResult,
     audit_media,
@@ -172,6 +173,8 @@ def build(
     manifest_dir = config.output_dir / "manifests"
     written = write_manifest_pages(pages, manifest_dir)
     manifest_stats = build_manifest_stats(pages)
+
+    feed_paths = generate_feeds(config, pages)
     media_stats = build_media_stats(media_plan, media_result)
 
     duration = time.perf_counter() - start
@@ -192,6 +195,10 @@ def build(
         f"[bold green]Manifests[/]: {manifest_stats.pages} page(s) with {manifest_stats.items} item(s); "
         f"written {len(written)} file(s) to {manifest_dir}"
     )
+
+    if feed_paths:
+        feed_locations = ", ".join(_display_path(path) for path in feed_paths)
+        console.print(f"[bold green]Feeds[/]: generated syndication feeds at {feed_locations}")
 
     media_line = (
         f"[bold green]Media[/]: {media_stats.assets_processed}/{media_stats.assets_planned} asset(s) "

@@ -478,11 +478,28 @@ function renderFooter(container, footer = {}) {
 
   if (links && Array.isArray(footer.links)) {
     footer.links.forEach((entry) => {
-      const linkNode = linkTemplate.cloneNode(true);
-      const link = linkNode;
-      link.textContent = entry.label;
-      link.href = entry.href ?? "#";
-      links.appendChild(linkNode);
+      const fragment = linkTemplate.cloneNode(true);
+      const anchor =
+        typeof fragment.querySelector === "function"
+          ? fragment.querySelector("a")
+          : fragment.firstElementChild;
+      if (anchor instanceof HTMLAnchorElement) {
+        anchor.textContent = entry.label;
+        anchor.href = entry.href ?? "#";
+        if (entry.target) {
+          anchor.target = entry.target;
+        }
+        if (entry.rel) {
+          anchor.rel = entry.rel;
+        }
+        links.appendChild(anchor);
+      } else {
+        const fallback = document.createElement("a");
+        fallback.className = "nav-link";
+        fallback.textContent = entry.label ?? "";
+        fallback.href = entry.href ?? "#";
+        links.appendChild(fallback);
+      }
     });
   }
 

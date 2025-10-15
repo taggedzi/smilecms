@@ -133,6 +133,39 @@ class MusicConfig(BaseModel):
         return Path(value)
 
 
+class FeedConfig(BaseModel):
+    """Options controlling feed generation."""
+
+    enabled: bool = Field(
+        default=True,
+        description="Toggle syndication feed generation.",
+    )
+    limit: int = Field(
+        default=50,
+        ge=1,
+        le=500,
+        description="Maximum number of entries to include per feed.",
+    )
+    base_url: str | None = Field(
+        default=None,
+        description="Canonical site URL used for absolute links (e.g., 'https://example.com').",
+    )
+    site_config_path: Path | None = Field(
+        default=None,
+        description="Optional override for the site metadata JSON used when populating feed metadata.",
+    )
+    output_subdir: Path | None = Field(
+        default=None,
+        description="Optional subdirectory (relative to output_dir) where feeds should be written.",
+    )
+
+    @field_validator("site_config_path", "output_subdir", mode="before")
+    def _ensure_path(cls, value: Any) -> Path | None:
+        if value is None:
+            return None
+        return Path(value)
+
+
 class Config(BaseModel):
     project_name: str = Field(default="SmileCMS Project")
     content_dir: Path = Field(default=Path("content"))
@@ -144,6 +177,7 @@ class Config(BaseModel):
     media_processing: MediaProcessingConfig = Field(default_factory=MediaProcessingConfig)
     gallery: GalleryConfig = Field(default_factory=GalleryConfig)
     music: MusicConfig = Field(default_factory=MusicConfig)
+    feeds: FeedConfig = Field(default_factory=FeedConfig)
 
     @field_validator(
         "content_dir",

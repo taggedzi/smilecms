@@ -28,7 +28,7 @@ Add a --watch/--serve loop that rebuilds on file changes while keeping the local
 
 ~~Teach the bootstrap script to follow manifest indexes instead of hard-coding content-001.json, so additional manifest chunks load automatically as the library grows (web/js/app.js:3).~~
 
-Generate RSS/Atom/JSON feeds directly from the manifests to satisfy the syndication goal and give visitors subscription options (docs/requirements.md:44).
+~~Generate RSS/Atom/JSON feeds directly from the manifests to satisfy the syndication goal and give visitors subscription options (docs/requirements.md:44).~~
 
 Publish a unified search dataset and lightweight global search UI that blends articles, gallery images, and tracks, rather than keeping filtering siloed in each module (web/js/journal.js:107, web/js/music.js:5).
 
