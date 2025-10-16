@@ -26,6 +26,9 @@ env/
 .env.*
 pip-wheel-metadata/
 pip-log.txt
+.kilocode/
+.continue/
+repomap/
 
 ################################################################################
 # Project outputs & caches
@@ -58,3 +61,4 @@ Desktop.ini
 
  build/lib/ 
  build/bdist.*
+
