@@ -13,6 +13,7 @@ from typing import Any, Iterable, Set
 
 from .config import Config
 from .content import ContentDocument, ContentStatus, MediaReference, MediaVariant
+from .markdown import render_markdown
 
 logger = logging.getLogger(__name__)
 
@@ -238,81 +239,7 @@ class ArticleBodyRenderer:
         return reference.variants[0]
 
     def _markdown_to_html(self, text: str) -> str:
-        lines = text.splitlines()
-        html_parts: list[str] = []
-        in_list = False
-        paragraph_lines: list[str] = []
-
-        def flush_paragraph() -> None:
-            nonlocal paragraph_lines
-            if paragraph_lines:
-                combined = " ".join(paragraph_lines).strip()
-                if combined:
-                    html_parts.append(f"<p>{html.escape(combined)}</p>")
-                paragraph_lines = []
-
-        for raw_line in lines:
-            stripped = raw_line.strip()
-
-            if not stripped:
-                if in_list:
-                    html_parts.append("</ul>")
-                    in_list = False
-                flush_paragraph()
-                continue
-
-            if stripped.startswith("<figure"):
-                if in_list:
-                    html_parts.append("</ul>")
-                    in_list = False
-                flush_paragraph()
-                html_parts.append(stripped)
-                continue
-
-            if stripped.startswith("### "):
-                if in_list:
-                    html_parts.append("</ul>")
-                    in_list = False
-                flush_paragraph()
-                html_parts.append(f"<h3>{html.escape(stripped[4:].strip())}</h3>")
-                continue
-
-            if stripped.startswith("## "):
-                if in_list:
-                    html_parts.append("</ul>")
-                    in_list = False
-                flush_paragraph()
-                html_parts.append(f"<h2>{html.escape(stripped[3:].strip())}</h2>")
-                continue
-
-            if stripped.startswith("# "):
-                if in_list:
-                    html_parts.append("</ul>")
-                    in_list = False
-                flush_paragraph()
-                html_parts.append(f"<h1>{html.escape(stripped[2:].strip())}</h1>")
-                continue
-
-            if stripped.startswith("- ") or stripped.startswith("* "):
-                flush_paragraph()
-                if not in_list:
-                    html_parts.append("<ul>")
-                    in_list = True
-                item_content = html.escape(stripped[2:].strip())
-                html_parts.append(f"<li>{item_content}</li>")
-                continue
-
-            if in_list:
-                html_parts.append("</ul>")
-                in_list = False
-
-            paragraph_lines.append(stripped)
-
-        if in_list:
-            html_parts.append("</ul>")
-        flush_paragraph()
-
-        return "\n".join(html_parts)
+        return render_markdown(text).strip()
 
     def _extract_plain_text(self, body: str) -> str:
         text_parts: list[str] = []

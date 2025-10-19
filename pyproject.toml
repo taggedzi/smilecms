@@ -10,7 +10,9 @@ dependencies = [
   "PyYAML>=6.0",
   "rich>=13.7",
   "jsonschema>=4.23",
-  "Pillow>=10.3"
+  "Pillow>=10.3",
+  "markdown-it-py>=3.0",
+  "mdit-py-plugins>=0.4"
 ]
 
 [project.optional-dependencies]

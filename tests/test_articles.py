@@ -4,9 +4,9 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from build.articles import write_article_pages
+from build.articles import ArticleBodyRenderer, write_article_pages
 from build.config import Config
-from build.content import ContentDocument, ContentMeta, ContentStatus
+from build.content import ContentDocument, ContentMeta, ContentStatus, MediaReference
 
 
 def _make_document(slug: str = "sample-post") -> ContentDocument:
@@ -112,3 +112,55 @@ def test_write_article_page_falls_back_without_base(tmp_path: Path) -> None:
     assert "site-header" in page and "Test Tagline" in page
     assert 'href="/styles/base.css"' in page
     assert "/js/app.js" not in page
+
+
+def test_markdown_renderer_supports_extended_markdown() -> None:
+    renderer = ArticleBodyRenderer()
+    image = MediaReference(path="photos/sunrise.jpg", alt_text="Sunrise")
+    audio = MediaReference(path="tracks/song.mp3", title="Song")
+    references = {
+        "photos/sunrise.jpg": image,
+        "tracks/song.mp3": audio,
+    }
+    body = """# Heading
+
+Paragraph with **bold**, *italic*, and a [link](https://example.com).
+
+> Blockquote
+
+- Item one
+- Item two
+- [Audio Clip](audio:tracks/song.mp3)
+
+1. Step one
+2. Step two
+
+| Column A | Column B |
+| -------- | -------- |
+| A1       | B1       |
+
+Term
+: Definition details
+
+Here is some code:
+
+```python
+def hello():
+    return "world"
+```
+
+Inline `code` and another reference with media: [Gallery Shot](image:photos/sunrise.jpg)
+"""
+
+    html = renderer.render_body(body, references)
+
+    assert "<h1>Heading</h1>" in html
+    assert "<strong>bold</strong>" in html and "<em>italic</em>" in html
+    assert '<a href="https://example.com">' in html
+    assert "<blockquote>" in html
+    assert "<ul>" in html and "<ol>" in html
+    assert "<table>" in html and "<td>A1</td>" in html
+    assert "<dl>" in html and "<dt>Term</dt>" in html
+    assert '<pre><code class="language-python">' in html
+    assert 'class="article-media article-media--audio"' in html
+    assert 'class="article-media article-media--image"' in html
