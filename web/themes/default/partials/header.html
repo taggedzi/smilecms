@@ -1,0 +1,13 @@
+<header class="site-header" id="site-header" aria-live="polite">
+  <div class="site-brand">
+    {% if site.tagline %}
+    <span class="pill">{{ site.tagline }}</span>
+    {% endif %}
+    <h1 class="headline-2">{{ site.title }}</h1>
+  </div>
+  <div class="site-actions">
+    <button class="button button--secondary" data-theme-toggle aria-pressed="{{ 'true' if current_theme == 'dark' else 'false' }}">
+      Toggle theme
+    </button>
+  </div>
+</header>

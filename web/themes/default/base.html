@@ -1,0 +1,44 @@
+{% set current_theme = shell.theme or theme.default_shell_theme %}
+{% set data_context = data if data is defined else {} %}
+{% if data_context is mapping %}
+  {% set site_config_endpoint = data_context.site_config %}
+  {% set manifest_bases = data_context.manifest_bases %}
+{% else %}
+  {% set site_config_endpoint = None %}
+  {% set manifest_bases = [] %}
+{% endif %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>{% block title %}{{ page.title }}{% endblock %}</title>
+    {% for href in assets.styles %}
+    <link rel="stylesheet" href="{{ href }}" />
+    {% endfor %}
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body{% if page.body_class %} class="{{ page.body_class }}"{% endif %}>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div id="app-shell" class="app-shell" data-theme="{{ current_theme }}"{% if site_config_endpoint %} data-site-config="{{ site_config_endpoint }}"{% endif %}{% if manifest_bases %} data-manifest-bases="{{ manifest_bases | join(' ') }}"{% endif %}>
+      {% if theme.partials.header %}
+        {% include theme.partials.header %}
+      {% endif %}
+      {% if theme.partials.nav %}
+        {% include theme.partials.nav %}
+      {% endif %}
+      {% block main %}{% endblock %}
+      {% if theme.partials.footer %}
+        {% include theme.partials.footer %}
+      {% endif %}
+    </div>
+    {% for script in assets.scripts %}
+    <script{% if script.type %} type="{{ script.type }}"{% endif %}{% if script.defer %} defer{% endif %}{% if script.async %} async{% endif %}{% if script.integrity %} integrity="{{ script.integrity }}"{% endif %}{% if script.crossorigin %} crossorigin="{{ script.crossorigin }}"{% endif %} src="{{ script.src }}"></script>
+    {% endfor %}
+    {% if theme.partials.inline_script %}
+      {% include theme.partials.inline_script %}
+    {% endif %}
+    {% block body_extra %}{% endblock %}
+  </body>
+</html>

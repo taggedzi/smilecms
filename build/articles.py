@@ -11,9 +11,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Set
 
+from markupsafe import Markup
+
 from .config import Config
 from .content import ContentDocument, ContentStatus, MediaReference, MediaVariant
 from .markdown import render_markdown
+from .themes import DEFAULT_THEME_NAME, ThemeError, ThemeLoader, build_theme_loader
 
 logger = logging.getLogger(__name__)
 
@@ -25,37 +28,7 @@ CODE_RE = re.compile(r"`([^`]+)`")
 AVERAGE_READING_SPEED_WPM = 200
 DEFAULT_SITE_NAME = "SmileCMS"
 DEFAULT_BACK_LABEL = "Back to Home"
-DEFAULT_THEME = "dark"
 MEDIA_BASE_URL = "/media/derived/"
-
-_INLINE_SCRIPT = """<script>
-(function () {
-  const shell = document.getElementById('app-shell');
-  if (shell && shell.dataset.theme) {
-    document.documentElement.dataset.theme = shell.dataset.theme;
-  }
-  const themeToggle = document.querySelector('[data-theme-toggle]');
-  if (shell && themeToggle) {
-    themeToggle.addEventListener('click', () => {
-      const next = shell.dataset.theme === 'dark' ? 'light' : 'dark';
-      shell.dataset.theme = next;
-      document.documentElement.dataset.theme = next;
-      themeToggle.setAttribute('aria-pressed', String(next === 'dark'));
-    });
-  }
-  const navToggle = document.querySelector('.nav-toggle');
-  const navMenu = document.getElementById('nav-menu');
-  if (navToggle && navMenu) {
-    navToggle.addEventListener('click', () => {
-      const isOpen = navMenu.dataset.open === 'true';
-      const next = isOpen ? 'false' : 'true';
-      navMenu.dataset.open = next;
-      navToggle.setAttribute('aria-expanded', String(next === 'true'));
-    });
-  }
-})();
-</script>"""
-
 
 class ArticlePageWriter:
     """Coordinate rendering and writing article pages to disk."""
@@ -90,26 +63,14 @@ class ArticlePageWriter:
 
 
 class TemplateAssets:
-    """Load template data shared across article rendering."""
+    """Load site configuration and active theme assets for rendering."""
 
     def __init__(self, config: Config) -> None:
         self._config = config
-        self.base_template = self._load_base_template()
         self.site_config = self._load_site_config()
-
-    def _load_base_template(self) -> str | None:
-        base_path = self._config.templates_dir / "index.html"
-        if not base_path.exists():
-            logger.warning(
-                "Base template not found at %s; using standalone article layout.",
-                base_path,
-            )
-            return None
-        try:
-            return base_path.read_text(encoding="utf-8")
-        except OSError as exc:
-            logger.warning("Unable to read base template %s: %s", base_path, exc)
-            return None
+        self.theme: ThemeLoader = self._load_theme()
+        self.data_endpoints = self._build_data_endpoints()
+        self.feed_links = self._build_feed_links()
 
     def _load_site_config(self) -> dict[str, Any]:
         config_path = self._config.templates_dir / "config" / "site.json"
@@ -128,6 +89,33 @@ class TemplateAssets:
         except (OSError, json.JSONDecodeError) as exc:
             logger.warning("Failed to load site configuration %s: %s", config_path, exc)
         return {}
+
+    def _load_theme(self) -> ThemeLoader:
+        try:
+            return build_theme_loader(
+                themes_root=self._config.themes_root,
+                active_theme=self._config.theme_name,
+                fallback_theme=DEFAULT_THEME_NAME,
+            )
+        except ThemeError as exc:
+            raise ThemeError(f"Unable to load theme '{self._config.theme_name}': {exc}") from exc
+
+    def _build_data_endpoints(self) -> dict[str, Any]:
+        """Expose JSON endpoints consumed by client-side scripts."""
+        return {
+            "site_config": "/config/site.json",
+            "manifest_bases": [
+                "./manifests/content",
+                "/site/manifests/content",
+            ],
+        }
+
+    def _build_feed_links(self) -> dict[str, str]:
+        return {
+            "rss": "/feed.xml",
+            "atom": "/atom.xml",
+            "json": "/feed.json",
+        }
 
 
 class ArticleBodyRenderer:
@@ -160,17 +148,13 @@ class ArticleBodyRenderer:
         processed = MEDIA_SHORTCODE_RE.sub(replace, body)
         return self._markdown_to_html(processed)
 
-    def render_hero(self, hero: MediaReference | None) -> str:
-        """Render the hero media block if a hero is present."""
+    def hero_context(self, hero: MediaReference | None) -> dict[str, str] | None:
+        """Produce template context for the hero media block."""
         if not hero:
-            return ""
+            return None
         url = self._select_media_url(hero, "image")
-        alt_text = html.escape(hero.alt_text or hero.title or "")
-        return (
-            '<figure class="article-hero">'
-            f'<img src="{url}" alt="{alt_text}" loading="lazy" />'
-            "</figure>"
-        )
+        alt_text = hero.alt_text or hero.title or ""
+        return {"url": url, "alt": alt_text or ""}
 
     def count_words(self, body: str) -> int:
         """Estimate the number of words in the original body content."""
@@ -257,50 +241,28 @@ class ArticleBodyRenderer:
 
 
 class SiteChromeRenderer:
-    """Render site-level chrome such as headers, navigation, and footer."""
+    """Build context for site-level chrome such as headers, navigation, and footer."""
 
     def __init__(self, site_config: dict[str, Any]) -> None:
         self._site_config = site_config
 
-    def site_title(self, fallback: str) -> str:
-        """Return the configured site title or a provided fallback value."""
+    def site_identity(self, fallback: str) -> dict[str, str]:
         site = self._site_config.get("site")
-        if isinstance(site, dict):
-            title = str(site.get("title") or "").strip()
-            if title:
-                return title
-        return fallback
-
-    def header(self) -> str:
-        """Render the site header block including branding and theme toggle."""
-        site = self._site_config.get("site")
-        fallback_title = DEFAULT_SITE_NAME
-        title = fallback_title
+        title = fallback
         tagline = ""
         if isinstance(site, dict):
-            title = str(site.get("title") or fallback_title)
+            candidate = str(site.get("title") or "").strip()
+            if candidate:
+                title = candidate
             tagline = str(site.get("tagline") or "").strip()
+        return {"title": title, "tagline": tagline or title}
 
-        title_html = html.escape(title)
-        tagline_html = html.escape(tagline or title)
+    def site_title(self, fallback: str) -> str:
+        return self.site_identity(fallback)["title"]
 
-        parts = [
-            '<div class="site-brand">',
-            f'  <span class="pill">{tagline_html}</span>',
-            f'  <h1 class="headline-2">{title_html}</h1>',
-            "</div>",
-            '<div class="site-actions">',
-            '  <button class="button button--secondary" data-theme-toggle aria-pressed="false">',
-            "    Toggle theme",
-            "  </button>",
-            "</div>",
-        ]
-        return "\n".join(parts)
-
-    def navigation(self, current_path: str) -> str:
-        """Render primary navigation markup, marking the active path when found."""
+    def navigation(self, current_path: str) -> dict[str, Any]:
         navigation = self._site_config.get("navigation")
-        items_markup: list[str] = []
+        items: list[dict[str, Any]] = []
         any_active = False
 
         if isinstance(navigation, list):
@@ -310,50 +272,29 @@ class SiteChromeRenderer:
                 label = str(entry.get("label") or "").strip()
                 if not label:
                     continue
-                href_raw = str(entry.get("href") or "").strip()
-                href = self._normalize_nav_href(href_raw)
+                raw_href = str(entry.get("href") or "").strip()
+                href = self._normalize_nav_href(raw_href)
                 active = bool(entry.get("active")) or self._href_matches_current(href, current_path)
                 if active:
                     any_active = True
-                aria_current = ' aria-current="page"' if active else ""
-                label_html = html.escape(label)
-                href_html = html.escape(href or "/")
-                items_markup.append(
-                    "\n".join(
-                        [
-                            '    <li role="none">',
-                            f'      <a class="nav-link" role="menuitem" href="{href_html}"{aria_current}>{label_html}</a>',
-                            "    </li>",
-                        ]
-                    )
+                items.append(
+                    {
+                        "label": label,
+                        "href": href or "/",
+                        "active": active,
+                    }
                 )
 
-        if not items_markup:
-            items_markup.append(
-                "\n".join(
-                    [
-                        '    <li role="none">',
-                        '      <a class="nav-link" role="menuitem" href="/">Home</a>',
-                        "    </li>",
-                    ]
-                )
-            )
+        if not items:
+            items.append({"label": "Home", "href": "/", "active": True})
             any_active = True
 
-        data_open = "true" if any_active else "false"
-        parts = [
-            '<button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">',
-            '  <span class="nav-toggle__label">Menu</span>',
-            '  <span class="nav-toggle__icon" aria-hidden="true"></span>',
-            "</button>",
-            f'<ul class="nav-list" id="nav-menu" role="menubar" data-open="{data_open}">',
-            *items_markup,
-            "</ul>",
-        ]
-        return "\n".join(parts)
+        return {
+            "items": items,
+            "menu_open": any_active,
+        }
 
-    def footer(self) -> str:
-        """Render footer copy along with optional external links."""
+    def footer(self) -> dict[str, Any]:
         footer = self._site_config.get("footer")
         copy_text = ""
         links: list[dict[str, Any]] = []
@@ -361,36 +302,29 @@ class SiteChromeRenderer:
             copy_text = str(footer.get("copy") or "").strip()
             raw_links = footer.get("links")
             if isinstance(raw_links, list):
-                links = [entry for entry in raw_links if isinstance(entry, dict)]
+                for entry in raw_links:
+                    if not isinstance(entry, dict):
+                        continue
+                    label = str(entry.get("label") or "").strip()
+                    if not label:
+                        continue
+                    raw_href = str(entry.get("href") or "").strip() or "#"
+                    href = self._normalize_nav_href(raw_href)
+                    links.append(
+                        {
+                            "label": label,
+                            "href": href or "/",
+                            "external": raw_href.startswith("http"),
+                        }
+                    )
 
         if not copy_text:
             site_title = self.site_title(DEFAULT_SITE_NAME)
             copy_text = f"Copyright (c) {datetime.today().year} {site_title}."
 
-        copy_html = html.escape(copy_text)
+        return {"copy": copy_text, "links": links}
 
-        link_lines: list[str] = []
-        for entry in links:
-            label = str(entry.get("label") or "").strip()
-            if not label:
-                continue
-            href = str(entry.get("href") or "").strip() or "#"
-            href_html = html.escape(self._normalize_nav_href(href))
-            label_html = html.escape(label)
-            attrs = ""
-            if href.startswith("http"):
-                attrs = ' target="_blank" rel="noreferrer noopener"'
-            link_lines.append(f'    <a class="site-footer__link" href="{href_html}"{attrs}>{label_html}</a>')
-
-        parts = [f'  <p class="site-footer__copy">{copy_html}</p>']
-        if link_lines:
-            parts.append('  <div class="site-footer__links">')
-            parts.extend(link_lines)
-            parts.append("  </div>")
-        return "\n".join(parts)
-
-    def back_link(self) -> tuple[str, str]:
-        """Determine the most relevant 'back' destination for article pages."""
+    def back_link(self, current_path: str) -> dict[str, str]:
         navigation = self._site_config.get("navigation")
         if isinstance(navigation, list):
             for entry in navigation:
@@ -400,24 +334,26 @@ class SiteChromeRenderer:
                 if not label:
                     continue
                 label_lower = label.lower()
+                raw_href = str(entry.get("href") or "").strip()
+                href = self._normalize_nav_href(raw_href)
                 if label_lower in {"journal", "articles", "blog"}:
-                    href = self._normalize_nav_href(str(entry.get("href") or "").strip())
-                    return (href or "/"), f"Back to {label}"
+                    return {"href": href or "/", "label": f"Back to {label}"}
             for entry in navigation:
                 if not isinstance(entry, dict):
                     continue
-                if entry.get("active"):
+                raw_href = str(entry.get("href") or "").strip()
+                href = self._normalize_nav_href(raw_href)
+                if entry.get("active") or self._href_matches_current(href, current_path):
                     label = str(entry.get("label") or "Home").strip() or "Home"
-                    href = self._normalize_nav_href(str(entry.get("href") or "").strip())
-                    return (href or "/"), f"Back to {label}"
+                    return {"href": href or "/", "label": f"Back to {label}"}
             for entry in navigation:
                 if not isinstance(entry, dict):
                     continue
                 label = str(entry.get("label") or "").strip()
                 if label.lower() == "home":
                     href = self._normalize_nav_href(str(entry.get("href") or "").strip())
-                    return (href or "/"), f"Back to {label or 'Home'}"
-        return "/", DEFAULT_BACK_LABEL
+                    return {"href": href or "/", "label": f"Back to {label or 'Home'}"}
+        return {"href": "/", "label": DEFAULT_BACK_LABEL}
 
     def _normalize_nav_href(self, value: str) -> str:
         if not value:
@@ -442,92 +378,51 @@ class SiteChromeRenderer:
 
 
 class ArticleMainRenderer:
-    """Produce the `<main>` article block, including metadata and back links."""
+    """Prepare context rendered inside the `<main>` article block."""
 
     def __init__(self, chrome: SiteChromeRenderer, body_renderer: ArticleBodyRenderer) -> None:
         self._chrome = chrome
         self._body_renderer = body_renderer
 
-    def render(
+    def build_context(
         self,
         document: ContentDocument,
+        *,
         body_html: str,
-        hero_html: str,
-        back_href: str,
-        back_label: str,
-    ) -> str:
+        hero: dict[str, str] | None,
+        back_link: dict[str, str],
+        site_title: str,
+    ) -> dict[str, Any]:
         meta = document.meta
-        date_str = self._format_datetime(meta.published_at) or self._format_datetime(meta.updated_at)
-        summary_html = f"<p>{html.escape(meta.summary)}</p>" if meta.summary else ""
+        summary = str(meta.summary or "").strip()
         word_count = self._body_renderer.count_words(document.body)
         reading_time = self._reading_time(word_count)
+        date_str = self._format_datetime(meta.published_at) or self._format_datetime(meta.updated_at)
 
         meta_items: list[str] = []
         if date_str:
-            meta_items.append(f"<span>{html.escape(date_str)}</span>")
+            meta_items.append(date_str)
         if reading_time:
-            meta_items.append(f"<span>{reading_time} min read</span>")
+            meta_items.append(f"{reading_time} min read")
 
-        tag_items: list[str] = [
-            f'<li><span class="pill pill--light">#{html.escape(tag)}</span></li>'
-            for tag in meta.tags
-        ]
+        tags = [tag.strip() for tag in meta.tags if tag and tag.strip()]
+        footer_copy = f"Copyright (c) {datetime.today().year} {site_title} - Return home"
 
-        body_lines = [
-            f"          {line}" if line else "          "
-            for line in body_html.strip().splitlines()
-        ] if body_html.strip() else []
-
-        hero_line = f"        {hero_html}" if hero_html else ""
-
-        back_label_text = back_label or "Back"
-        lines: list[str] = [
-            '<main id="main" class="article-main" tabindex="-1">',
-            '  <div class="article-shell">',
-            '    <header class="article-header">',
-            '      <nav class="article-nav">',
-            f'        <a class="article-nav__back" href="{html.escape(back_href)}">{html.escape(back_label_text)}</a>',
-            "      </nav>",
-            "    </header>",
-            '    <section id="article" class="article-content" aria-labelledby="article-title">',
-            '      <article class="article-card">',
-            '        <header class="article-card__header">',
-            f'          <h1 id="article-title">{html.escape(meta.title)}</h1>',
-        ]
-
-        if summary_html:
-            lines.append(f"          {summary_html}")
-
-        if meta_items:
-            lines.append('          <div class="article-card__meta">')
-            for item in meta_items:
-                lines.append(f"            {item}")
-            lines.append("          </div>")
-
-        if tag_items:
-            lines.append('          <ul class="article-card__tags">')
-            for tag_item in tag_items:
-                lines.append(f"            {tag_item}")
-            lines.append("          </ul>")
-
-        lines.append("        </header>")
-
-        if hero_line:
-            lines.append(hero_line)
-
-        lines.append('        <div class="article-card__body">')
-        if body_lines:
-            lines.extend(body_lines)
-        lines.append("        </div>")
-        lines.append("      </article>")
-        lines.append("    </section>")
-        lines.append('    <footer class="article-footer">')
-        footer_copy = f"Copyright (c) {datetime.today().year} {DEFAULT_SITE_NAME} - Return home"
-        lines.append(f'      <a href="/">{html.escape(footer_copy)}</a>')
-        lines.append("    </footer>")
-        lines.append("  </div>")
-        lines.append("</main>")
-        return "\n".join(lines)
+        return {
+            "summary": summary,
+            "meta_items": meta_items,
+            "tags": tags,
+            "hero": hero,
+            "body_html": Markup(body_html) if body_html else Markup(""),
+            "back": {
+                "href": back_link["href"],
+                "label": back_link["label"],
+            },
+            "footer": {
+                "href": "/",
+                "copy": footer_copy,
+            },
+        }
 
     @staticmethod
     def _format_datetime(value: datetime | None) -> str | None:
@@ -547,7 +442,7 @@ class ArticleMainRenderer:
 
 
 class TemplateComposer:
-    """Compose the final HTML page from rendered fragments."""
+    """Compose the final HTML page using the active Jinja theme."""
 
     def __init__(
         self,
@@ -559,229 +454,49 @@ class TemplateComposer:
         self._chrome = chrome
         self._main_renderer = main_renderer
 
-    def compose(self, document: ContentDocument, body_html: str, hero_html: str) -> str:
-        """Assemble the final HTML page for a document using available assets."""
-        back_href, back_label = self._chrome.back_link()
-        if self._assets.base_template:
-            return self._render_with_base_template(
-                document,
-                body_html,
-                hero_html,
-                back_href=back_href,
-                back_label=back_label,
-            )
-        return self._render_standalone_document(
+    @property
+    def theme(self) -> ThemeLoader:
+        return self._assets.theme
+
+    def compose(self, document: ContentDocument, body_html: str, hero: dict[str, str] | None) -> str:
+        meta = document.meta
+        current_path = f"/posts/{document.slug}/"
+
+        site_identity = self._chrome.site_identity(DEFAULT_SITE_NAME)
+        navigation = self._chrome.navigation(current_path=current_path)
+        footer = self._chrome.footer()
+        back_link = self._chrome.back_link(current_path=current_path)
+
+        article_context = self._main_renderer.build_context(
             document,
-            body_html,
-            hero_html,
-            back_href=back_href,
-            back_label=back_label,
+            body_html=body_html,
+            hero=hero,
+            back_link=back_link,
+            site_title=site_identity["title"],
         )
 
-    def _render_with_base_template(
-        self,
-        document: ContentDocument,
-        body_html: str,
-        hero_html: str,
-        *,
-        back_href: str,
-        back_label: str,
-    ) -> str:
-        assert self._assets.base_template is not None
-        meta = document.meta
-        site_title = self._chrome.site_title(meta.slug)
-        page_title = f"{html.escape(meta.title)} - {html.escape(site_title)}"
-
-        header_block = self._indent_block(self._chrome.header(), 8)
-        nav_block = self._indent_block(
-            self._chrome.navigation(current_path=f"/posts/{document.slug}/"),
-            8,
-        )
-        footer_block = self._indent_block(self._chrome.footer(), 8)
-        main_block = self._indent_html(
-            self._main_renderer.render(
-                document,
-                body_html,
-                hero_html,
-                back_href=back_href,
-                back_label=back_label,
-            ),
-            6,
-        )
-
-        html_text = self._assets.base_template
-        html_text = self._inject_inline_script(html_text)
-        html_text = self._strip_template_host(html_text)
-        html_text = self._replace_title(html_text, page_title)
-        html_text = self._replace_tag_contents(html_text, "header", "site-header", header_block)
-        html_text = self._replace_tag_contents(html_text, "nav", "site-nav", nav_block)
-        html_text = self._replace_main_section(html_text, main_block)
-        html_text = self._replace_tag_contents(html_text, "footer", "site-footer", footer_block)
-        html_text = self._normalize_asset_paths(html_text)
-        html_text = self._ensure_shell_theme(html_text)
-        return html_text
-
-    def _render_standalone_document(
-        self,
-        document: ContentDocument,
-        body_html: str,
-        hero_html: str,
-        *,
-        back_href: str,
-        back_label: str,
-    ) -> str:
-        meta = document.meta
-        site_title = self._chrome.site_title(DEFAULT_SITE_NAME) or DEFAULT_SITE_NAME
-        page_title = f"{html.escape(meta.title)} - {html.escape(site_title)}"
-
-        header_block = self._indent_block(self._chrome.header(), 8, trailing_newline=False)
-        nav_block = self._indent_block(
-            self._chrome.navigation(current_path=f"/posts/{document.slug}/"),
-            8,
-            trailing_newline=False,
-        )
-        main_block = self._indent_block(
-            self._main_renderer.render(
-                document,
-                body_html,
-                hero_html,
-                back_href=back_href,
-                back_label=back_label,
-            ),
-            6,
-            leading_newline=False,
-            trailing_newline=False,
-        )
-        footer_block = self._indent_block(self._chrome.footer(), 8, trailing_newline=False)
-
-        template_lines = [
-            "<!DOCTYPE html>",
-            '<html lang="en">',
-            "  <head>",
-            '    <meta charset="utf-8" />',
-            '    <meta name="viewport" content="width=device-width, initial-scale=1" />',
-            '    <meta name="color-scheme" content="dark light" />',
-            f"    <title>{page_title}</title>",
-            '    <link rel="stylesheet" href="/styles/tokens.css" />',
-            '    <link rel="stylesheet" href="/styles/base.css" />',
-            '    <link rel="stylesheet" href="/styles/layout.css" />',
-            '    <link rel="stylesheet" href="/styles/typography.css" />',
-            '    <link rel="stylesheet" href="/styles/components.css" />',
-            "  </head>",
-            "  <body>",
-            '    <a class="skip-link" href="#main">Skip to content</a>',
-            f'    <div id="app-shell" class="app-shell" data-theme="{DEFAULT_THEME}">',
-            '      <header class="site-header" id="site-header" aria-live="polite">',
-            f"{header_block}",
-            "      </header>",
-            '      <nav class="site-nav" id="site-nav" aria-label="Primary">',
-            f"{nav_block}",
-            "      </nav>",
-            f"{main_block}",
-            '      <footer class="site-footer" id="site-footer">',
-            f"{footer_block}",
-            "      </footer>",
-            "    </div>",
-            f"{self._indent_block(_INLINE_SCRIPT, 4, leading_newline=False, trailing_newline=False)}",
-            "  </body>",
-            "</html>",
-        ]
-        html_text = "\n".join(template_lines)
-        html_text = self._normalize_asset_paths(html_text)
-        html_text = self._ensure_shell_theme(html_text)
-        return html_text
-
-    def _replace_tag_contents(self, source: str, tag: str, element_id: str, replacement: str) -> str:
-        pattern = re.compile(
-            rf'(<{tag}\b[^>]*\bid="{element_id}"[^>]*>)(.*?)(</{tag}>)',
-            re.IGNORECASE | re.DOTALL,
-        )
-
-        def _repl(match: re.Match[str]) -> str:
-            return f"{match.group(1)}{replacement}{match.group(3)}"
-
-        return pattern.sub(_repl, source, count=1)
-
-    def _replace_main_section(self, source: str, replacement: str) -> str:
-        pattern = re.compile(
-            r'<main\b[^>]*id="main"[^>]*>.*?</main>',
-            re.IGNORECASE | re.DOTALL,
-        )
-        return pattern.sub(replacement, source, count=1)
-
-    def _replace_title(self, source: str, title: str) -> str:
-        pattern = re.compile(r"<title>.*?</title>", re.IGNORECASE | re.DOTALL)
-        replacement = f"<title>{title}</title>"
-        updated, count = pattern.subn(replacement, source, count=1)
-        if count == 0:
-            return replacement + source
-        return updated
-
-    def _normalize_asset_paths(self, html_text: str) -> str:
-        html_text = html_text.replace('href="./styles/', 'href="/styles/')
-        html_text = html_text.replace('href="../styles/', 'href="/styles/')
-        html_text = html_text.replace('src="./js/', 'src="/js/')
-        html_text = html_text.replace('src="../js/', 'src="/js/')
-        return html_text
-
-    def _strip_template_host(self, html_text: str) -> str:
-        pattern = re.compile(r'\s*<div id="template-host"[^>]*></div>\s*', re.IGNORECASE)
-        return pattern.sub("\n", html_text, count=1)
-
-    def _inject_inline_script(self, html_text: str) -> str:
-        pattern = re.compile(
-            r'(?P<indent>\s*)<script[^>]+src="\.?/js/app\.js"[^>]*></script>',
-            re.IGNORECASE,
-        )
-
-        def repl(match: re.Match[str]) -> str:
-            indent = match.group("indent")
-            script_lines = _INLINE_SCRIPT.strip().splitlines()
-            indented = "\n".join(f"{indent}{line}" for line in script_lines)
-            return indented
-
-        updated, count = pattern.subn(repl, html_text, count=1)
-        if count:
-            return updated
-
-        fallback_indent = "    "
-        script_lines = _INLINE_SCRIPT.strip().splitlines()
-        indented_script = "\n".join(f"{fallback_indent}{line}" for line in script_lines)
-        return updated.replace("</body>", f"{indented_script}\n  </body>", 1)
-
-    def _ensure_shell_theme(self, html_text: str) -> str:
-        if 'data-theme="' in html_text:
-            return html_text
-        return html_text.replace(
-            '<div id="app-shell" class="app-shell"',
-            f'<div id="app-shell" class="app-shell" data-theme="{DEFAULT_THEME}"',
-            1,
-        )
-
-    def _indent_html(self, content: str, spaces: int) -> str:
-        if not content:
-            return ""
-        prefix = " " * spaces
-        stripped = content.strip("\n")
-        lines = stripped.splitlines()
-        return "\n".join(f"{prefix}{line}" if line else prefix for line in lines)
-
-    def _indent_block(
-        self,
-        content: str,
-        spaces: int,
-        *,
-        leading_newline: bool = True,
-        trailing_newline: bool = True,
-    ) -> str:
-        if not content:
-            return ""
-        body = self._indent_html(content, spaces)
-        if leading_newline:
-            body = "\n" + body
-        if trailing_newline:
-            body = body + "\n"
-        return body
+        context = {
+            "site": site_identity,
+            "navigation": navigation,
+            "footer": footer,
+            "shell": {
+                "theme": self.theme.manifest.default_shell_theme,
+            },
+            "page": {
+                "title": f"{meta.title} - {site_identity['title']}",
+                "slug": meta.slug,
+                "body_class": "article-page",
+            },
+            "document": {
+                "title": meta.title,
+                "slug": meta.slug,
+            },
+            "article": article_context,
+            "assets": self.theme.assets.to_template_dict(),
+            "feeds": self._assets.feed_links,
+            "data": self._assets.data_endpoints,
+        }
+        return self.theme.render_page("article", context)
 
 
 class DirectoryPruner:
@@ -809,8 +524,8 @@ class ArticlePageRenderer:
         """Render the provided document into final HTML."""
         references = self._body_renderer.build_reference_map(document)
         body_html = self._body_renderer.render_body(document.body, references)
-        hero_html = self._body_renderer.render_hero(document.meta.hero_media)
-        return self._composer.compose(document, body_html, hero_html)
+        hero = self._body_renderer.hero_context(document.meta.hero_media)
+        return self._composer.compose(document, body_html, hero)
 
 
 def write_article_pages(documents: Iterable[ContentDocument], config: Config) -> list[Path]:

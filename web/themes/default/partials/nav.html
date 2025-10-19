@@ -1,0 +1,13 @@
+<nav class="site-nav" id="site-nav" aria-label="Primary">
+  <button class="nav-toggle" aria-expanded="{{ 'true' if navigation.menu_open else 'false' }}" aria-controls="nav-menu">
+    <span class="nav-toggle__label">Menu</span>
+    <span class="nav-toggle__icon" aria-hidden="true"></span>
+  </button>
+  <ul class="nav-list" id="nav-menu" role="menubar" data-open="{{ 'true' if navigation.menu_open else 'false' }}">
+    {% for item in navigation["items"] %}
+    <li role="none">
+      <a class="nav-link" role="menuitem" href="{{ item.href }}" {% if item.active %}aria-current="page"{% endif %}>{{ item.label }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</nav>

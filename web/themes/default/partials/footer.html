@@ -1,0 +1,10 @@
+<footer class="site-footer" id="site-footer">
+  <p class="site-footer__copy">{{ footer.copy }}</p>
+  {% if footer.links %}
+  <div class="site-footer__links">
+    {% for link in footer.links %}
+    <a class="site-footer__link" href="{{ link.href }}" {% if link.external %}target="_blank" rel="noreferrer noopener"{% endif %}>{{ link.label }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</footer>

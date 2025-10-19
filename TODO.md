@@ -1,35 +1,14 @@
-# Todo List
+# Implementation Script
 
-## Authoring Workflow
+- [x] Gather context: audit build/articles.py, existing template files under templates/, JSON outputs, and how articles/galleries/music data is produced; capture current render pipeline for reference.
+- [x] Add dependency: update project packaging (e.g., pyproject.toml or requirements.txt) to include Jinja2>=3.x; adjust build tooling or virtualenv bootstrap as needed.
+- [x] Introduce theme layout: scaffold a default theme directory (templates/ or themes/default/) with base.html, partials/header.html, partials/nav.html, partials/footer.html, pages/article.html, pages/index.html, etc., using Jinja2 block syntax and placeholders matching the planned data context.
+- [x] Refactor renderer: replace string-built HTML in ArticleBodyRenderer, SiteChromeRenderer, ArticleMainRenderer, and TemplateComposer with Jinja2 rendering calls. Build context dictionaries (site chrome, article metadata, asset URLs, JSON endpoints) and render the appropriate template; keep JSON generation and writing logic intact.
+- [x] Implement loader + theme manifest: add a loader that resolves templates from the active theme (filesystem loader with inheritance), validate required templates exist, and support fallbacks if missing. Consider a theme.json describing available pages/assets.
+- [x] Adjust inline script handling: move the JS snippet into a template partial or static asset referenced from templates instead of injecting via Python.
+- [x] Ensure static JSON feeds remain referenced from templates/JS so client-side hydration still works; expose needed URLs in the context passed to templates.
+- [x] Update build flow: wire the new renderer into ArticlePageWriter so final HTML still lands in output/posts/<slug>/index.html; remove now-unused HTML assembly helpers.
+- [ ] Run formatting/tests: execute lint/unit/static site build commands (pytest, python build.py, etc.) to confirm no regressions and newly generated HTML looks correct.
+- [x] Document theme API: add or update docs/theme-dev.md detailing context variables, required template files, asset expectations, and the dev workflow for front-end contributors.
+- [x] Add regression coverage: create snapshot/golden tests or fixture-based checks ensuring templates render expected HTML for representative content (article with media, missing hero, etc.).
 
-~~Ship a smilecms new <post|gallery|track> command that scaffolds the recommended front matter and directory layout instead of asking editors to copy templates by hand (docs/content-workflows.md:71, docs/content-workflows.md:124).~~
-
-~~Extend validate_document into a fast smilecms lint/doctor mode that flags missing alt_text, broken hero media, or draft content before a full build, codifying the manual checks described for authors (docs/content-workflows.md:83, build/validation.py:25) and document these features in the project.~~
-
-Turn the existing JSON build report into an HTML/Markdown dashboard so admins can review changes without opening site/report.json manually (build/reporting.py:121).
-
-Add an environment check that confirms optional extras (e.g., .[ml]) are installed and needed models are cached before the pipeline runs, instead of relying on operators to remember those steps (README.md:19).
-
-~~Add a site crawler to verify links, file placement, and functionality.~~
-
-Extract EXIF data from image if availble for display in front end. (or strip exif data if privacy/security wanted)
-
-## Build & CLI Loop
-
-~~Finish the placeholder `preview` and `clean` commands so maintainers can serve `site/` and purge artifacts without dropping to raw `http.server` or manual deletes (build/cli.py:132, build/cli.py:135, README.md:31).~~
-
-~~Introduce change detection/incremental rebuilds to avoid wiping `site/` and `media/derived/` every time, matching the stated requirement while speeding large galleries considerably (build/cli.py:33, docs/requirements.md:46).~~
-
-Add a --watch/--serve loop that rebuilds on file changes while keeping the local preview running, streamlining the repeated smilecms build routine in the docs (README.md:30, docs/content-workflows.md:48).
-
-~~Provide a smilecms media audit (or similar) to surface orphaned/out-of-bounds assets so editors don’t have to police the “assets must live under specific roots” rule manually (docs/content-workflows.md:68).~~
-
-## Front-End Experience
-
-~~Teach the bootstrap script to follow manifest indexes instead of hard-coding content-001.json, so additional manifest chunks load automatically as the library grows (web/js/app.js:3).~~
-
-~~Generate RSS/Atom/JSON feeds directly from the manifests to satisfy the syndication goal and give visitors subscription options (docs/requirements.md:44).~~
-
-Publish a unified search dataset and lightweight global search UI that blends articles, gallery images, and tracks, rather than keeping filtering siloed in each module (web/js/journal.js:107, web/js/music.js:5).
-
-Layer in an offline-friendly service worker or static precache to hit the “offline-friendly baseline” target without leaving static hosting territory (docs/requirements.md:57).

@@ -173,6 +173,8 @@ class Config(BaseModel):
     article_media_dir: Path = Field(default=Path("content/media"))
     output_dir: Path = Field(default=Path("site"))
     templates_dir: Path = Field(default=Path("web"))
+    themes_dir: Path | None = Field(default=None)
+    theme_name: str = Field(default="default")
     cache_dir: Path = Field(default=Path(".cache"))
     media_processing: MediaProcessingConfig = Field(default_factory=MediaProcessingConfig)
     gallery: GalleryConfig = Field(default_factory=GalleryConfig)
@@ -191,6 +193,12 @@ class Config(BaseModel):
     def _ensure_path(cls, value: Any) -> Path:
         return Path(value)
 
+    @field_validator("themes_dir", mode="before")
+    def _ensure_optional_path(cls, value: Any) -> Path | None:
+        if value is None:
+            return None
+        return Path(value)
+
     @property
     def media_mounts(self) -> list[tuple[str, Path]]:
         return [
@@ -198,6 +206,12 @@ class Config(BaseModel):
             ("gallery", self.gallery.source_dir),
             ("audio", self.music.source_dir),
         ]
+
+    @property
+    def themes_root(self) -> Path:
+        if self.themes_dir is not None:
+            return self.themes_dir
+        return self.templates_dir / "themes"
 
 
 def load_config(path: str | Path) -> Config:

@@ -1,0 +1,31 @@
+{
+  "name": "SmileCMS Default Theme",
+  "version": "0.1.0",
+  "entrypoints": {
+    "base": "base.html",
+    "article": "pages/article.html",
+    "index": "pages/index.html"
+  },
+  "partials": {
+    "header": "partials/header.html",
+    "nav": "partials/nav.html",
+    "footer": "partials/footer.html",
+    "inline_script": "partials/inline-script.html"
+  },
+  "assets": {
+    "styles": [
+      "/styles/tokens.css",
+      "/styles/base.css",
+      "/styles/layout.css",
+      "/styles/typography.css",
+      "/styles/components.css"
+    ],
+    "scripts": [
+      {
+        "src": "/js/app.js",
+        "type": "module"
+      }
+    ]
+  },
+  "default_shell_theme": "dark"
+}
