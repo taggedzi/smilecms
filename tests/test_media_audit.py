@@ -7,7 +7,9 @@ from build.content.models import ContentDocument, ContentMeta, ContentStatus, Me
 from build.media.audit import audit_media
 
 
-def _document(slug: str, hero: str | None = None, assets: list[str] | None = None) -> ContentDocument:
+def _document(
+    slug: str, hero: str | None = None, assets: list[str] | None = None
+) -> ContentDocument:
     meta = ContentMeta(
         slug=slug,
         title=slug.title(),

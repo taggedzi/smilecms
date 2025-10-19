@@ -201,10 +201,8 @@ def _load_yaml(path: Path) -> dict[str, Any]:
 
 def _image_to_reference(
     collection: GalleryCollectionEntry,
-    image_entry: GalleryImageEntry | None,
-) -> MediaReference | None:
-    if image_entry is None:
-        return None
+    image_entry: GalleryImageEntry,
+) -> MediaReference:
     metadata = image_entry.metadata
     rel_path = metadata.derived.get("original") or _media_path("gallery", collection.id, metadata.filename)
     reference = MediaReference(

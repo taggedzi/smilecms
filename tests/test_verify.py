@@ -8,7 +8,7 @@ def _write(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def test_verify_site_detects_missing_internal_links_and_assets(tmp_path):
+def test_verify_site_detects_missing_internal_links_and_assets(tmp_path: Path) -> None:
     site_dir = tmp_path / "site"
     _write(
         site_dir / "index.html",
@@ -36,7 +36,7 @@ def test_verify_site_detects_missing_internal_links_and_assets(tmp_path):
     assert "/media/photo.jpg" in targets
 
 
-def test_verify_site_skips_external_and_fragments(tmp_path):
+def test_verify_site_skips_external_and_fragments(tmp_path: Path) -> None:
     site_dir = tmp_path / "site"
     _write(
         site_dir / "index.html",
@@ -57,7 +57,7 @@ def test_verify_site_skips_external_and_fragments(tmp_path):
     assert report.issues == []
 
 
-def test_verify_site_flags_out_of_bounds_references(tmp_path):
+def test_verify_site_flags_out_of_bounds_references(tmp_path: Path) -> None:
     site_dir = tmp_path / "site"
     _write(
         site_dir / "index.html",

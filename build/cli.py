@@ -2,14 +2,13 @@
 
 import contextlib
 from dataclasses import dataclass
-import functools
 import shutil
 import time
 import webbrowser
 from enum import Enum
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Iterable, cast
+from typing import TYPE_CHECKING, Annotated, Any, Iterable, Iterator, Sequence, cast
 
 import typer
 from rich.console import Console
@@ -41,8 +40,8 @@ from .reporting import (
 from .scaffold import ScaffoldError, ScaffoldResult, normalize_slug, scaffold_content
 from .staging import StagingResult, reset_directory, stage_static_site
 from .state import BuildTracker, ChangeSummary
-from .validation import DocumentValidationError, IssueSeverity, lint_workspace
-from .verify import verify_site
+from .validation import DocumentIssue, DocumentValidationError, IssueSeverity, lint_workspace
+from .verify import VerificationReport, verify_site
 
 if TYPE_CHECKING:
     from .gallery import GalleryWorkspace
@@ -235,7 +234,7 @@ def _prepare_output_directories(config: Config, change_summary: ChangeSummary, f
 def _load_build_documents(
     config: Config,
     gallery_workspace: "GalleryWorkspace",
-) -> Iterable["ContentDocument"]:
+) -> list["ContentDocument"]:
     try:
         return load_documents(config, gallery_workspace=gallery_workspace)
     except DocumentValidationError as error:
@@ -245,7 +244,7 @@ def _load_build_documents(
 
 def _generate_site_artifacts(
     config: Config,
-    documents: Iterable["ContentDocument"],
+    documents: Sequence["ContentDocument"],
     gallery_workspace: "GalleryWorkspace",
 ) -> BuildOutputs:
     start = time.perf_counter()
@@ -339,7 +338,7 @@ def _print_primary_summary(
 def _stage_static_assets(
     config: Config,
     tracker: BuildTracker,
-    documents: Iterable["ContentDocument"],
+    documents: Sequence["ContentDocument"],
     gallery_workspace: "GalleryWorkspace",
 ) -> StageArtifacts:
     previous_templates = tracker.previous_template_paths or None
@@ -522,11 +521,15 @@ def preview(
             f"{output_dir} is empty. Run 'smilecms build' to populate the site."
         )
 
-    handler = functools.partial(SimpleHTTPRequestHandler, directory=str(output_dir))
+    handler = _make_request_handler(output_dir)
 
     try:
         with _serve(host, port, handler) as server:
-            bound_host, bound_port = server.server_address[:2]
+            raw_host = server.server_address[0]
+            bound_host = (
+                raw_host.decode("utf-8", "ignore") if isinstance(raw_host, bytes) else str(raw_host)
+            )
+            bound_port = int(server.server_address[1])
             url_host = "127.0.0.1" if bound_host in {"0.0.0.0", ""} else bound_host
             site_url = f"http://{url_host}:{bound_port}/"
             console.print(
@@ -591,7 +594,7 @@ def _print_scaffold_summary(kind: NewContentType, slug: str, result: ScaffoldRes
             console.print(f"- {note}")
 
 
-def _lint_sort_key(issue) -> tuple[int, str, str]:
+def _lint_sort_key(issue: DocumentIssue) -> tuple[int, str, str]:
     severity_order = 0 if issue.severity is IssueSeverity.ERROR else 1
     pointer = issue.pointer or ""
     return (severity_order, issue.source_path, pointer)
@@ -638,8 +641,8 @@ def _print_media_audit(result: MediaAuditResult) -> None:
         console.print("[bold green]No media issues detected.[/]")
 
 
-def _media_audit_payload(result: MediaAuditResult) -> dict:
-    def serialize_usage(path: str, usage: "ReferenceUsage") -> dict:
+def _media_audit_payload(result: MediaAuditResult) -> dict[str, object]:
+    def serialize_usage(path: str, usage: "ReferenceUsage") -> dict[str, object]:
         payload: dict[str, object] = {
             "path": path,
             "documents": sorted(usage.documents),
@@ -650,7 +653,7 @@ def _media_audit_payload(result: MediaAuditResult) -> dict:
             payload["expected_path"] = usage.expected_path.as_posix()
         return payload
 
-    payload = {
+    payload: dict[str, object] = {
         "summary": {
             "total_assets": result.total_assets,
             "total_references": result.total_references,
@@ -710,7 +713,7 @@ def _display_path(path: Path) -> str:
         return path.as_posix()
 
 
-def _print_verification_report(report) -> None:
+def _print_verification_report(report: VerificationReport) -> None:
     if not report.issues:
         console.print(
             "[bold green]Verification complete[/]: "
@@ -730,7 +733,7 @@ def _print_verification_report(report) -> None:
         )
 
 
-def _render_verification_text(report, output_dir: Path) -> str:
+def _render_verification_text(report: VerificationReport, output_dir: Path) -> str:
     lines = [
         "SmileCMS site verification report",
         f"Output directory: {output_dir.resolve().as_posix()}",
@@ -764,12 +767,22 @@ class _ThreadingHTTPServer(ThreadingHTTPServer):
     allow_reuse_address = True
 
 
+def _make_request_handler(directory: Path) -> type[SimpleHTTPRequestHandler]:
+    directory_path = str(directory)
+
+    class PreviewRequestHandler(SimpleHTTPRequestHandler):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            super().__init__(*args, directory=directory_path, **kwargs)
+
+    return PreviewRequestHandler
+
+
 @contextlib.contextmanager
 def _serve(
     host: str,
     port: int,
-    handler: type[SimpleHTTPRequestHandler] | functools.partial,
-) -> ThreadingHTTPServer:
+    handler: type[SimpleHTTPRequestHandler],
+) -> Iterator[ThreadingHTTPServer]:
     server = _ThreadingHTTPServer((host, port), handler)
     try:
         yield server

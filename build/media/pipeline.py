@@ -52,7 +52,7 @@ def collect_media_plan(documents: Iterable[ContentDocument], config: Config) -> 
                         plan.add_task(task)
                         seen[key] = task
                     task.add_document(document.slug)
-                    task.add_role(role)  # type: ignore[arg-type]
+                    task.add_role(role)
             else:
                 plan.add_static_asset(rel_path, source_path)
 

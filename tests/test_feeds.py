@@ -1,10 +1,11 @@
-from datetime import datetime, timezone
 import json
+from datetime import UTC, datetime
+from pathlib import Path
 
 from build.config import Config, FeedConfig
+from build.content.models import ContentStatus, ContentType, MediaReference, MediaVariant
 from build.feeds import generate_feeds
 from build.manifests.models import ManifestItem, ManifestPage
-from build.content.models import ContentStatus, ContentType, MediaReference, MediaVariant
 
 
 def _manifest_item(slug: str) -> ManifestItem:
@@ -23,8 +24,8 @@ def _manifest_item(slug: str) -> ManifestItem:
                 MediaVariant(profile="large", path="large/media/example.jpg"),
             ],
         ),
-        published_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        updated_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        published_at=datetime(2024, 1, 1, tzinfo=UTC),
+        updated_at=datetime(2024, 1, 2, tzinfo=UTC),
         word_count=120,
         reading_time_minutes=1,
         asset_count=1,
@@ -32,7 +33,7 @@ def _manifest_item(slug: str) -> ManifestItem:
     )
 
 
-def test_generate_feeds_writes_all_formats(tmp_path):
+def test_generate_feeds_writes_all_formats(tmp_path: Path) -> None:
     template_dir = tmp_path / "web"
     (template_dir / "config").mkdir(parents=True)
     (template_dir / "config" / "site.json").write_text(
@@ -80,7 +81,7 @@ def test_generate_feeds_writes_all_formats(tmp_path):
     assert feed_json["items"][0]["image"] == "https://example.com/large/media/example.jpg"
 
 
-def test_generate_feeds_respects_disabled(tmp_path):
+def test_generate_feeds_respects_disabled(tmp_path: Path) -> None:
     template_dir = tmp_path / "web"
     (template_dir / "config").mkdir(parents=True)
     (template_dir / "config" / "site.json").write_text("{}", encoding="utf-8")

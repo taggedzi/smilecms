@@ -104,6 +104,7 @@ def _sort_key(meta: ContentMeta) -> tuple[datetime, str, str]:
 def _summarize(document: ContentDocument) -> Tuple[Optional[str], int]:
     summary = document.meta.summary
     plain = _extract_plain_text(document.body)
+    excerpt: str | None
     if summary:
         excerpt = summary
     else:

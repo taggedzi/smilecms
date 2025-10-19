@@ -2,15 +2,25 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from functools import lru_cache
 from importlib import resources
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator, Protocol, cast
 
-from jsonschema import Draft202012Validator
+
+class _Validator(Protocol):
+    def iter_errors(self, instance: Any) -> Iterator[Any]:
+        ...
+
+
+ValidatorFactory = Callable[[Any], _Validator]
+
+_jsonschema = importlib.import_module("jsonschema")
+Draft202012Validator = cast(ValidatorFactory, getattr(_jsonschema, "Draft202012Validator"))
 
 from .collections import load_gallery_documents, load_music_documents
 from .config import Config
@@ -169,14 +179,17 @@ def lint_workspace(config: Config) -> LintReport:
 
 
 @lru_cache(maxsize=1)
-def _get_content_validator() -> Draft202012Validator:
+def _get_content_validator() -> _Validator:
     schema = _load_schema(CONTENT_SCHEMA_NAME)
     return Draft202012Validator(schema)
 
 
 def _load_schema(name: str) -> dict[str, Any]:
     with resources.files(SCHEMA_PACKAGE).joinpath(name).open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+        payload = json.load(handle)
+    if not isinstance(payload, dict):
+        raise ValueError(f"Schema '{name}' must be a JSON object.")
+    return cast(dict[str, Any], payload)
 
 
 def _lint_media_reference(

@@ -254,6 +254,8 @@ def _calculate_target_size(size: tuple[int, int], profile: DerivativeProfile) ->
         return int(orig_width * scale), int(orig_height * scale)
 
     # height specified
+    if height is None:
+        return None
     scale = min(height / orig_height, 1.0)
     return int(orig_width * scale), int(orig_height * scale)
 

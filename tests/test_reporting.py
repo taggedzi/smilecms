@@ -1,7 +1,8 @@
 import json
+from pathlib import Path
 
 from build.content.models import ContentDocument, ContentMeta, ContentStatus
-from build.manifests.models import ManifestPage, ManifestItem
+from build.manifests.models import ManifestItem, ManifestPage
 from build.media.models import MediaPlan
 from build.media.processor import MediaProcessingResult
 from build.reporting import (
@@ -48,7 +49,7 @@ def test_build_manifest_stats_counts_items() -> None:
     assert stats.items == 2
 
 
-def test_write_report_writes_json(tmp_path) -> None:
+def test_write_report_writes_json(tmp_path: Path) -> None:
     documents = build_document_stats([_doc("a", ContentStatus.PUBLISHED)])
     manifests = build_manifest_stats(
         [

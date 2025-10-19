@@ -20,7 +20,9 @@ dev = [
   "ruff>=0.4",
   "timm==1.0.20",
   "coverage",
-  "pre-commit"
+  "pre-commit",
+  "pydantic", 
+  "types-PyYAML"
 ]
 ml = [
   "huggingface_hub[hf_xet]",
@@ -49,6 +51,14 @@ extend-exclude = ["build", "dist", ".venv"]
 [tool.ruff.format]
 quote-style = "double"
 
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+  "PT018",  # split assertions (fine to allow in tests)
+  "PLR2004",# magic numbers in comparisons (okay in tests)
+  "PLR0913",# too many args (test helpers often do)
+  "E501",   # long lines (error messages/asserts can be long)
+]
+
 [tool.mypy]
 python_version = "3.12"
 warn_unused_ignores = true
@@ -56,8 +66,20 @@ warn_redundant_casts = true
 warn_return_any = true
 no_implicit_optional = true
 strict = true
+plugins = ["pydantic.mypy"]
 disallow_any_generics = true
 exclude = ['build/','dist/','\.venv/']
+
+# Keep core code strict, but don't force type annotations in tests
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+check_untyped_defs = false
+disable_error_code = ["misc"]  # silences "Untyped decorator makes function..."
+
+[[tool.mypy.overrides]]
+module = ["build.cli"]
+disable_error_code = ["misc"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

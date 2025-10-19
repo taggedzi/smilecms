@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from PIL import Image
+
 from build.config import (
     Config,
     DerivativeProfile,
@@ -10,7 +12,6 @@ from build.config import (
 )
 from build.content.models import ContentDocument, ContentMeta, ContentStatus, MediaReference
 from build.media import apply_variants_to_documents, collect_media_plan, process_media_plan
-from PIL import Image
 
 
 def _doc(slug: str, media_paths: list[str], hero_path: str | None = None) -> ContentDocument:
@@ -50,12 +51,20 @@ def test_collect_media_plan_deduplicates_assets(tmp_path: Path) -> None:
     assert plan.static_assets == {}
     thumb_tasks = [task for task in plan.tasks if task.profile.name == "thumb"]
     assert len(thumb_tasks) == 2
-    photo_task = next(task for task in plan.tasks if task.media_path == "gallery/photo.jpg" and task.profile.name == "thumb")
+    photo_task = next(
+        task
+        for task in plan.tasks
+        if task.media_path == "gallery/photo.jpg" and task.profile.name == "thumb"
+    )
     assert photo_task.source == media_config.source_dir / "gallery/photo.jpg"
     assert photo_task.destination == media_config.output_dir / "thumb" / "gallery" / "photo.webp"
     assert photo_task.documents == {"alpha", "beta"}
     assert "asset" in photo_task.roles
-    hero_task = next(task for task in plan.tasks if task.media_path == "gallery/diagram.png" and task.profile.name == "thumb")
+    hero_task = next(
+        task
+        for task in plan.tasks
+        if task.media_path == "gallery/diagram.png" and task.profile.name == "thumb"
+    )
     assert hero_task.roles == {"asset", "hero"}
 
 
@@ -121,7 +130,9 @@ def test_process_media_plan_generates_variants(tmp_path: Path) -> None:
     assert "large/gallery/photo.jpg" in variant_paths
     for variant in asset.variants:
         if variant.profile == "thumb":
+            assert variant.width is not None
             assert variant.width <= 160
+            assert variant.height is not None
             assert variant.height <= 160
 
 

@@ -8,9 +8,9 @@ from datetime import datetime, timezone
 from email.utils import format_datetime as format_rfc2822
 from html import escape
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Sequence
 
-from .config import Config
+from .config import Config, FeedConfig
 from .content.models import ContentStatus
 from .manifests import ManifestItem, ManifestPage
 
@@ -158,18 +158,23 @@ def _load_site_metadata(config: Config, base_url: str | None) -> dict[str, str]:
         else config.templates_dir / "config" / "site.json"
     )
 
-    data: dict[str, object] = {}
+    data: dict[str, Any] = {}
     if site_path.exists():
         try:
-            data = json.loads(site_path.read_text(encoding="utf-8"))
+            loaded = json.loads(site_path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                data = loaded
+            else:
+                data = {}
         except json.JSONDecodeError:
             data = {}
 
-    site_data = data.get("site", {}) if isinstance(data, dict) else {}
+    site_raw = data.get("site", {})
+    site_data = site_raw if isinstance(site_raw, dict) else {}
     title = str(site_data.get("title") or fallback_title)
     description = str(site_data.get("tagline") or fallback_description)
 
-    navigation = data.get("navigation") if isinstance(data, dict) else None
+    navigation = data.get("navigation")
     home_path = "/"
     if isinstance(navigation, list):
         for entry in navigation:
@@ -352,7 +357,7 @@ def _resolve_feed_root(config: Config) -> Path:
     return config.output_dir / subdir
 
 
-def _feed_relative_base(settings) -> str:
+def _feed_relative_base(settings: FeedConfig) -> str:
     subdir = settings.output_subdir
     if subdir is None:
         return ""

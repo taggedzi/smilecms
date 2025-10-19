@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import dataclasses
 from pathlib import Path
-from typing import Any, Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable, Tuple, cast
 
 import torch
 from PIL import Image
@@ -40,7 +40,8 @@ class Tagger:
             device = "cuda" if torch.cuda.is_available() else "cpu"
 
         self.device = torch.device(device)
-        self.processor = AutoImageProcessor.from_pretrained(
+        processor_cls = cast(Any, AutoImageProcessor)
+        self.processor = processor_cls.from_pretrained(
             model_repo,
             cache_dir=cache_dir,
             trust_remote_code=trust_remote_code,

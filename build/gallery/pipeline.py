@@ -7,7 +7,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import Iterable
+from typing import Any, Iterable
 
 from ..config import Config
 from ..media.processor import MediaProcessingResult
@@ -159,12 +159,12 @@ def export_datasets(workspace: GalleryWorkspace, config: Config) -> None:
     existing_files = {path for path in data_root.glob("**/*") if path.is_file()}
     timestamp = datetime.now(tz=timezone.utc).isoformat()
 
-    collections_payload: dict[str, object] = {
+    collections_payload: dict[str, Any] = {
         "version": 1,
         "generated_at": timestamp,
         "collections": [],
     }
-    manifest_payload: dict[str, object] = {
+    manifest_payload: dict[str, Any] = {
         "version": 1,
         "generated_at": timestamp,
         "collections": workspace.collection_count(),
@@ -190,12 +190,12 @@ def export_datasets(workspace: GalleryWorkspace, config: Config) -> None:
     existing_files.discard(global_jsonl_path)
 
     collections_path = data_root / "collections.json"
-    write_json(collections_path, collections_payload)  # type: ignore[arg-type]
+    write_json(collections_path, collections_payload)
     workspace.record_data_write(collections_path)
     existing_files.discard(collections_path)
 
     manifest_path = data_root / "manifest.json"
-    write_json(manifest_path, manifest_payload)  # type: ignore[arg-type]
+    write_json(manifest_path, manifest_payload)
     workspace.record_data_write(manifest_path)
     existing_files.discard(manifest_path)
 

@@ -9,13 +9,16 @@ repos:
     rev: v1.11.2
     hooks:
       - id: mypy
-        additional_dependencies: []
+        additional_dependencies:
+          - pydantic==2.12.3
+          - pydantic-core==2.41.4
+          - types-PyYAML
   # Run pytest as a local hook (not a remote repo)
   - repo: local
     hooks:
       - id: pytest
         name: pytest
-        entry: pytest -q
+        entry: python tools/run_pytest.py
         language: system
         types: [python]
         pass_filenames: false

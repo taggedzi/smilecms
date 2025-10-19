@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, cast
 
 from PIL import Image, ExifTags
 
@@ -161,7 +161,8 @@ def _safe_datetime(timestamp: float) -> datetime:
 def _image_dimensions(path: Path) -> tuple[int | None, int | None]:
     try:
         with Image.open(path) as image:
-            return image.size
+            width, height = cast(tuple[int, int], image.size)
+            return width, height
     except (OSError, FileNotFoundError) as exc:
         logger.warning("Unable to determine dimensions for %s: %s", path, exc)
         return None, None

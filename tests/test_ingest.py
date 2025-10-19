@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from build.config import Config, GalleryConfig, MusicConfig
 import pytest
 
+from build.config import Config, GalleryConfig, MusicConfig
 from build.ingest import load_documents
 from build.validation import DocumentValidationError
 
@@ -51,7 +51,7 @@ def test_invalid_document_raises_validation_error(tmp_path: Path) -> None:
     content = tmp_path / "content"
     _write(
         content / "posts" / "bad.md",
-        "---\nslug: \"Bad Slug\"\ntitle: Invalid\n---\nBody",
+        '---\nslug: "Bad Slug"\ntitle: Invalid\n---\nBody',
     )
 
     config = Config(

@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable, Tuple
+from typing import Any, Iterable, Tuple
 
 from ..config import Config
 from ..content import (
@@ -84,7 +84,7 @@ def export_music_catalog(documents: Iterable[ContentDocument], config: Config) -
     )
 
 
-def _build_track_record(document: ContentDocument) -> Tuple[dict | None, list[str]]:
+def _build_track_record(document: ContentDocument) -> Tuple[dict[str, Any] | None, list[str]]:
     warnings: list[str] = []
     meta = document.meta
 
@@ -202,7 +202,7 @@ def _classify_asset(reference: MediaReference) -> str | None:
     return None
 
 
-def _serialize_media_reference(reference: MediaReference | None) -> dict | None:
+def _serialize_media_reference(reference: MediaReference | None) -> dict[str, Any] | None:
     if reference is None:
         return None
     variants = {variant.profile: variant.path for variant in reference.variants}

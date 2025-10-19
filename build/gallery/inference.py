@@ -6,7 +6,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Callable, Optional, TypedDict, cast
 
 from PIL import Image
 
@@ -23,6 +23,13 @@ class AnnotationResult:
     alt_text: str | None
     tags: list[str]
     tag_scores: dict[str, float]
+    rating: str | None
+    confidence: float | None
+
+
+class TagResult(TypedDict):
+    tags: list[str]
+    scores: dict[str, float]
     rating: str | None
     confidence: float | None
 
@@ -64,10 +71,13 @@ class TaggingSession:
             logger.debug("transformers import failure: %s", exc, exc_info=True)
             return
 
+        hf_hub_download: Callable[..., str] | None
         try:
-            from huggingface_hub import hf_hub_download
+            from huggingface_hub import hf_hub_download as download
         except ImportError:
             hf_hub_download = None
+        else:
+            hf_hub_download = download
 
         try:
             from .wdtagger import Tagger
@@ -165,6 +175,8 @@ class TaggingSession:
             finally:
                 rgb.close()
 
+        tag_result = self._tag_image(rgb)
+
         return AnnotationResult(
             caption=caption,
             alt_text=caption,
@@ -186,11 +198,12 @@ class TaggingSession:
                 **inputs,
                 max_new_tokens=60,
             )
-        caption = self._processor.decode(output_ids[0], skip_special_tokens=True)
+        processor = cast(Any, self._processor)
+        caption = processor.decode(output_ids[0], skip_special_tokens=True)
         caption = caption.strip()
         return caption or None
 
-    def _tag_image(self, image: Image.Image) -> dict[str, Optional[object]]:
+    def _tag_image(self, image: Image.Image) -> TagResult:
         assert self._tagger is not None
 
         output = self._tagger.tag(
@@ -220,7 +233,9 @@ class TaggingSession:
             selected = selected[: self._max_tags]
 
         selected = list(dict.fromkeys(selected))
-        confidence = max((combined_scores.get(tag, 0.0) for tag in selected), default=None)
+        confidence: float | None = None
+        if selected:
+            confidence = max(combined_scores.get(tag, 0.0) for tag in selected)
 
         rating_label: str | None = None
         if output.rating:

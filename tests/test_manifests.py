@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from build.content.models import (
@@ -48,7 +48,7 @@ def test_chunk_documents_respects_page_size() -> None:
 
 
 def test_manifest_generator_orders_by_newest_first() -> None:
-    tz = timezone.utc
+    tz = UTC
     docs = [
         _document(
             "old",
@@ -91,7 +91,7 @@ def test_manifest_writer_serializes_json(tmp_path: Path) -> None:
             "single",
             title="Single",
             body="This document includes an image reference.",
-            published=datetime.now(timezone.utc),
+            published=datetime.now(UTC),
             assets=[MediaReference(path="images/sample.jpg")],
         )
     ]

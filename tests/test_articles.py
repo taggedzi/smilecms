@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from build.articles import write_article_pages
@@ -16,7 +16,7 @@ def _make_document(slug: str = "sample-post") -> ContentDocument:
         summary="Sample summary",
         tags=["journal", "updates"],
         status=ContentStatus.PUBLISHED,
-        published_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        published_at=datetime(2024, 1, 1, tzinfo=UTC),
     )
     return ContentDocument(
         meta=meta,
@@ -84,7 +84,7 @@ def test_write_article_page_uses_base_template(tmp_path: Path) -> None:
 
     assert len(written) == 1
     page = written[0].read_text(encoding="utf-8")
-    assert '<title>Sample Post - Test Site</title>' in page
+    assert "<title>Sample Post - Test Site</title>" in page
     assert 'class="site-header"' in page and "Test Tagline" in page
     assert 'class="nav-list"' in page and 'data-open="true"' in page
     assert "Back to Journal" in page
