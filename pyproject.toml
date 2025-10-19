@@ -18,7 +18,9 @@ dev = [
   "pytest>=8.2",
   "mypy>=1.10",
   "ruff>=0.4",
-  "timm==1.0.20"
+  "timm==1.0.20",
+  "coverage",
+  "pre-commit"
 ]
 ml = [
   "huggingface_hub[hf_xet]",
@@ -36,6 +38,40 @@ exclude = ["content*", "media*", "site*", "web*"]
 
 [tool.setuptools.package-data]
 "build.schemas" = ["*.json"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+lint.select = ["E","F","I","UP","B","SIM","PL","PT","RUF"]
+lint.ignore = ["E203"]  # compatible with black-style spacing if you prefer
+extend-exclude = ["build", "dist", ".venv"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+no_implicit_optional = true
+strict = true
+disallow_any_generics = true
+exclude = ['build/','dist/','\.venv/']
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
