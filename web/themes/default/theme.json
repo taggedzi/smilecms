@@ -4,7 +4,9 @@
   "entrypoints": {
     "base": "base.html",
     "article": "pages/article.html",
-    "index": "pages/index.html"
+    "index": "pages/index.html",
+    "gallery": "pages/gallery.html",
+    "music": "pages/music.html"
   },
   "partials": {
     "header": "partials/header.html",

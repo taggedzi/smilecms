@@ -24,7 +24,9 @@ When the build runs, the theme directory is resolved from `Config.themes_root`. 
   "entrypoints": {
     "base": "base.html",
     "article": "pages/article.html",
-    "index": "pages/index.html"
+    "index": "pages/index.html",
+    "gallery": "pages/gallery.html",
+    "music": "pages/music.html"
   },
   "partials": {
     "header": "partials/header.html",
@@ -40,7 +42,7 @@ When the build runs, the theme directory is resolved from `Config.themes_root`. 
 }
 ```
 
-- **entrypoints** map named pages (e.g., `article`) to template files. `base` is required.
+- **entrypoints** map named pages (e.g., `article`, `gallery`) to template files. `base` is required.
 - **partials** are optional helpers included by `base.html`. Missing partials simply aren’t rendered.
 - **assets.styles** is an ordered list of stylesheet URLs.
 - **assets.scripts** contains objects with `src`, and optional `type`, `defer`, `async`, `integrity`, `crossorigin`.
@@ -50,22 +52,23 @@ If a custom theme omits styles or scripts, the loader reuses values from the fal
 
 ## Template Context
 
-Article pages (`pages/article.html`) receive the following context keys:
+All page entrypoints inherit a shared context surface; individual pages (e.g., `article`, `gallery`, `music`) add their own blocks under the keys noted below.
 
 | Key | Description |
 | --- | --- |
 | `site` | `{ "title": str, "tagline": str }` calculated from `web/config/site.json`. |
 | `navigation` | `{ "items": [{"label", "href", "active"}], "menu_open": bool }`. |
 | `footer` | `{ "copy": str, "links": [{"label", "href", "external"}] }`. |
-| `page` | `{ "title": str, "slug": str, "body_class": str }` metadata for the layout. |
+| `page` | `{ "title": str, "slug": str, "body_class": str, "styles": [href], "scripts": [{src,...}], "relative_root": str }`. |
 | `document` | `{ "title": str, "slug": str }` describing the content item. |
 | `article` | `{ "summary": str, "meta_items": [str], "tags": [str], "hero": {"url", "alt"}?, "body_html": Markup, "back": {"href","label"}, "footer": {"href","copy"} }`. |
-| `shell` | `{ "theme": str }` used to seed the theme toggle and document dataset. |
+| `gallery` | `{ "loading_message": str }` supplied when rendering `pages/gallery.html`. |
+| `music` | `{ "loading_message": str }` supplied when rendering `pages/music.html`. |
+| `shell` | `{ "theme": str, "data_attributes": { "site-config": str, ... } }` seeds theme toggle + data attributes. |
 | `assets` | Dict built from the manifest (`styles`, `scripts`). |
 | `feeds` | Convenience mapping for `/feed.xml`, `/atom.xml`, `/feed.json`. |
-| `data` | `{ "site_config": "/config/site.json", "manifest_bases": ["./manifests/content", "/site/manifests/content"] }`. |
 
-`base.html` serialises the `data` object into `data-*` attributes on `#app-shell`. The inline script installs `window.__SMILE_DATA__` so front-end code can hydrate using the same URLs.
+`base.html` serialises `shell.data_attributes` into `data-*` attributes on `#app-shell`. The inline script installs `window.__SMILE_DATA__` so front-end code can hydrate using the same URL sets regardless of the page depth.
 
 ## Extending or Creating Themes
 

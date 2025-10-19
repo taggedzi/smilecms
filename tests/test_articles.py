@@ -66,8 +66,12 @@ def test_write_article_page_uses_theme_layout(tmp_path: Path) -> None:
     page = written[0].read_text(encoding="utf-8")
     assert "<title>Sample Post - Test Site</title>" in page
     assert 'class="site-header"' in page and "Test Tagline" in page
-    assert 'data-site-config="/config/site.json"' in page
-    assert 'data-manifest-bases="./manifests/content /site/manifests/content"' in page
+    assert 'data-site-config="../../config/site.json /site/config/site.json"' in page
+    assert 'data-manifest-bases="../../manifests/content /site/manifests/content"' in page
+    assert (
+        'data-gallery-collections="../../data/gallery/collections.json /site/data/gallery/collections.json"'
+        in page
+    )
     assert 'aria-current="page"' in page  # journal link marked active
     assert "Back to Journal" in page
     assert 'href="/styles/tokens.css"' in page
@@ -91,7 +95,7 @@ def test_write_article_page_uses_fallback_theme(tmp_path: Path) -> None:
     assert "<title>Sample Post - Test Site</title>" in page
     assert "Back to Journal" in page
     assert 'class="site-header"' in page
-    assert 'data-site-config="/config/site.json"' in page
+    assert 'data-site-config="../../config/site.json /site/config/site.json"' in page
     assert 'href="/styles/tokens.css"' in page
     assert '<script type="module" src="/js/app.js"></script>' in page
 

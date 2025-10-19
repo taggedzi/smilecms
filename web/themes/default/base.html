@@ -1,12 +1,5 @@
 {% set current_theme = shell.theme or theme.default_shell_theme %}
-{% set data_context = data if data is defined else {} %}
-{% if data_context is mapping %}
-  {% set site_config_endpoint = data_context.site_config %}
-  {% set manifest_bases = data_context.manifest_bases %}
-{% else %}
-  {% set site_config_endpoint = None %}
-  {% set manifest_bases = [] %}
-{% endif %}
+{% set shell_attributes = shell.data_attributes if shell.data_attributes is defined else {} %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -17,11 +10,16 @@
     {% for href in assets.styles %}
     <link rel="stylesheet" href="{{ href }}" />
     {% endfor %}
+    {% if page.styles %}
+      {% for href in page.styles %}
+      <link rel="stylesheet" href="{{ href }}" />
+      {% endfor %}
+    {% endif %}
     {% block head_extra %}{% endblock %}
   </head>
   <body{% if page.body_class %} class="{{ page.body_class }}"{% endif %}>
     <a class="skip-link" href="#main">Skip to content</a>
-    <div id="app-shell" class="app-shell" data-theme="{{ current_theme }}"{% if site_config_endpoint %} data-site-config="{{ site_config_endpoint }}"{% endif %}{% if manifest_bases %} data-manifest-bases="{{ manifest_bases | join(' ') }}"{% endif %}>
+    <div id="app-shell" class="app-shell" data-theme="{{ current_theme }}"{% for key, value in shell_attributes.items() %} data-{{ key }}="{{ value }}"{% endfor %}>
       {% if theme.partials.header %}
         {% include theme.partials.header %}
       {% endif %}
@@ -36,6 +34,11 @@
     {% for script in assets.scripts %}
     <script{% if script.type %} type="{{ script.type }}"{% endif %}{% if script.defer %} defer{% endif %}{% if script.async %} async{% endif %}{% if script.integrity %} integrity="{{ script.integrity }}"{% endif %}{% if script.crossorigin %} crossorigin="{{ script.crossorigin }}"{% endif %} src="{{ script.src }}"></script>
     {% endfor %}
+    {% if page.scripts %}
+      {% for script in page.scripts %}
+      <script{% if script.type %} type="{{ script.type }}"{% endif %}{% if script.defer %} defer{% endif %}{% if script.async %} async{% endif %}{% if script.integrity %} integrity="{{ script.integrity }}"{% endif %}{% if script.crossorigin %} crossorigin="{{ script.crossorigin }}"{% endif %} src="{{ script.src }}"></script>
+      {% endfor %}
+    {% endif %}
     {% if theme.partials.inline_script %}
       {% include theme.partials.inline_script %}
     {% endif %}

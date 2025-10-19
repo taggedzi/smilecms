@@ -29,6 +29,7 @@ from .media import (
     process_media_plan,
 )
 from .music import MusicExportResult, export_music_catalog
+from .pages import write_gallery_page, write_music_page
 from .reporting import (
     BuildReport,
     assemble_report,
@@ -39,6 +40,7 @@ from .reporting import (
 )
 from .scaffold import ScaffoldError, ScaffoldResult, normalize_slug, scaffold_content
 from .staging import StagingResult, reset_directory, stage_static_site
+from .templates import TemplateAssets
 from .state import BuildTracker, ChangeSummary
 from .validation import DocumentIssue, DocumentValidationError, IssueSeverity, lint_workspace
 from .verify import VerificationReport, verify_site
@@ -92,6 +94,8 @@ class StageArtifacts:
 
     stage_result: StagingResult
     article_pages: list[Path]
+    gallery_page: Path
+    music_page: Path
     music_result: MusicExportResult
 
 
@@ -346,12 +350,17 @@ def _stage_static_assets(
         config,
         previous_template_paths=previous_templates,
     )
-    article_pages = write_article_pages(documents, config)
+    template_assets = TemplateAssets(config)
+    article_pages = write_article_pages(documents, config, assets=template_assets)
+    gallery_page = write_gallery_page(config, template_assets)
+    music_page = write_music_page(config, template_assets)
     export_gallery_datasets(gallery_workspace, config)
     music_result = export_music_catalog(documents, config)
     return StageArtifacts(
         stage_result=stage_result,
         article_pages=article_pages,
+        gallery_page=gallery_page,
+        music_page=music_page,
         music_result=music_result,
     )
 
@@ -385,6 +394,14 @@ def _print_stage_summary(
             f"rendered {len(stage_artifacts.article_pages)} page(s) in "
             f"{_display_path(config.output_dir / 'posts')}"
         )
+    console.print(
+        "[bold green]Gallery page[/]: "
+        f"rendered {_display_path(stage_artifacts.gallery_page)}"
+    )
+    console.print(
+        "[bold green]Music page[/]: "
+        f"rendered {_display_path(stage_artifacts.music_page)}"
+    )
 
     if gallery_workspace.data_writes:
         console.print(

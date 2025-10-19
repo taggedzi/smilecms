@@ -12,3 +12,13 @@
 - [x] Document theme API: add or update docs/theme-dev.md detailing context variables, required template files, asset expectations, and the dev workflow for front-end contributors.
 - [x] Add regression coverage: create snapshot/golden tests or fixture-based checks ensuring templates render expected HTML for representative content (article with media, missing hero, etc.).
 
+# Gallery & Music Jinja Migration
+
+- [x] Audit existing gallery and music static pages plus front-end scripts to understand data dependencies and required markup.
+- [x] Extract reusable template asset/context helpers so gallery and music pages can share the Jinja environment.
+- [x] Extend the default theme manifest and templates to add gallery and music entrypoints, including page-specific layouts, styles, and scripts.
+- [x] Implement Python renderers that generate `gallery/index.html` and `music/index.html` via Jinja, wiring them into the build pipeline.
+- [x] Update gallery and music client scripts to consume the new data attributes / shared context emitted by the templates.
+- [x] Ensure the build step writes the new pages without stale static copies and update staging summaries accordingly.
+- [x] Add unit tests covering rendered gallery and music pages (titles, data attributes, assets, navigation state).
+- [ ] Refresh documentation or developer notes if the theming API gains new context fields and rerun formatting/tests to validate the changes.

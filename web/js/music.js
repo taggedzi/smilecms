@@ -1,6 +1,31 @@
-const TRACKS_META_SOURCES = ["../data/music/manifest.json", "/site/data/music/manifest.json"];
-const TRACKS_SOURCES = ["../data/music/tracks.jsonl", "/site/data/music/tracks.jsonl"];
-const SITE_CONFIG_SOURCES = ["../config/site.json", "/site/config/site.json"];
+const DEFAULT_TRACKS_META_SOURCES = [
+  "../data/music/manifest.json",
+  "/site/data/music/manifest.json",
+];
+const DEFAULT_TRACKS_SOURCES = ["../data/music/tracks.jsonl", "/site/data/music/tracks.jsonl"];
+const DEFAULT_SITE_CONFIG_SOURCES = ["../config/site.json", "/site/config/site.json"];
+
+const GLOBAL_DATA = window.__SMILE_DATA__ || {};
+
+const TRACKS_META_SOURCES = resolveSources(
+  GLOBAL_DATA.music?.manifest,
+  DEFAULT_TRACKS_META_SOURCES
+);
+const TRACKS_SOURCES = resolveSources(GLOBAL_DATA.music?.tracks, DEFAULT_TRACKS_SOURCES);
+const SITE_CONFIG_SOURCES = resolveSources(
+  GLOBAL_DATA.siteConfig,
+  DEFAULT_SITE_CONFIG_SOURCES
+);
+
+function resolveSources(preferred, fallback) {
+  if (Array.isArray(preferred) && preferred.length) {
+    return preferred.filter(Boolean);
+  }
+  if (typeof preferred === "string" && preferred.trim()) {
+    return [preferred.trim()];
+  }
+  return fallback.slice();
+}
 
 const state = {
   mediaBasePath: "/media/derived",

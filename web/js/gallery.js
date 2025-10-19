@@ -1,9 +1,63 @@
-const COLLECTIONS_SOURCES = [
+const DEFAULT_COLLECTIONS_SOURCES = [
   "../data/gallery/collections.json",
   "/site/data/gallery/collections.json",
 ];
 
-const SITE_CONFIG_SOURCES = ["../config/site.json", "/site/config/site.json"];
+const DEFAULT_SITE_CONFIG_SOURCES = ["../config/site.json", "/site/config/site.json"];
+
+const GLOBAL_DATA = window.__SMILE_DATA__ || {};
+
+const COLLECTIONS_SOURCES = resolveSources(
+  GLOBAL_DATA.gallery?.collections,
+  DEFAULT_COLLECTIONS_SOURCES
+);
+
+const SITE_CONFIG_SOURCES = resolveSources(
+  GLOBAL_DATA.siteConfig,
+  DEFAULT_SITE_CONFIG_SOURCES
+);
+
+const COLLECTION_ROOTS = deriveRoots(COLLECTIONS_SOURCES, "collections.json");
+
+function resolveSources(preferred, fallback) {
+  if (Array.isArray(preferred) && preferred.length) {
+    return preferred.filter(Boolean);
+  }
+  if (typeof preferred === "string" && preferred.trim()) {
+    return [preferred.trim()];
+  }
+  return fallback.slice();
+}
+
+function deriveRoots(sources, filename) {
+  if (!Array.isArray(sources) || !sources.length) {
+    return [];
+  }
+  return sources
+    .map((source) => {
+      if (typeof source !== "string") return null;
+      const clean = source.split("?")[0];
+      const index = clean.lastIndexOf(filename);
+      if (index >= 0) {
+        return clean.slice(0, index);
+      }
+      if (clean.endsWith("/")) {
+        return clean;
+      }
+      const segments = clean.split("/");
+      segments.pop();
+      return `${segments.join("/")}/`;
+    })
+    .filter(Boolean)
+    .map(ensureTrailingSlash);
+}
+
+function ensureTrailingSlash(value) {
+  if (typeof value !== "string" || !value) {
+    return value;
+  }
+  return value.endsWith("/") ? value : `${value}/`;
+}
 
 const state = {
   collections: [],
@@ -555,7 +609,9 @@ async function syncRouteFromLocation(options = {}) {
 
 async function fetchCollectionRecords(collection) {
   const dataPath = collection.data_path?.replace(/^\.\//, "") || `${collection.id}.jsonl`;
-  const sources = [`../data/gallery/${dataPath}`, `/site/data/gallery/${dataPath}`];
+  const sources = COLLECTION_ROOTS.length
+    ? COLLECTION_ROOTS.map((root) => `${root}${dataPath}`)
+    : [`../data/gallery/${dataPath}`, `/site/data/gallery/${dataPath}`];
   const text = await fetchFirstText(sources);
   return text
     .split(/\r?\n/)

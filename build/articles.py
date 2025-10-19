@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import html
-import json
 import logging
 import re
 import shutil
@@ -16,7 +15,8 @@ from markupsafe import Markup
 from .config import Config
 from .content import ContentDocument, ContentStatus, MediaReference, MediaVariant
 from .markdown import render_markdown
-from .themes import DEFAULT_THEME_NAME, ThemeError, ThemeLoader, build_theme_loader
+from .templates import TemplateAssets
+from .themes import ThemeLoader
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +33,10 @@ MEDIA_BASE_URL = "/media/derived/"
 class ArticlePageWriter:
     """Coordinate rendering and writing article pages to disk."""
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, assets: TemplateAssets | None = None) -> None:
         self._config = config
         self._output_root = config.output_dir / "posts"
-        self._assets = TemplateAssets(config)
+        self._assets = assets or TemplateAssets(config)
         self._renderer = ArticlePageRenderer(self._assets)
 
     def write(self, documents: Iterable[ContentDocument]) -> list[Path]:
@@ -60,62 +60,6 @@ class ArticlePageWriter:
 
         DirectoryPruner.prune(existing_dirs - current_dirs)
         return written_paths
-
-
-class TemplateAssets:
-    """Load site configuration and active theme assets for rendering."""
-
-    def __init__(self, config: Config) -> None:
-        self._config = config
-        self.site_config = self._load_site_config()
-        self.theme: ThemeLoader = self._load_theme()
-        self.data_endpoints = self._build_data_endpoints()
-        self.feed_links = self._build_feed_links()
-
-    def _load_site_config(self) -> dict[str, Any]:
-        config_path = self._config.templates_dir / "config" / "site.json"
-        if not config_path.exists():
-            logger.warning("Site configuration not found at %s; using defaults.", config_path)
-            return {}
-        try:
-            with config_path.open("r", encoding="utf-8") as handle:
-                data = json.load(handle)
-                if isinstance(data, dict):
-                    return data
-                logger.warning(
-                    "Site configuration %s does not define an object root; ignoring.",
-                    config_path,
-                )
-        except (OSError, json.JSONDecodeError) as exc:
-            logger.warning("Failed to load site configuration %s: %s", config_path, exc)
-        return {}
-
-    def _load_theme(self) -> ThemeLoader:
-        try:
-            return build_theme_loader(
-                themes_root=self._config.themes_root,
-                active_theme=self._config.theme_name,
-                fallback_theme=DEFAULT_THEME_NAME,
-            )
-        except ThemeError as exc:
-            raise ThemeError(f"Unable to load theme '{self._config.theme_name}': {exc}") from exc
-
-    def _build_data_endpoints(self) -> dict[str, Any]:
-        """Expose JSON endpoints consumed by client-side scripts."""
-        return {
-            "site_config": "/config/site.json",
-            "manifest_bases": [
-                "./manifests/content",
-                "/site/manifests/content",
-            ],
-        }
-
-    def _build_feed_links(self) -> dict[str, str]:
-        return {
-            "rss": "/feed.xml",
-            "atom": "/atom.xml",
-            "json": "/feed.json",
-        }
 
 
 class ArticleBodyRenderer:
@@ -461,6 +405,7 @@ class TemplateComposer:
     def compose(self, document: ContentDocument, body_html: str, hero: dict[str, str] | None) -> str:
         meta = document.meta
         current_path = f"/posts/{document.slug}/"
+        depth = self._document_depth(document)
 
         site_identity = self._chrome.site_identity(DEFAULT_SITE_NAME)
         navigation = self._chrome.navigation(current_path=current_path)
@@ -475,17 +420,23 @@ class TemplateComposer:
             site_title=site_identity["title"],
         )
 
+        shell_attributes = self._assets.build_shell_attributes(depth=depth)
+
         context = {
             "site": site_identity,
             "navigation": navigation,
             "footer": footer,
             "shell": {
                 "theme": self.theme.manifest.default_shell_theme,
+                "data_attributes": shell_attributes,
             },
             "page": {
                 "title": f"{meta.title} - {site_identity['title']}",
                 "slug": meta.slug,
                 "body_class": "article-page",
+                "styles": [],
+                "scripts": [],
+                "relative_root": self._relative_prefix(depth),
             },
             "document": {
                 "title": meta.title,
@@ -494,9 +445,17 @@ class TemplateComposer:
             "article": article_context,
             "assets": self.theme.assets.to_template_dict(),
             "feeds": self._assets.feed_links,
-            "data": self._assets.data_endpoints,
         }
         return self.theme.render_page("article", context)
+
+    @staticmethod
+    def _document_depth(document: ContentDocument) -> int:
+        """Compute directory depth from site root for the rendered document."""
+        return document.slug.count("/") + 2
+
+    @staticmethod
+    def _relative_prefix(depth: int) -> str:
+        return "./" if depth == 0 else "../" * depth
 
 
 class DirectoryPruner:
@@ -528,7 +487,12 @@ class ArticlePageRenderer:
         return self._composer.compose(document, body_html, hero)
 
 
-def write_article_pages(documents: Iterable[ContentDocument], config: Config) -> list[Path]:
+def write_article_pages(
+    documents: Iterable[ContentDocument],
+    config: Config,
+    *,
+    assets: TemplateAssets | None = None,
+) -> list[Path]:
     """
     Render published articles into static HTML pages.
 
@@ -539,6 +503,6 @@ def write_article_pages(documents: Iterable[ContentDocument], config: Config) ->
     Returns:
         A list of paths to the written HTML files.
     """
-    writer = ArticlePageWriter(config)
+    writer = ArticlePageWriter(config, assets=assets)
     return writer.write(documents)
 
