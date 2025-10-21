@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import tomllib
 from importlib.metadata import PackageNotFoundError, version as load_pkg_version
 from pathlib import Path
-import tomllib
+from typing import Any
 
 from .ingest import load_documents
 
@@ -15,10 +16,17 @@ def _read_local_project_version() -> str:
     """Read the project version from pyproject.toml when the package is uninstalled."""
     pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
     try:
-        data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+        data: dict[str, Any] = tomllib.loads(pyproject.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return "0.0.0"
-    return data.get("project", {}).get("version", "0.0.0")
+
+    project = data.get("project")
+    if isinstance(project, dict):
+        version = project.get("version")
+        if isinstance(version, str):
+            return version
+
+    return "0.0.0"
 
 
 try:

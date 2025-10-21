@@ -49,7 +49,7 @@ line-length = 100
 target-version = "py312"
 lint.select = ["E","F","I","UP","B","SIM","PL","PT","RUF"]
 lint.ignore = ["E203"]  # compatible with black-style spacing if you prefer
-extend-exclude = ["dist", ".venv"]
+extend-exclude = ["src", "dist", ".venv"]
 
 [tool.ruff.format]
 quote-style = "double"
