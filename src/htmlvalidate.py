@@ -242,13 +242,16 @@ def _resolve_message_path(location: str, root: Path) -> Path:
     if parsed.scheme == "file":
         netloc = unquote(parsed.netloc or "")
         path_part = unquote(parsed.path or "")
-        if not netloc and path_part.startswith("/"):
-            path_part = path_part.lstrip("/")
-        candidate_str = f"{netloc}{path_part}" if netloc else path_part
-        candidate = Path(candidate_str)
+        if netloc:
+            combined = f"{netloc}{path_part}"
+            candidate = Path(combined)
+        else:
+            if path_part.startswith("/"):
+                candidate = Path(path_part)
+            else:
+                candidate = (root / path_part).resolve()
     else:
         candidate = Path(unquote(location))
     if not candidate.is_absolute():
         candidate = (root / candidate).resolve()
     return candidate
-
