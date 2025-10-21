@@ -15,6 +15,9 @@ __pycache__/
 .coverage
 coverage.xml
 htmlcov/
+build/lib/ 
+build/bdist.*
+
 
 ################################################################################
 # Environments & tooling
@@ -58,7 +61,24 @@ Desktop.ini
 *.swo
 *.orig
 
+################################################################################
+# Ignore large or export intermediates that may appear
+################################################################################
+*.xcf
+*.psd
+*.blend
+*.zip
+*.7z
+*.tmp
+*.bak
 
- build/lib/ 
- build/bdist.*
-
+################################################################################
+# Ignore only raw or work-in-progress media (not finalized demo/export)
+# These directories are local working assets and never belong in the repo.
+################################################################################
+media/raw/
+media/source/
+assets/source/
+assets/raw/
+private_media/
+temp_media/
