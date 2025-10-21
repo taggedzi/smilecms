@@ -443,7 +443,7 @@ class TemplateComposer:
                 "slug": meta.slug,
             },
             "article": article_context,
-            "assets": self.theme.assets.to_template_dict(),
+            "assets": self._assets.build_theme_assets(depth=depth),
             "feeds": self._assets.feed_links,
         }
         return self.theme.render_page("article", context)

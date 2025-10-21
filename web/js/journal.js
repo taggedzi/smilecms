@@ -364,28 +364,93 @@ function normalizeNavEntry(entry) {
 }
 
 function renderFooter(container, footer = {}) {
-  const template = useTemplate("tmpl-site-footer");
-  const linkTemplate = useTemplate("tmpl-footer-link");
-  const node = template.cloneNode(true);
-
-  const copy = node.querySelector("[data-footer-copy]");
-  const links = node.querySelector("[data-footer-links]");
-
-  if (copy) {
-    copy.textContent = footer.copy ?? "";
+  if (!container) {
+    return;
   }
 
-  if (links && Array.isArray(footer.links)) {
+  container.innerHTML = "";
+
+  const template = useTemplate("tmpl-site-footer");
+  const linkTemplate = useTemplate("tmpl-footer-link");
+
+  let fragment;
+  if (template) {
+    fragment = template.cloneNode(true);
+  } else {
+    fragment = document.createDocumentFragment();
+    const left = document.createElement("div");
+    left.className = "footer-left";
+    const copySpan = document.createElement("span");
+    copySpan.className = "caption";
+    left.appendChild(copySpan);
+
+    const right = document.createElement("div");
+    right.className = "footer-right";
+
+    fragment.appendChild(left);
+    fragment.appendChild(right);
+  }
+
+  const copyTarget =
+    typeof fragment.querySelector === "function"
+      ? fragment.querySelector("[data-footer-copy]")
+      : null;
+  if (copyTarget) {
+    copyTarget.textContent = footer.copy || "";
+  } else {
+    const fallbackCopy = fragment.querySelector(".footer-left .caption");
+    if (fallbackCopy) {
+      fallbackCopy.textContent = footer.copy || "";
+    }
+  }
+
+  const linksTarget =
+    typeof fragment.querySelector === "function"
+      ? fragment.querySelector("[data-footer-links]")
+      : null;
+  const linkContainer =
+    linksTarget || fragment.querySelector(".footer-right") || container;
+
+  if (linkContainer && Array.isArray(footer.links)) {
     footer.links.forEach((entry) => {
-      const linkNode = linkTemplate.cloneNode(true);
-      const link = linkNode;
-      link.textContent = entry.label;
-      link.href = entry.href ?? "#";
-      links.appendChild(linkNode);
+      const resolved = normalizeFooterEntry(entry);
+      let linkFragment = null;
+      let anchor = null;
+
+      if (linkTemplate) {
+        linkFragment = linkTemplate.cloneNode(true);
+        anchor =
+          typeof linkFragment.querySelector === "function"
+            ? linkFragment.querySelector("a")
+            : null;
+      }
+
+      if (!anchor) {
+        anchor = document.createElement("a");
+        anchor.className = "nav-link";
+        linkFragment = anchor;
+      }
+
+      anchor.textContent = resolved.label;
+      anchor.href = resolved.href;
+      if (resolved.target) {
+        anchor.target = resolved.target;
+      }
+      if (resolved.rel) {
+        anchor.rel = resolved.rel;
+      }
+
+      if (linkFragment instanceof HTMLElement) {
+        linkContainer.appendChild(linkFragment);
+      } else if (linkFragment) {
+        linkContainer.appendChild(linkFragment);
+      } else {
+        linkContainer.appendChild(anchor);
+      }
     });
   }
 
-  container.appendChild(node);
+  container.appendChild(fragment);
 }
 
 function useTemplate(id) {
@@ -412,6 +477,22 @@ function attachThemeToggle(headerEl) {
       target.setAttribute("aria-pressed", String(isDark));
     }
   });
+}
+
+function normalizeFooterEntry(entry = {}) {
+  const label = entry.label || "Link";
+  const href = entry.href || "#";
+  const isExternal = entry.external ?? /^https?:\/\//i.test(href);
+  const target = entry.target || (isExternal ? "_blank" : undefined);
+  const rel =
+    entry.rel || (target === "_blank" ? "noreferrer noopener" : undefined);
+
+  return {
+    label,
+    href,
+    target,
+    rel,
+  };
 }
 
 function formatDate(iso) {

@@ -79,7 +79,7 @@ class _BasePageRenderer:
                 "scripts": list(scripts),
                 "relative_root": self._relative_prefix(depth),
             },
-            "assets": self.theme.assets.to_template_dict(),
+            "assets": self._assets.build_theme_assets(depth=depth),
             "feeds": self._assets.feed_links,
         }
 
