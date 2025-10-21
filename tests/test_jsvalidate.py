@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+
 import pytest
 
-import src.jsvalidate as jsvalidate
+from src import jsvalidate
 from src.jsvalidate import (
     JsValidationIssue,
     JsValidatorUnavailableError,
@@ -41,7 +42,9 @@ def test_validate_javascript_reports_clean(tmp_path: Path, monkeypatch: pytest.M
     assert calls == [("node", target)]
 
 
-def test_validate_javascript_handles_syntax_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_validate_javascript_handles_syntax_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     def fake_available() -> tuple[str, tuple[int, int, int]]:
         return ("node", (18, 0, 0))
 
@@ -65,7 +68,9 @@ def test_validate_javascript_handles_syntax_error(tmp_path: Path, monkeypatch: p
     assert "Unexpected token" in issue.message
 
 
-def test_validate_javascript_excludes_patterns(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_validate_javascript_excludes_patterns(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     calls: list[Path] = []
 
     def fake_available() -> tuple[str, tuple[int, int, int]]:
@@ -94,7 +99,9 @@ def test_validate_javascript_requires_node(tmp_path: Path, monkeypatch: pytest.M
         validate_javascript(tmp_path)
 
 
-def test_validate_javascript_requires_modern_node(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_validate_javascript_requires_modern_node(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr(jsvalidate, "_node_available", lambda: ("node", (12, 22, 0)))
     with pytest.raises(JsValidatorUnavailableError) as error:
         validate_javascript(tmp_path)
