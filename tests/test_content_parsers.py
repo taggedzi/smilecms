@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from build.content.parsers import FrontMatterError, load_markdown_document
+from src.content.parsers import FrontMatterError, load_markdown_document
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "content" / "posts"
 

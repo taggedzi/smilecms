@@ -4,14 +4,14 @@ from pathlib import Path
 
 from PIL import Image
 
-from build.config import (
+from src.config import (
     Config,
     DerivativeProfile,
     GalleryConfig,
     MediaProcessingConfig,
 )
-from build.content.models import ContentDocument, ContentMeta, ContentStatus, MediaReference
-from build.media import apply_variants_to_documents, collect_media_plan, process_media_plan
+from src.content.models import ContentDocument, ContentMeta, ContentStatus, MediaReference
+from src.media import apply_variants_to_documents, collect_media_plan, process_media_plan
 
 
 def _doc(slug: str, media_paths: list[str], hero_path: str | None = None) -> ContentDocument:

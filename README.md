@@ -62,7 +62,7 @@ See [`docs/content-workflows.md`](docs/content-workflows.md) for step-by-step in
 ## Build & Deploy
 
 1. Install the project (see **Quick Start**).
-2. Run `smilecms build` (or `python -m build.cli build`) from the project root. Configuration defaults come from `smilecms.yml`.
+2. Run `smilecms build` (or `python -m src.cli build`) from the project root. Configuration defaults come from `smilecms.yml`.
 3. Inspect the console summary or `site/report.json` for warnings (missing media, gallery tagging failures).
 4. Deploy the entire `site/` directory to your static host/CDN. It already contains HTML, CSS/JS, JSON manifests, and media derivatives.
 

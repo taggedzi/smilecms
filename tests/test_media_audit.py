@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from build.config import Config, GalleryConfig, MediaProcessingConfig, MusicConfig
-from build.content.models import ContentDocument, ContentMeta, ContentStatus, MediaReference
-from build.media.audit import audit_media
+from src.config import Config, GalleryConfig, MediaProcessingConfig, MusicConfig
+from src.content.models import ContentDocument, ContentMeta, ContentStatus, MediaReference
+from src.media.audit import audit_media
 
 
 def _document(

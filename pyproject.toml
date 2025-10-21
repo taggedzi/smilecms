@@ -34,22 +34,22 @@ ml = [
 ]
 
 [project.scripts]
-smilecms = "build.cli:app"
+smilecms = "src.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["build*"]
+include = ["src*"]
 exclude = ["content*", "media*", "site*", "web*"]
 
 [tool.setuptools.package-data]
-"build.schemas" = ["*.json"]
+"src.schemas" = ["*.json"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
 lint.select = ["E","F","I","UP","B","SIM","PL","PT","RUF"]
 lint.ignore = ["E203"]  # compatible with black-style spacing if you prefer
-extend-exclude = ["build", "dist", ".venv"]
+extend-exclude = ["dist", ".venv"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -71,7 +71,7 @@ no_implicit_optional = true
 strict = true
 plugins = ["pydantic.mypy"]
 disallow_any_generics = true
-exclude = ['build/','dist/','\.venv/']
+exclude = ['dist/','\.venv/']
 
 # Keep core code strict, but don't force type annotations in tests
 [[tool.mypy.overrides]]
@@ -81,7 +81,7 @@ check_untyped_defs = false
 disable_error_code = ["misc"]  # silences "Untyped decorator makes function..."
 
 [[tool.mypy.overrides]]
-module = ["build.cli"]
+module = ["src.cli"]
 disable_error_code = ["misc"]
 
 [tool.pytest.ini_options]

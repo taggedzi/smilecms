@@ -2,10 +2,10 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from build.config import Config, FeedConfig
-from build.content.models import ContentStatus, ContentType, MediaReference, MediaVariant
-from build.feeds import generate_feeds
-from build.manifests.models import ManifestItem, ManifestPage
+from src.config import Config, FeedConfig
+from src.content.models import ContentStatus, ContentType, MediaReference, MediaVariant
+from src.feeds import generate_feeds
+from src.manifests.models import ManifestItem, ManifestPage
 
 
 def _manifest_item(slug: str) -> ManifestItem:

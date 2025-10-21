@@ -1,14 +1,14 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
-from build.content.models import (
+from src.content.models import (
     ContentDocument,
     ContentMeta,
     ContentStatus,
     MediaReference,
     MediaVariant,
 )
-from build.manifests import ManifestGenerator, chunk_documents, write_manifest_pages
+from src.manifests import ManifestGenerator, chunk_documents, write_manifest_pages
 
 
 def _document(
