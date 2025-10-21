@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
@@ -25,7 +26,7 @@ def _make_stub_html(tmp_path: Path, name: str) -> Path:
 def test_validate_html_returns_empty_report(tmp_path: Path) -> None:
     _make_stub_html(tmp_path, "index.html")
 
-    def runner(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+    def runner(cmd: Sequence[str]) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(cmd, 0, stdout='{"messages": []}', stderr="")
 
     report = validate_html(tmp_path, runner=runner)
@@ -58,7 +59,7 @@ def test_validate_html_parses_validator_messages(tmp_path: Path) -> None:
         ]
     }
 
-    def runner(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+    def runner(cmd: Sequence[str]) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(cmd, 1, stdout=str(payload).replace("'", '"'), stderr="")
 
     report = validate_html(tmp_path, runner=runner)
@@ -77,7 +78,7 @@ def test_validate_html_parses_validator_messages(tmp_path: Path) -> None:
 def test_validate_html_handles_missing_validator(tmp_path: Path) -> None:
     _make_stub_html(tmp_path, "index.html")
 
-    def runner(_cmd: list[str]) -> subprocess.CompletedProcess[str]:
+    def runner(_cmd: Sequence[str]) -> subprocess.CompletedProcess[str]:
         raise FileNotFoundError("not found")
 
     with pytest.raises(HtmlValidatorUnavailableError):
@@ -87,7 +88,7 @@ def test_validate_html_handles_missing_validator(tmp_path: Path) -> None:
 def test_validate_html_raises_on_unknown_exit_code(tmp_path: Path) -> None:
     _make_stub_html(tmp_path, "index.html")
 
-    def runner(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+    def runner(cmd: Sequence[str]) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(cmd, 3, stdout="", stderr="unexpected failure")
 
     with pytest.raises(HtmlValidatorError):

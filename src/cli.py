@@ -811,12 +811,12 @@ def _render_verification_text(
         lines.append(f"Warnings: {html_report.warning_count}")
         if html_report.issues:
             lines.append("")
-            for issue in html_report.issues:
-                location = issue.location()
+            for html_issue in html_report.issues:
+                location = html_issue.location()
                 location_text = f":{location}" if location else ""
                 lines.append(
-                    f"- [{issue.severity}] "
-                    f"{issue.file.resolve().as_posix()}{location_text}: {issue.message}"
+                    f"- [{html_issue.severity}] "
+                    f"{html_issue.file.resolve().as_posix()}{location_text}: {html_issue.message}"
                 )
     lines.append("")
     return "\n".join(lines)
@@ -835,15 +835,15 @@ def _print_html_validation_report(report: HtmlValidationReport) -> None:
         f"{report.error_count} error(s), {report.warning_count} warning(s) "
         f"across {report.scanned_files} file(s)."
     )
-    for issue in report.issues:
-        color = "red" if issue.severity == "error" else "yellow"
-        if issue.severity not in {"error", "warning"}:
+    for html_issue in report.issues:
+        color = "red" if html_issue.severity == "error" else "yellow"
+        if html_issue.severity not in {"error", "warning"}:
             color = "blue"
-        location = issue.location()
+        location = html_issue.location()
         location_text = f":{location}" if location else ""
         console.print(
-            f"[bold {color}]{issue.severity}[/] "
-            f"{_display_path(issue.file)}{location_text} :: {issue.message}"
+            f"[bold {color}]{html_issue.severity}[/] "
+            f"{_display_path(html_issue.file)}{location_text} :: {html_issue.message}"
         )
 
 
