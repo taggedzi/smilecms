@@ -4,6 +4,22 @@
   --music-card-padding: clamp(1rem, 3vw, 1.5rem);
 }
 
+.music-page {
+  --color-surface-alt: rgba(27, 32, 44, 0.82);
+  --color-muted: var(--color-text-secondary);
+  --shadow-sm: 0 8px 20px rgba(15, 17, 23, 0.25);
+  --shadow-md: var(--shadow-soft);
+  --shadow-lg: var(--shadow-hover);
+}
+
+:root[data-theme="light"] .music-page {
+  --color-surface-alt: rgba(255, 255, 255, 0.92);
+  --color-muted: var(--color-text-secondary);
+  --shadow-sm: 0 6px 18px rgba(31, 36, 48, 0.16);
+  --shadow-md: var(--shadow-soft);
+  --shadow-lg: var(--shadow-hover);
+}
+
 .music-main {
   padding-bottom: clamp(3rem, 6vw, 6rem);
 }

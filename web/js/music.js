@@ -780,13 +780,17 @@ function renderSiteChrome(siteConfig) {
   const footerConfig = siteConfig?.footer ?? {};
 
   if (header) {
+    const shell = document.getElementById("app-shell");
+    const isDark = (shell?.dataset.theme || "dark") !== "light";
+    const tagline = site.tagline || "SmileCMS";
+    const title = site.title || "SmileCMS";
     header.innerHTML = `
       <div class="site-brand">
-        <span class="pill">${escapeHtml(site.tagline || "Music Catalog")}</span>
-        <h1 class="headline-3">${escapeHtml(site.title || "SmileCMS")}</h1>
+        <span class="pill">${escapeHtml(tagline)}</span>
+        <h1 class="headline-2">${escapeHtml(title)}</h1>
       </div>
       <div class="site-actions">
-        <button class="button button--secondary" data-theme-toggle aria-pressed="false">
+        <button class="button button--secondary" data-theme-toggle aria-pressed="${String(isDark)}">
           Toggle theme
         </button>
       </div>

@@ -4,6 +4,24 @@
   --gallery-card-spacing: clamp(1rem, 3vw, 1.5rem);
 }
 
+.gallery-page {
+  --color-surface-alt: rgba(27, 32, 44, 0.82);
+  --color-muted: var(--color-text-secondary);
+  --shadow-sm: 0 10px 24px rgba(15, 17, 23, 0.3);
+  --shadow-md: var(--shadow-soft);
+  --shadow-lg: var(--shadow-hover);
+  --shadow-xl: 0 28px 64px rgba(15, 17, 23, 0.48);
+}
+
+:root[data-theme="light"] .gallery-page {
+  --color-surface-alt: rgba(255, 255, 255, 0.94);
+  --color-muted: var(--color-text-secondary);
+  --shadow-sm: 0 8px 20px rgba(31, 36, 48, 0.18);
+  --shadow-md: var(--shadow-soft);
+  --shadow-lg: var(--shadow-hover);
+  --shadow-xl: 0 24px 56px rgba(31, 36, 48, 0.22);
+}
+
 .gallery-main {
   padding-bottom: clamp(3rem, 6vw, 6rem);
 }
