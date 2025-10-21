@@ -175,8 +175,6 @@ class TaggingSession:
             finally:
                 rgb.close()
 
-        tag_result = self._tag_image(rgb)
-
         return AnnotationResult(
             caption=caption,
             alt_text=caption,

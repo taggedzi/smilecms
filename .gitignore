@@ -82,3 +82,8 @@ assets/source/
 assets/raw/
 private_media/
 temp_media/
+
+################################################################################
+# Ignore generated media files
+################################################################################
+media/image_gallery_raw/*/*.json
