@@ -93,7 +93,8 @@ The preview and verification commands operate on the generated bundle in `site/`
   - `--config PATH`
   - `--report PATH`, `-r PATH`: optionally write a plaintext report summarizing findings.
   - `--html-validation/--no-html-validation`: enable or skip HTML5 validation on the rendered output (defaults to enabled; requires the `html5validator` package/Java).
-- **Outputs:** The command prints the scan target, reports any issues by severity, and exits with code 1 if errors are present. When `--report` is supplied, it writes a UTF-8 text file with the same content.
+  - `--js-validation/--no-js-validation`: enable or skip JavaScript syntax validation using `node --check` (requires Node.js ≥ 14 and defaults to enabled).
+- **Outputs:** The command prints the scan target, reports any issues by severity, and exits with code 1 if errors are present. When `--report` is supplied, it writes a UTF-8 text file with the same content. If Node.js ≥ 14 is not available, JavaScript validation is skipped with a warning.
 - **Example:**
   ```bash
   smilecms verify --report verify-report.txt
