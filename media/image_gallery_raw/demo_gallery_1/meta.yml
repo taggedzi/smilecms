@@ -1,14 +1,14 @@
 {
   "cover_image_id": null,
-  "created_at": "2025-10-21T07:55:52.744593Z",
+  "created_at": "2025-10-21T12:04:15.322738Z",
   "description": null,
-  "hero_image_id": null,
+  "hero_image_id": "2eb0818d-9f90-470a-a590-cc1656c939bb",
   "id": "demo_gallery_1",
   "options": {},
   "sort_order": 0,
-  "summary": null,
+  "summary": "A Collection of cars",
   "tags": [],
   "title": "Demo Gallery 1",
-  "updated_at": "2025-10-21T07:55:52.744593Z",
+  "updated_at": "2025-10-21T12:04:15.322738Z",
   "version": 1
 }
