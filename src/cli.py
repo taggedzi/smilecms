@@ -19,6 +19,12 @@ from .feeds import generate_feeds
 from .gallery import apply_derivatives as apply_gallery_derivatives
 from .gallery import export_datasets as export_gallery_datasets
 from .gallery import prepare_workspace as prepare_gallery_workspace
+from .htmlvalidate import (
+    HtmlValidationReport,
+    HtmlValidatorError,
+    HtmlValidatorUnavailableError,
+    validate_html,
+)
 from .ingest import load_documents
 from .manifests import ManifestGenerator, write_manifest_pages
 from .media import (
@@ -446,6 +452,13 @@ def _print_accumulated_warnings(
 @app.command()
 def verify(
     config_path: ConfigPathOption = "smilecms.yml",
+    html_validation: Annotated[
+        bool,
+        typer.Option(
+            "--html-validation/--no-html-validation",
+            help="Run HTML5 validation on rendered output.",
+        ),
+    ] = True,
     report_path: Annotated[
         str | None,
         typer.Option(
@@ -467,17 +480,37 @@ def verify(
     report = verify_site(output_dir)
     _print_verification_report(report)
 
+    html_report: HtmlValidationReport | None = None
+    if html_validation:
+        console.print(
+            f"[bold blue]HTML validation[/]: validating {_display_path(output_dir)} with html5validator"
+        )
+        try:
+            html_report = validate_html(output_dir)
+        except HtmlValidatorUnavailableError as exc:
+            console.print(f"[bold yellow]HTML validation skipped[/]: {exc}")
+        except HtmlValidatorError as exc:
+            console.print(f"[bold red]HTML validation failed[/]: {exc}")
+            raise typer.Exit(code=1) from exc
+        else:
+            _print_html_validation_report(html_report)
+
     if report_path:
         target = Path(report_path)
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(_render_verification_text(report, output_dir), encoding="utf-8")
+            target.write_text(
+                _render_verification_text(report, output_dir, html_report),
+                encoding="utf-8",
+            )
             console.print(f"[bold green]Report written[/]: {_display_path(target)}")
         except OSError as exc:
             console.print(f"[bold red]Failed to write report[/]: {exc}")
             raise typer.Exit(code=1) from exc
 
     exit_code = 1 if report.error_count > 0 else 0
+    if html_report and html_report.error_count > 0:
+        exit_code = 1
     raise typer.Exit(code=exit_code)
 
 
@@ -750,7 +783,11 @@ def _print_verification_report(report: VerificationReport) -> None:
         )
 
 
-def _render_verification_text(report: VerificationReport, output_dir: Path) -> str:
+def _render_verification_text(
+    report: VerificationReport,
+    output_dir: Path,
+    html_report: HtmlValidationReport | None = None,
+) -> str:
     lines = [
         "SmileCMS site verification report",
         f"Output directory: {output_dir.resolve().as_posix()}",
@@ -767,7 +804,47 @@ def _render_verification_text(report: VerificationReport, output_dir: Path) -> s
                 f"{issue.source.resolve().as_posix()} -> {issue.target}: {issue.message}"
             )
     lines.append("")
+    if html_report:
+        lines.append("HTML validation summary")
+        lines.append(f"Files validated: {html_report.scanned_files}")
+        lines.append(f"Errors: {html_report.error_count}")
+        lines.append(f"Warnings: {html_report.warning_count}")
+        if html_report.issues:
+            lines.append("")
+            for issue in html_report.issues:
+                location = issue.location()
+                location_text = f":{location}" if location else ""
+                lines.append(
+                    f"- [{issue.severity}] "
+                    f"{issue.file.resolve().as_posix()}{location_text}: {issue.message}"
+                )
+    lines.append("")
     return "\n".join(lines)
+
+
+def _print_html_validation_report(report: HtmlValidationReport) -> None:
+    if not report.issues:
+        console.print(
+            "[bold green]HTML validation[/]: "
+            f"{report.scanned_files} HTML file(s) validated; no issues found."
+        )
+        return
+
+    console.print(
+        "[bold red]HTML validation issues[/]: "
+        f"{report.error_count} error(s), {report.warning_count} warning(s) "
+        f"across {report.scanned_files} file(s)."
+    )
+    for issue in report.issues:
+        color = "red" if issue.severity == "error" else "yellow"
+        if issue.severity not in {"error", "warning"}:
+            color = "blue"
+        location = issue.location()
+        location_text = f":{location}" if location else ""
+        console.print(
+            f"[bold {color}]{issue.severity}[/] "
+            f"{_display_path(issue.file)}{location_text} :: {issue.message}"
+        )
 
 
 def _load(path: str) -> Config:

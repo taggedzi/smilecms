@@ -92,6 +92,7 @@ The preview and verification commands operate on the generated bundle in `site/`
 - **Options:**
   - `--config PATH`
   - `--report PATH`, `-r PATH`: optionally write a plaintext report summarizing findings.
+  - `--html-validation/--no-html-validation`: enable or skip HTML5 validation on the rendered output (defaults to enabled; requires the `html5validator` package/Java).
 - **Outputs:** The command prints the scan target, reports any issues by severity, and exits with code 1 if errors are present. When `--report` is supplied, it writes a UTF-8 text file with the same content.
 - **Example:**
   ```bash
@@ -129,4 +130,3 @@ The preview and verification commands operate on the generated bundle in `site/`
 - Chain `smilecms lint --strict`, `smilecms build`, and `smilecms verify` in continuous integration to fail early on content or asset regressions.
 - Use `smilecms audit media --json` to feed dashboards or pre-commit hooks that enforce media hygiene.
 - When scripting, rely on exit codes: non-zero statuses signal actionable failures (validation errors, missing outputs, or verification issues).
-
