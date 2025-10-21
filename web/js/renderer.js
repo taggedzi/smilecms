@@ -471,7 +471,8 @@ function renderAudioTile(item, mediaBasePath) {
   const node = template.cloneNode(true);
 
   const genre = node.querySelector("[data-tile-genre]");
-  const title = node.querySelector("[data-tile-title]");
+  const titleContainer = node.querySelector("[data-tile-title]");
+  const titleLink = node.querySelector("[data-tile-title-link]");
   const description = node.querySelector("[data-tile-description]");
   const audio = node.querySelector("[data-tile-audio]");
   const meta = node.querySelector("[data-tile-meta]");
@@ -479,8 +480,25 @@ function renderAudioTile(item, mediaBasePath) {
   if (genre) {
     genre.textContent = formatTags(item.tags, 1) || "Audio";
   }
-  if (title) {
-    title.textContent = item.title ?? item.slug;
+  const slug = item.slug || item.id;
+  const titleText = item.title ?? slug ?? "Listen now";
+  if (titleContainer) {
+    titleContainer.textContent = "";
+  }
+  if (titleLink) {
+    let href = item.canonical_url || "/music/";
+    if (slug) {
+      const base = item.canonical_url || "/music/";
+      const separator = base.includes("?") ? "&" : "?";
+      href = `${base}${separator}track=${encodeURIComponent(slug)}`;
+    }
+    titleLink.textContent = titleText;
+    titleLink.href = href;
+    if (titleContainer) {
+      titleContainer.appendChild(titleLink);
+    }
+  } else if (titleContainer) {
+    titleContainer.textContent = titleText;
   }
   if (description) {
     description.textContent = item.summary ?? item.excerpt ?? "";
