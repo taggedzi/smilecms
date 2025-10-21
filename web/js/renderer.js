@@ -428,6 +428,7 @@ function renderGalleryTile(item, mediaBasePath) {
   const caption = node.querySelector("[data-tile-caption]");
   const count = node.querySelector("[data-tile-count]");
   const tags = node.querySelector("[data-tile-tags]");
+  const coverLink = node.querySelector("[data-tile-cover-link]");
   const link = node.querySelector("[data-tile-link]");
 
   const heroVariant = selectVariant(item.hero_media, ["thumb", "large", "original"]);
@@ -444,16 +445,22 @@ function renderGalleryTile(item, mediaBasePath) {
   if (tags) {
     tags.textContent = formatTags(item.tags);
   }
+  const slug = item.slug || item.collection_id;
+  const linkLabel = item.title ?? slug ?? "View gallery";
+  let href = item.canonical_url || "/gallery/";
+  if (slug) {
+    const base = item.canonical_url || "/gallery/";
+    const separator = base.includes("?") ? "&" : "?";
+    href = `${base}${separator}collection=${encodeURIComponent(slug)}`;
+  }
+
   if (link) {
-    const slug = item.slug || item.collection_id;
-    link.textContent = item.title ?? slug ?? "View gallery";
-    if (slug) {
-      const base = item.canonical_url || "/gallery/";
-      const separator = base.includes("?") ? "&" : "?";
-      link.href = `${base}${separator}collection=${encodeURIComponent(slug)}`;
-    } else {
-      link.href = item.canonical_url || "/gallery/";
-    }
+    link.textContent = linkLabel;
+    link.href = href;
+  }
+  if (coverLink) {
+    coverLink.href = href;
+    coverLink.setAttribute("aria-label", linkLabel);
   }
 
   return node;
