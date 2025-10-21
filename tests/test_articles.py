@@ -51,6 +51,11 @@ def _copy_default_theme(destination: Path) -> None:
     shutil.copytree(THEME_SOURCE, destination)
 
 
+def _expected_asset_prefix(slug: str) -> str:
+    depth = slug.count("/") + 2
+    return "./" if depth == 0 else "../" * depth
+
+
 def test_write_article_page_uses_theme_layout(tmp_path: Path) -> None:
     templates_dir = tmp_path / "web"
     output_dir = tmp_path / "site"
@@ -74,8 +79,9 @@ def test_write_article_page_uses_theme_layout(tmp_path: Path) -> None:
     )
     assert 'aria-current="page"' in page  # journal link marked active
     assert "Back to Journal" in page
-    assert 'href="/styles/tokens.css"' in page
-    assert '<script type="module" src="/js/app.js"></script>' in page
+    prefix = _expected_asset_prefix(document.meta.slug)
+    assert f'href="{prefix}styles/tokens.css"' in page
+    assert f'<script type="module" src="{prefix}js/app.js"></script>' in page
     assert "window.__SMILE_DATA__" in page
 
 
@@ -96,8 +102,9 @@ def test_write_article_page_uses_fallback_theme(tmp_path: Path) -> None:
     assert "Back to Journal" in page
     assert 'class="site-header"' in page
     assert 'data-site-config="../../config/site.json /site/config/site.json"' in page
-    assert 'href="/styles/tokens.css"' in page
-    assert '<script type="module" src="/js/app.js"></script>' in page
+    prefix = _expected_asset_prefix(document.meta.slug)
+    assert f'href="{prefix}styles/tokens.css"' in page
+    assert f'<script type="module" src="{prefix}js/app.js"></script>' in page
 
 
 def test_markdown_renderer_supports_extended_markdown() -> None:
