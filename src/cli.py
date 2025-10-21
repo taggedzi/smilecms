@@ -25,6 +25,12 @@ from .htmlvalidate import (
     HtmlValidatorUnavailableError,
     validate_html,
 )
+from .jsvalidate import (
+    JsValidationReport,
+    JsValidatorError,
+    JsValidatorUnavailableError,
+    validate_javascript,
+)
 from .ingest import load_documents
 from .manifests import ManifestGenerator, write_manifest_pages
 from .media import (
@@ -459,6 +465,13 @@ def verify(
             help="Run HTML5 validation on rendered output.",
         ),
     ] = True,
+    js_validation: Annotated[
+        bool,
+        typer.Option(
+            "--js-validation/--no-js-validation",
+            help="Run JavaScript validation on rendered output.",
+        ),
+    ] = True,
     report_path: Annotated[
         str | None,
         typer.Option(
@@ -481,6 +494,7 @@ def verify(
     _print_verification_report(report)
 
     html_report: HtmlValidationReport | None = None
+    js_report: JsValidationReport | None = None
     if html_validation:
         console.print(
             f"[bold blue]HTML validation[/]: validating {_display_path(output_dir)} with html5validator"
@@ -495,12 +509,26 @@ def verify(
         else:
             _print_html_validation_report(html_report)
 
+    if js_validation:
+        console.print(
+            f"[bold blue]JavaScript validation[/]: parsing scripts under {_display_path(output_dir)}"
+        )
+        try:
+            js_report = validate_javascript(output_dir)
+        except JsValidatorUnavailableError as exc:
+            console.print(f"[bold yellow]JavaScript validation skipped[/]: {exc}")
+        except JsValidatorError as exc:
+            console.print(f"[bold red]JavaScript validation failed[/]: {exc}")
+            raise typer.Exit(code=1) from exc
+        else:
+            _print_js_validation_report(js_report)
+
     if report_path:
         target = Path(report_path)
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(
-                _render_verification_text(report, output_dir, html_report),
+                _render_verification_text(report, output_dir, html_report, js_report),
                 encoding="utf-8",
             )
             console.print(f"[bold green]Report written[/]: {_display_path(target)}")
@@ -510,6 +538,8 @@ def verify(
 
     exit_code = 1 if report.error_count > 0 else 0
     if html_report and html_report.error_count > 0:
+        exit_code = 1
+    if js_report and js_report.error_count > 0:
         exit_code = 1
     raise typer.Exit(code=exit_code)
 
@@ -787,6 +817,7 @@ def _render_verification_text(
     report: VerificationReport,
     output_dir: Path,
     html_report: HtmlValidationReport | None = None,
+    js_report: JsValidationReport | None = None,
 ) -> str:
     lines = [
         "SmileCMS site verification report",
@@ -818,6 +849,21 @@ def _render_verification_text(
                     f"- [{html_issue.severity}] "
                     f"{html_issue.file.resolve().as_posix()}{location_text}: {html_issue.message}"
                 )
+    if js_report:
+        lines.append("")
+        lines.append("JavaScript validation summary")
+        lines.append(f"Files validated: {js_report.scanned_files}")
+        lines.append(f"Errors: {js_report.error_count}")
+        lines.append(f"Warnings: {js_report.warning_count}")
+        if js_report.issues:
+            lines.append("")
+            for js_issue in js_report.issues:
+                location = js_issue.location()
+                location_text = f":{location}" if location else ""
+                lines.append(
+                    f"- [{js_issue.severity}] "
+                    f"{js_issue.file.resolve().as_posix()}{location_text}: {js_issue.message}"
+                )
     lines.append("")
     return "\n".join(lines)
 
@@ -844,6 +890,31 @@ def _print_html_validation_report(report: HtmlValidationReport) -> None:
         console.print(
             f"[bold {color}]{html_issue.severity}[/] "
             f"{_display_path(html_issue.file)}{location_text} :: {html_issue.message}"
+        )
+
+
+def _print_js_validation_report(report: JsValidationReport) -> None:
+    if not report.issues:
+        console.print(
+            "[bold green]JavaScript validation[/]: "
+            f"{report.scanned_files} script(s) validated; no issues found."
+        )
+        return
+
+    console.print(
+        "[bold red]JavaScript validation issues[/]: "
+        f"{report.error_count} error(s), {report.warning_count} warning(s) "
+        f"across {report.scanned_files} file(s)."
+    )
+    for js_issue in report.issues:
+        color = "red" if js_issue.severity == "error" else "yellow"
+        if js_issue.severity not in {"error", "warning"}:
+            color = "blue"
+        location = js_issue.location()
+        location_text = f":{location}" if location else ""
+        console.print(
+            f"[bold {color}]{js_issue.severity}[/] "
+            f"{_display_path(js_issue.file)}{location_text} :: {js_issue.message}"
         )
 
 
