@@ -68,6 +68,11 @@ See [`docs/content-workflows.md`](docs/content-workflows.md) for step-by-step in
 
 For a quick local preview of the production bundle, run `smilecms preview` and visit `http://localhost:8000/`.
 
+## CI & Versioning
+
+- Continuous integration lives in `.github/workflows/ci.yml`. It installs the project with `.[dev]`, runs Ruff, mypy, and pytest on every push and pull request.
+- Version bumps are manual: update the `version` field in `pyproject.toml`. The package exposes `smilecms.__version__` by reading that field at runtime, so `pyproject.toml` remains the single source of truth.
+
 ## Additional Documentation
 
 - [`docs/content-workflows.md`](docs/content-workflows.md) — authoring pipeline, build loop, and deployment checklists for journal entries and galleries.
