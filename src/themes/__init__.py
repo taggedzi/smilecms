@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, Iterable, Sequence, cast
+from typing import Any, Iterable, Sequence
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -142,7 +142,12 @@ class ThemeLoader:
         if not template_path:
             raise ThemeError(f"Theme '{self._active_theme}' does not define an entrypoint named '{key}'.")
         template = self.environment.get_template(template_path)
-        return cast(str, template.render(**context))
+        rendered = template.render(**context)
+        if not isinstance(rendered, str):  # pragma: no cover - defensive typing check
+            raise ThemeError(
+                f"Template '{template_path}' for theme '{self._active_theme}' rendered non-string output."
+            )
+        return rendered
 
     def ensure_templates(self, template_keys: Sequence[str]) -> None:
         for key in template_keys:

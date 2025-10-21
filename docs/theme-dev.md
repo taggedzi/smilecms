@@ -15,7 +15,7 @@ When the build runs, the theme directory is resolved from `Config.themes_root`. 
 
 ## Manifest Schema
 
-`theme.json` follows the structure read by `build.themes.ThemeManifest`:
+`theme.json` follows the structure read by `src.themes.ThemeManifest`:
 
 ```json
 {
@@ -82,7 +82,7 @@ All page entrypoints inherit a shared context surface; individual pages (e.g., `
    theme_name: my-theme
    ```
    or via CLI overrides if available.
-5. Run the build (`python -m build.cli build`) and inspect the output under `site/`.
+5. Run the build (`python -m src.cli build`) and inspect the output under `site/`.
 
 All templates are standard Jinja2 files. Autoescaping is enabled, so wrap trusted HTML in `|safe` when necessary (for example, when rendering Markdown that has already been sanitised).
 

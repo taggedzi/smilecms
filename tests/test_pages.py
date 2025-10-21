@@ -4,9 +4,9 @@ import json
 import shutil
 from pathlib import Path
 
-from build.config import Config
-from build.pages import write_gallery_page, write_music_page
-from build.templates import TemplateAssets
+from src.config import Config
+from src.pages import write_gallery_page, write_music_page
+from src.templates import TemplateAssets
 
 THEME_SOURCE = Path(__file__).resolve().parents[1] / "web" / "themes" / "default"
 

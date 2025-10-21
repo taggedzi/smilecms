@@ -5,16 +5,16 @@ from pathlib import Path
 
 from PIL import Image
 
-from build.config import (
+from src.config import (
     Config,
     DerivativeProfile,
     GalleryConfig,
     MediaProcessingConfig,
     MusicConfig,
 )
-from build.gallery import apply_derivatives, export_datasets, prepare_workspace
-from build.ingest import load_documents
-from build.media import apply_variants_to_documents, collect_media_plan, process_media_plan
+from src.gallery import apply_derivatives, export_datasets, prepare_workspace
+from src.ingest import load_documents
+from src.media import apply_variants_to_documents, collect_media_plan, process_media_plan
 
 
 def test_gallery_pipeline_generates_sidecars_and_datasets(tmp_path: Path) -> None:

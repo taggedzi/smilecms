@@ -139,7 +139,7 @@ Notes:
 
 ### Embedding media in Markdown
 
-Use the shortcode syntax already wired into `build/articles.py`:
+Use the shortcode syntax already wired into `src/articles.py`:
 
 - `[Caption](img:media/example.jpg)` – renders an `<img>` with caption and figure wrapper.
 - `[Label](audio:audio/song.mp3)` – renders an `<audio>` element with controls.
@@ -171,7 +171,7 @@ media/image_gallery_raw/<collection-slug>/
 Run `smilecms new gallery <slug> --title "Display Title"` to bootstrap the folder and collection metadata before dropping in raw images.
 
 - Raw images sit next to their `.json` sidecars. When the pipeline discovers a new file it will create a sidecar with baseline metadata (title from stem, timestamps, etc.).
-- `meta.yml` can be JSON or YAML and accepts the fields defined in `build/gallery/models.py` (`title`, `summary`, `tags`, `sort_order`, etc.). Missing fields are auto-filled.
+- `meta.yml` can be JSON or YAML and accepts the fields defined in `src/gallery/models.py` (`title`, `summary`, `tags`, `sort_order`, etc.). Missing fields are auto-filled.
 - Drop new images into the collection folder and rerun `smilecms build`; derivatives and metadata refresh automatically. Assets placed outside `media/image_gallery_raw/` will not be picked up.
 
 **Tip:** Give each asset a unique filename (stem). If you drop both `painting.png` and `painting.jpg` into a collection, the single sidecar (`painting.json`) can only reference one of them. The other file will be reported as an orphan during `smilecms audit media`. Remove the unwanted duplicate (or create a second image/sidecar pair) and update the remaining sidecar to resolve the warning.
@@ -251,6 +251,6 @@ assets:
 
 - [`README.md`](../README.md) – quickstart and high-level overview.
 - [`docs/frontend.md`](frontend.md) – layout and styling notes for the web front end.
-- [`build/`](../build/) package – Python source for the pipeline if you need to extend or debug the process.
+- [`src/`](../src/) package – Python source for the pipeline if you need to extend or debug the process.
 
 If you keep this workflow document in sync with code changes, future contributors (or your future self) can confidently pick up development, extend content types, or adjust the build pipeline without relearning the project from scratch.

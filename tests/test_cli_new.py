@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 from typer.testing import CliRunner
 
-from build.cli import app
+from src.cli import app
 
 
 def _write_default_config(path: Path) -> None:

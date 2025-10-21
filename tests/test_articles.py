@@ -5,9 +5,9 @@ import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
-from build.articles import ArticleBodyRenderer, write_article_pages
-from build.config import Config
-from build.content import ContentDocument, ContentMeta, ContentStatus, MediaReference
+from src.articles import ArticleBodyRenderer, write_article_pages
+from src.config import Config
+from src.content import ContentDocument, ContentMeta, ContentStatus, MediaReference
 
 THEME_SOURCE = Path(__file__).resolve().parents[1] / "web" / "themes" / "default"
 

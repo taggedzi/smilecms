@@ -28,7 +28,7 @@ from .content import ContentDocument, ContentStatus, MediaReference, load_markdo
 from .content.parsers import FrontMatterError
 from .gallery.pipeline import prepare_workspace
 
-SCHEMA_PACKAGE = "build.schemas"
+SCHEMA_PACKAGE = "src.schemas"
 CONTENT_SCHEMA_NAME = "content_post.schema.json"
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff", ".svg"}
 SUPPORTED_SUFFIXES = {".md", ".markdown", ".mdx"}

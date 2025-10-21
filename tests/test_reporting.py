@@ -1,11 +1,11 @@
 import json
 from pathlib import Path
 
-from build.content.models import ContentDocument, ContentMeta, ContentStatus
-from build.manifests.models import ManifestItem, ManifestPage
-from build.media.models import MediaPlan
-from build.media.processor import MediaProcessingResult
-from build.reporting import (
+from src.content.models import ContentDocument, ContentMeta, ContentStatus
+from src.manifests.models import ManifestItem, ManifestPage
+from src.media.models import MediaPlan
+from src.media.processor import MediaProcessingResult
+from src.reporting import (
     assemble_report,
     build_document_stats,
     build_manifest_stats,

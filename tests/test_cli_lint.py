@@ -4,7 +4,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from build.cli import app
+from src.cli import app
 
 
 def _write_config(path: Path) -> None:

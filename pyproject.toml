@@ -1,6 +1,6 @@
 [project]
 name = "smilecms"
-version = "0.1.0"
+version = "0.8.0"
 description = "Static-first publishing pipeline with Python builds and JSON-driven front-end."
 requires-python = ">=3.11"
 authors = [{name = "Matthew Craig"}]
@@ -9,10 +9,13 @@ dependencies = [
   "pydantic>=2.7",
   "PyYAML>=6.0",
   "rich>=13.7",
+  "huggingface_hub[hf_xet]",
   "jsonschema>=4.23",
   "Pillow>=10.3",
   "markdown-it-py>=3.0",
   "mdit-py-plugins>=0.4",
+  "torch>=2.3",
+  "transformers>=4.41",
   "Jinja2>=3.1"
 ]
 
@@ -27,29 +30,24 @@ dev = [
   "pydantic", 
   "types-PyYAML"
 ]
-ml = [
-  "huggingface_hub[hf_xet]",
-  "transformers>=4.41",
-  "torch>=2.3"
-]
 
 [project.scripts]
-smilecms = "build.cli:app"
+smilecms = "src.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["build*"]
+include = ["src*"]
 exclude = ["content*", "media*", "site*", "web*"]
 
 [tool.setuptools.package-data]
-"build.schemas" = ["*.json"]
+"src.schemas" = ["*.json"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
 lint.select = ["E","F","I","UP","B","SIM","PL","PT","RUF"]
 lint.ignore = ["E203"]  # compatible with black-style spacing if you prefer
-extend-exclude = ["build", "dist", ".venv"]
+extend-exclude = ["src", "dist", ".venv"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -71,7 +69,7 @@ no_implicit_optional = true
 strict = true
 plugins = ["pydantic.mypy"]
 disallow_any_generics = true
-exclude = ['build/','dist/','\.venv/']
+exclude = ['dist/','\.venv/']
 
 # Keep core code strict, but don't force type annotations in tests
 [[tool.mypy.overrides]]
@@ -81,7 +79,7 @@ check_untyped_defs = false
 disable_error_code = ["misc"]  # silences "Untyped decorator makes function..."
 
 [[tool.mypy.overrides]]
-module = ["build.cli"]
+module = ["src.cli"]
 disable_error_code = ["misc"]
 
 [tool.pytest.ini_options]

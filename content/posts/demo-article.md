@@ -11,7 +11,7 @@ tags:
 assets:
   - path: "media/zero-theroum-image.png"
     alt_text: "Zero Theorum place holder."
-  - path: "audio/doorway-dreams/doorway-dreams.mp3"
+  - path: "audio/im-not-waiting/im-not-waiting.mp3"
 ---
 
 Welcome to SmileCMS! This is the very first entry rendered by the pipeline, and it
@@ -20,11 +20,11 @@ static site.
 
 Take a look at one of the studies we recently finished:
 
-[Highland Horizon](img:media/life-like-water.jpg)
+[Highland Horizon](img:media/zero-theroum-image.png)
 
 Want to set the mood while you read? Press play on the companion track.
 
-[Play Doorway Dreams](audio:audio/doorway-dreams/doorway-dreams.mp3)
+[Play Doorway Dreams](audio:audio/im-not-waiting/im-not-waiting.mp3)
 
 With this workflow each article can travel with its own media and be published
 as a fully static document.

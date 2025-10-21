@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from build.config import Config, GalleryConfig, MusicConfig
-from build.ingest import load_documents
-from build.validation import DocumentValidationError
+from src.config import Config, GalleryConfig, MusicConfig
+from src.ingest import load_documents
+from src.validation import DocumentValidationError
 
 
 def _write(path: Path, body: str) -> None:

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from build.verify import verify_site
+from src.verify import verify_site
 
 
 def _write(path: Path, content: str) -> None:
