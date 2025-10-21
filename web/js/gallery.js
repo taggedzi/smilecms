@@ -808,19 +808,7 @@ function renderSiteChrome(siteConfig) {
   }
 
   if (footer) {
-    footer.innerHTML = `
-      <p>${escapeHtml(footerConfig.copy || "")}</p>
-      <div class="footer-links">
-        ${(footerConfig.links || [])
-          .map(
-            (entry) =>
-              `<a href="${escapeHtml(entry.href || "#")}" target="_blank" rel="noopener">${escapeHtml(
-                entry.label || "Link"
-              )}</a>`
-          )
-          .join("")}
-      </div>
-    `;
+    renderFooterSection(footer, footerConfig);
   }
 
   attachThemeToggle(header);
@@ -840,6 +828,113 @@ function attachThemeToggle(header) {
       target.setAttribute("aria-pressed", String(next === "dark"));
     }
   });
+}
+
+function renderFooterSection(container, footer = {}) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  const footerTemplate = document.getElementById("tmpl-site-footer");
+  const linkTemplate = document.getElementById("tmpl-footer-link");
+
+  let fragment;
+  if (footerTemplate) {
+    fragment = (footerTemplate.content || footerTemplate).cloneNode(true);
+  } else {
+    fragment = document.createDocumentFragment();
+    const left = document.createElement("div");
+    left.className = "footer-left";
+    const copySpan = document.createElement("span");
+    copySpan.className = "caption";
+    left.appendChild(copySpan);
+
+    const right = document.createElement("div");
+    right.className = "footer-right";
+
+    fragment.appendChild(left);
+    fragment.appendChild(right);
+  }
+
+  const copyTarget =
+    typeof fragment.querySelector === "function"
+      ? fragment.querySelector("[data-footer-copy]")
+      : null;
+  const linksTarget =
+    typeof fragment.querySelector === "function"
+      ? fragment.querySelector("[data-footer-links]")
+      : null;
+
+  if (copyTarget) {
+    copyTarget.textContent = footer.copy || "";
+  } else {
+    const fallbackCopy = fragment.querySelector(".footer-left .caption");
+    if (fallbackCopy) {
+      fallbackCopy.textContent = footer.copy || "";
+    }
+  }
+
+  const linkContainer =
+    linksTarget || fragment.querySelector(".footer-right") || container;
+
+  if (linkContainer && Array.isArray(footer.links)) {
+    footer.links.forEach((entry) => {
+      const resolved = normalizeFooterEntry(entry);
+      let linkFragment = null;
+      let anchor = null;
+
+      if (linkTemplate) {
+        linkFragment = (linkTemplate.content || linkTemplate).cloneNode(true);
+        anchor =
+          typeof linkFragment.querySelector === "function"
+            ? linkFragment.querySelector("a")
+            : null;
+      }
+
+      if (!anchor) {
+        anchor = document.createElement("a");
+        anchor.className = "nav-link";
+        linkFragment = anchor;
+      }
+
+      anchor.textContent = resolved.label;
+      anchor.href = resolved.href;
+      if (resolved.target) {
+        anchor.target = resolved.target;
+      }
+      if (resolved.rel) {
+        anchor.rel = resolved.rel;
+      }
+
+      if (linkFragment instanceof HTMLElement) {
+        linkContainer.appendChild(linkFragment);
+      } else if (linkFragment) {
+        linkContainer.appendChild(linkFragment);
+      } else {
+        linkContainer.appendChild(anchor);
+      }
+    });
+  }
+
+  container.appendChild(fragment);
+}
+
+function normalizeFooterEntry(entry = {}) {
+  const label = entry.label || "Link";
+  const href = entry.href || "#";
+  const isExternal = entry.external ?? /^https?:\/\//i.test(href);
+  const target = entry.target || (isExternal ? "_blank" : undefined);
+  const rel =
+    entry.rel || (target === "_blank" ? "noreferrer noopener" : undefined);
+
+  return {
+    label,
+    href,
+    target,
+    rel,
+  };
 }
 
 function openModal(record, options = {}) {

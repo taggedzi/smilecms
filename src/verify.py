@@ -127,7 +127,14 @@ def _parse_srcset(srcset: str) -> Iterator[str]:
 def _is_ignorable(reference: str) -> bool:
     if not reference:
         return True
-    parsed = urlsplit(reference)
+    stripped = reference.strip()
+    if not stripped:
+        return True
+    # Ignore templating placeholders (e.g., Jinja) that aren't concrete paths yet.
+    if "{{" in stripped or "{%" in stripped or "}}" in stripped or "%}" in stripped:
+        return True
+
+    parsed = urlsplit(stripped)
 
     if parsed.scheme in {"http", "https", "mailto", "tel", "data", "javascript", "ftp"}:
         return True

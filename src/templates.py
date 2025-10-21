@@ -108,6 +108,27 @@ class TemplateAssets:
 
     def make_asset_href(self, path: str, *, depth: int) -> str:
         """Return a relative href/src for assets located under the site root."""
+        if path.startswith(("http://", "https://", "//")):
+            return path
         normalized = path.lstrip("/")
         prefix = "./" if depth == 0 else "../" * depth
         return f"{prefix}{normalized}"
+
+    def build_theme_assets(self, *, depth: int) -> dict[str, Any]:
+        """Resolve theme asset paths relative to the rendered page depth."""
+        bundle = self.theme.assets.to_template_dict()
+        styles: list[str] = []
+        for href in bundle.get("styles", []):
+            styles.append(self.make_asset_href(href, depth=depth))
+
+        scripts: list[dict[str, Any]] = []
+        for script in bundle.get("scripts", []):
+            src = script.get("src", "")
+            normalized = dict(script)
+            normalized["src"] = self.make_asset_href(src, depth=depth) if src else src
+            scripts.append(normalized)
+
+        return {
+            "styles": styles,
+            "scripts": scripts,
+        }
