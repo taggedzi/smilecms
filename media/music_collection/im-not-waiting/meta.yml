@@ -1,0 +1,17 @@
+title: "Im Not Waiting"
+summary: "A song about not waiting."
+description: |
+  Swing, alternative rock swing beat clarinet acoustic guitars intricate and 
+  exotic interleaving drums mood subtly pulsating between relaxed and 
+  refreshed to energetic and exotic.
+tags: []
+status: published
+published_at: 2025-10-21T07:35:00Z
+duration: 144
+audio: im-not-waiting.mp3
+download: true
+audio_meta:
+  mime_type: audio/mpeg
+assets:
+  cover.jpeg:
+    alt_text: "Clock on a door."

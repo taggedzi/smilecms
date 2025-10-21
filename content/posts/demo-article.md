@@ -3,14 +3,14 @@ title: "Hello"
 status: published
 published_at: 2025-10-01T10:30:00
 hero_media:
-  path: "media/hello-hero-1.png"
-  alt_text: "Painterly portrait with glowing blues"
+  path: "media/placeholder.png"
+  alt_text: "A Placeholder image. By Choice!"
 tags:
   - welcome
   - update
 assets:
-  - path: "media/life-like-water.jpg"
-    alt_text: "Evening shoreline study"
+  - path: "media/zero-theroum-image.png"
+    alt_text: "Zero Theorum place holder."
   - path: "audio/doorway-dreams/doorway-dreams.mp3"
 ---
 

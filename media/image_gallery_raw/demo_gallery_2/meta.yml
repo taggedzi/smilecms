@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "id": "demo-gallery-2",
+  "title": "Demo Gallery 2 - Space Ships!",
+  "summary": "AI generated pictures of colored space ships!",
+  "description": "AI generated pictures of colored space ships!",
+  "tags": ["illustration","space ships","space craft","wierd ships","colored line art","ai art"],
+  "sort_order": 0,
+  "created_at": "2025-10-21T07:16:40Z",
+  "updated_at": "2025-10-21T07:16:40Z",
+  "cover_image_id": 9685aa66-e0b0-4c97-9602-ca894185dfd5,
+  "hero_image_id": 9685aa66-e0b0-4c97-9602-ca894185dfd5,
+  "options": {}
+}
