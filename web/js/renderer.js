@@ -1,18 +1,26 @@
 const TEMPLATE_CACHE = new Map();
-const TEMPLATE_SOURCES = [
-  "./templates/header.html",
-  "./templates/nav.html",
-  "./templates/hero.html",
-  "./templates/section.html",
-  "./templates/tile-article.html",
-  "./templates/tile-gallery.html",
-  "./templates/tile-audio.html",
-  "./templates/footer.html",
+const TEMPLATE_FILES = [
+  "header.html",
+  "nav.html",
+  "hero.html",
+  "section.html",
+  "tile-article.html",
+  "tile-gallery.html",
+  "tile-audio.html",
+  "footer.html",
+];
+const DEFAULT_TEMPLATE_BASES = [
+  "/templates",
+  "/site/templates",
+  "./templates",
+  "../templates",
+  "../../templates",
 ];
 
 export async function initializeRenderer({
   manifestUrl,
   siteConfigUrl = "./config/site.json",
+  templateBases,
 } = {}) {
   const main = document.getElementById("main");
   if (!main) return;
@@ -20,7 +28,8 @@ export async function initializeRenderer({
   renderLoading(main, "Loading content…");
 
   try {
-    await loadTemplates();
+    const effectiveTemplateBases = normalizeList(templateBases, DEFAULT_TEMPLATE_BASES);
+    await loadTemplates(effectiveTemplateBases);
     const [manifest, siteConfig] = await Promise.all([
       loadManifest(manifestUrl),
       fetchJson(siteConfigUrl),
@@ -80,6 +89,25 @@ async function fetchJson(url) {
     }
   }
   throw lastError ?? new Error("fetchJson requires at least one URL");
+}
+
+async function fetchText(url) {
+  const candidates = Array.isArray(url) ? url : [url];
+  let lastError;
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      const response = await fetch(candidate, { cache: "no-cache" });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${candidate} (${response.status})`);
+      }
+      return await response.text();
+    } catch (error) {
+      lastError = error;
+      console.debug("[renderer] fetch attempt failed", candidate, error);
+    }
+  }
+  throw lastError ?? new Error("fetchText requires at least one URL");
 }
 
 async function loadManifest(manifestSource) {
@@ -375,8 +403,10 @@ function renderArticleTile(item) {
     tags.textContent = formatTags(item.tags);
   }
   if (link) {
-    link.textContent = item.title ?? item.slug;
-    link.href = item.canonical_url ?? `./posts/${item.slug}/`;
+    const slug = String(item.slug ?? "").replace(/^\/+/, "");
+    link.textContent = item.title ?? (slug || "View article");
+    const href = item.canonical_url ?? (slug ? `/posts/${slug}/` : "#");
+    link.href = href;
   }
   if (excerpt) {
     excerpt.textContent = item.excerpt ?? item.summary ?? "";
@@ -518,7 +548,7 @@ function useTemplate(id) {
   return TEMPLATE_CACHE.get(id);
 }
 
-async function loadTemplates() {
+async function loadTemplates(templateBases = DEFAULT_TEMPLATE_BASES) {
   if (document.getElementById("tmpl-site-header")) {
     return;
   }
@@ -527,12 +557,9 @@ async function loadTemplates() {
   const parser = new DOMParser();
 
   await Promise.all(
-    TEMPLATE_SOURCES.map(async (path) => {
-      const response = await fetch(path, { cache: "no-cache" });
-      if (!response.ok) {
-        throw new Error(`Failed to load template ${path}`);
-      }
-      const html = await response.text();
+    TEMPLATE_FILES.map(async (file) => {
+      const candidates = buildTemplateCandidates(file, templateBases);
+      const html = await fetchText(candidates);
       const doc = parser.parseFromString(html, "text/html");
       doc.querySelectorAll("template").forEach((template) => {
         const imported = document.importNode(template, true);
@@ -614,4 +641,44 @@ function attachThemeToggle(headerEl) {
       target.setAttribute("aria-pressed", String(isDark));
     }
   });
+}
+
+function normalizeList(value, fallback) {
+  if (Array.isArray(value) && value.length) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = value
+      .split(/\s+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    if (parsed.length) {
+      return parsed;
+    }
+  }
+  return fallback;
+}
+
+function buildTemplateCandidates(file, bases) {
+  const filename = file.replace(/^\/+/, "");
+  const candidates = [];
+  for (const base of bases || []) {
+    if (!base) continue;
+    const candidate = joinPath(base, filename);
+    if (!candidates.includes(candidate)) {
+      candidates.push(candidate);
+    }
+  }
+  if (!candidates.includes(filename)) {
+    candidates.push(filename);
+  }
+  return candidates;
+}
+
+function joinPath(base, suffix) {
+  if (!base) return suffix;
+  if (base.endsWith("/")) {
+    return `${base}${suffix}`;
+  }
+  return `${base}/${suffix}`;
 }
