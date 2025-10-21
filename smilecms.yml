@@ -21,5 +21,6 @@ gallery:
   source_dir: "media/image_gallery_raw"
   metadata_filename: "meta.yml"
 music:
+  enabled: false
   source_dir: "media/music_collection"
   metadata_filename: "meta.yml"

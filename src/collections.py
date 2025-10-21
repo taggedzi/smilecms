@@ -90,6 +90,8 @@ def load_gallery_documents(
 
 def load_music_documents(config: Config) -> list[ContentDocument]:
     """Create content documents for music tracks."""
+    if not config.music.enabled:
+        return []
     root = config.music.source_dir
     meta_name = config.music.metadata_filename
     if not root.exists():

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
+from copy import deepcopy
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict
 
 from .config import Config
@@ -39,7 +41,7 @@ class TemplateAssets:
             with config_path.open("r", encoding="utf-8") as handle:
                 data = json.load(handle)
                 if isinstance(data, dict):
-                    return data
+                    return self._apply_feature_toggles(data)
                 logger.warning(
                     "Site configuration %s does not define an object root; ignoring.",
                     config_path,
@@ -60,7 +62,7 @@ class TemplateAssets:
 
     def _build_data_endpoints(self) -> dict[str, Any]:
         """Expose JSON endpoints consumed by client-side scripts."""
-        return {
+        endpoints: dict[str, Any] = {
             "site_config": "config/site.json",
             "manifest_bases": "manifests/content",
             "gallery": {
@@ -68,12 +70,14 @@ class TemplateAssets:
                 "manifest": "data/gallery/manifest.json",
                 "images": "data/gallery/images.jsonl",
             },
-            "music": {
+        }
+        if self.config.music.enabled:
+            endpoints["music"] = {
                 "tracks": "data/music/tracks.jsonl",
                 "manifest": "data/music/manifest.json",
                 "summary": "data/music/tracks.json",
-            },
-        }
+            }
+        return endpoints
 
     def _build_feed_links(self) -> dict[str, str]:
         return {
@@ -106,6 +110,53 @@ class TemplateAssets:
 
         return attributes
 
+    def _apply_feature_toggles(self, site_config: dict[str, Any]) -> dict[str, Any]:
+        """Prune site configuration elements when features are disabled."""
+        sanitized = deepcopy(site_config)
+        if not self.config.music.enabled:
+            self._prune_music_config(sanitized)
+        return sanitized
+
+    def _prune_music_config(self, site_config: dict[str, Any]) -> None:
+        """Remove music-specific navigation and sections when disabled."""
+
+        def _targets_music(entry: Any) -> bool:
+            if not isinstance(entry, dict):
+                return False
+            raw_href = str(entry.get("href") or "").strip()
+            if not raw_href:
+                return False
+            normalized = raw_href
+            if not normalized.startswith("/"):
+                normalized = f"/{normalized}"
+            if not normalized.endswith("/"):
+                normalized = f"{normalized}/"
+            return normalized == "/music/"
+
+        navigation = site_config.get("navigation")
+        if isinstance(navigation, list):
+            site_config["navigation"] = [entry for entry in navigation if not _targets_music(entry)]
+
+        hero = site_config.get("hero")
+        if isinstance(hero, dict):
+            actions = hero.get("actions")
+            if isinstance(actions, list):
+                hero["actions"] = [entry for entry in actions if not _targets_music(entry)]
+
+        sections = site_config.get("sections")
+        if isinstance(sections, list):
+            pruned_sections: list[Any] = []
+            for section in sections:
+                if not isinstance(section, dict):
+                    pruned_sections.append(section)
+                    continue
+                section_type = str(section.get("type") or "").strip().lower()
+                section_id = str(section.get("id") or "").strip().lower()
+                if section_type == "audio" or section_id in {"audio", "music"}:
+                    continue
+                pruned_sections.append(section)
+            site_config["sections"] = pruned_sections
+
     def make_asset_href(self, path: str, *, depth: int) -> str:
         """Return a relative href/src for assets located under the site root."""
         if path.startswith(("http://", "https://", "//")):
@@ -132,3 +183,11 @@ class TemplateAssets:
             "styles": styles,
             "scripts": scripts,
         }
+
+    def write_site_config(self, destination: Path | None = None) -> Path:
+        """Persist the sanitized site configuration for runtime hydration."""
+        target = destination or (self.config.output_dir / "config" / "site.json")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        serialized = json.dumps(self.site_config, indent=2)
+        target.write_text(serialized, encoding="utf-8")
+        return target

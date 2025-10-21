@@ -121,6 +121,10 @@ class GalleryConfig(BaseModel):
 class MusicConfig(BaseModel):
     """Configuration for music collection ingestion."""
 
+    enabled: bool = Field(
+        default=True,
+        description="Toggle music catalog ingestion and publication.",
+    )
     source_dir: Path = Field(default=Path("media/music_collection"))
     metadata_filename: str = Field(default="meta.yml")
     data_subdir: str = Field(
