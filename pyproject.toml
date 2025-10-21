@@ -9,10 +9,13 @@ dependencies = [
   "pydantic>=2.7",
   "PyYAML>=6.0",
   "rich>=13.7",
+  "huggingface_hub[hf_xet]",
   "jsonschema>=4.23",
   "Pillow>=10.3",
   "markdown-it-py>=3.0",
   "mdit-py-plugins>=0.4",
+  "torch>=2.3",
+  "transformers>=4.41",
   "Jinja2>=3.1"
 ]
 
@@ -26,11 +29,6 @@ dev = [
   "pre-commit",
   "pydantic", 
   "types-PyYAML"
-]
-ml = [
-  "huggingface_hub[hf_xet]",
-  "transformers>=4.41",
-  "torch>=2.3"
 ]
 
 [project.scripts]
