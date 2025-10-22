@@ -65,12 +65,13 @@ class TemplateAssets:
         endpoints: dict[str, Any] = {
             "site_config": "config/site.json",
             "manifest_bases": "manifests/content",
-            "gallery": {
+        }
+        if self.config.gallery.enabled:
+            endpoints["gallery"] = {
                 "collections": "data/gallery/collections.json",
                 "manifest": "data/gallery/manifest.json",
                 "images": "data/gallery/images.jsonl",
-            },
-        }
+            }
         if self.config.music.enabled:
             endpoints["music"] = {
                 "tracks": "data/music/tracks.jsonl",
@@ -113,35 +114,53 @@ class TemplateAssets:
     def _apply_feature_toggles(self, site_config: dict[str, Any]) -> dict[str, Any]:
         """Prune site configuration elements when features are disabled."""
         sanitized = deepcopy(site_config)
+        if not self.config.gallery.enabled:
+            self._prune_feature_config(
+                sanitized,
+                target_slug="gallery",
+                section_types=("gallery",),
+                section_ids=("gallery",),
+            )
         if not self.config.music.enabled:
-            self._prune_music_config(sanitized)
+            self._prune_feature_config(
+                sanitized,
+                target_slug="music",
+                section_types=("audio",),
+                section_ids=("audio", "music"),
+            )
         return sanitized
 
-    def _prune_music_config(self, site_config: dict[str, Any]) -> None:
-        """Remove music-specific navigation and sections when disabled."""
+    def _prune_feature_config(
+        self,
+        site_config: dict[str, Any],
+        *,
+        target_slug: str,
+        section_types: tuple[str, ...],
+        section_ids: tuple[str, ...],
+    ) -> None:
+        """Remove navigation, hero actions, and sections tied to a disabled feature."""
+        target_href = self._normalize_internal_href(target_slug)
 
-        def _targets_music(entry: Any) -> bool:
+        def _targets_feature(entry: Any) -> bool:
             if not isinstance(entry, dict):
                 return False
             raw_href = str(entry.get("href") or "").strip()
             if not raw_href:
                 return False
-            normalized = raw_href
-            if not normalized.startswith("/"):
-                normalized = f"/{normalized}"
-            if not normalized.endswith("/"):
-                normalized = f"{normalized}/"
-            return normalized == "/music/"
+            if "://" in raw_href or raw_href.startswith(("mailto:", "#")):
+                return False
+            normalized = self._normalize_internal_href(raw_href)
+            return normalized == target_href
 
         navigation = site_config.get("navigation")
         if isinstance(navigation, list):
-            site_config["navigation"] = [entry for entry in navigation if not _targets_music(entry)]
+            site_config["navigation"] = [entry for entry in navigation if not _targets_feature(entry)]
 
         hero = site_config.get("hero")
         if isinstance(hero, dict):
             actions = hero.get("actions")
             if isinstance(actions, list):
-                hero["actions"] = [entry for entry in actions if not _targets_music(entry)]
+                hero["actions"] = [entry for entry in actions if not _targets_feature(entry)]
 
         sections = site_config.get("sections")
         if isinstance(sections, list):
@@ -152,10 +171,28 @@ class TemplateAssets:
                     continue
                 section_type = str(section.get("type") or "").strip().lower()
                 section_id = str(section.get("id") or "").strip().lower()
-                if section_type == "audio" or section_id in {"audio", "music"}:
+                if section_type in section_types or section_id in section_ids:
                     continue
+                actions = section.get("actions")
+                if isinstance(actions, list):
+                    section["actions"] = [entry for entry in actions if not _targets_feature(entry)]
                 pruned_sections.append(section)
             site_config["sections"] = pruned_sections
+
+    @staticmethod
+    def _normalize_internal_href(value: str) -> str:
+        """Normalize relative hrefs for feature matching."""
+        text = value.strip()
+        if not text:
+            return "/"
+        if "://" in text or text.startswith(("mailto:", "#")):
+            return text
+        normalized = text
+        if not normalized.startswith("/"):
+            normalized = f"/{normalized}"
+        if not normalized.endswith("/"):
+            normalized = f"{normalized}/"
+        return normalized
 
     def make_asset_href(self, path: str, *, depth: int) -> str:
         """Return a relative href/src for assets located under the site root."""

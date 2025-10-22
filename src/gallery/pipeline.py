@@ -36,6 +36,8 @@ def prepare_workspace(
     run_llm_cleanup: bool | None = None,
 ) -> GalleryWorkspace:
     """Discover gallery collections and ensure sidecars exist."""
+    if not config.gallery.enabled:
+        return GalleryWorkspace(root=config.gallery.source_dir)
     root = config.gallery.source_dir
     workspace = GalleryWorkspace(root=root)
     if not root.exists():
@@ -115,6 +117,8 @@ def apply_derivatives(
     config: Config,
 ) -> int:
     """Attach derivative paths from media processing to image metadata."""
+    if not config.gallery.enabled:
+        return 0
     updated = 0
     variant_map = media_result.variants
 
@@ -154,6 +158,8 @@ def apply_derivatives(
 
 def export_datasets(workspace: GalleryWorkspace, config: Config) -> None:
     """Write JSON and JSONL datasets consumed by the gallery front-end."""
+    if not config.gallery.enabled:
+        return
     data_root = config.output_dir / config.gallery.data_subdir
     data_root.mkdir(parents=True, exist_ok=True)
     existing_files = {path for path in data_root.glob("**/*") if path.is_file()}

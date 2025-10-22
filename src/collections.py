@@ -32,6 +32,8 @@ def load_gallery_documents(
     workspace: GalleryWorkspace | None = None,
 ) -> list[ContentDocument]:
     """Create content documents for gallery collections supplied by the new pipeline."""
+    if not config.gallery.enabled:
+        return []
     if workspace is None:
         workspace = prepare_workspace(
             config,

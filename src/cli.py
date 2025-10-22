@@ -16,9 +16,12 @@ from rich.console import Console
 from .articles import write_article_pages
 from .config import Config, MediaProcessingConfig, load_config
 from .feeds import generate_feeds
-from .gallery import apply_derivatives as apply_gallery_derivatives
-from .gallery import export_datasets as export_gallery_datasets
-from .gallery import prepare_workspace as prepare_gallery_workspace
+from .gallery import (
+    GalleryWorkspace,
+    apply_derivatives as apply_gallery_derivatives,
+    export_datasets as export_gallery_datasets,
+    prepare_workspace as prepare_gallery_workspace,
+)
 from .htmlvalidate import (
     HtmlValidationReport,
     HtmlValidatorError,
@@ -58,7 +61,6 @@ from .validation import DocumentIssue, DocumentValidationError, IssueSeverity, l
 from .verify import VerificationReport, verify_site
 
 if TYPE_CHECKING:
-    from .gallery import GalleryWorkspace
     from .media.audit import ReferenceUsage
     from .content import ContentDocument
 
@@ -106,7 +108,7 @@ class StageArtifacts:
 
     stage_result: StagingResult
     article_pages: list[Path]
-    gallery_page: Path
+    gallery_page: Path | None
     music_page: Path | None
     music_result: MusicExportResult | None
 
@@ -199,7 +201,10 @@ def build(
 
     _prepare_output_directories(config, change_summary, force)
 
-    gallery_workspace: "GalleryWorkspace" = prepare_gallery_workspace(config)
+    if config.gallery.enabled:
+        gallery_workspace = prepare_gallery_workspace(config)
+    else:
+        gallery_workspace = GalleryWorkspace(root=config.gallery.source_dir)
     documents = _load_build_documents(config, gallery_workspace)
 
     outputs = _generate_site_artifacts(config, documents, gallery_workspace)
@@ -268,7 +273,9 @@ def _generate_site_artifacts(
     media_plan = collect_media_plan(documents, config)
     media_result = process_media_plan(media_plan, config)
     apply_variants_to_documents(documents, media_result.variants)
-    updated_gallery = apply_gallery_derivatives(gallery_workspace, media_result, config)
+    updated_gallery = 0
+    if config.gallery.enabled:
+        updated_gallery = apply_gallery_derivatives(gallery_workspace, media_result, config)
 
     pages = ManifestGenerator().build_pages(documents, prefix="content")
     manifest_paths = write_manifest_pages(pages, config.output_dir / "manifests")
@@ -341,14 +348,17 @@ def _print_primary_summary(
         media_line += f"; removed {stats.artifacts_pruned} stale file(s)"
     console.print(media_line)
 
-    console.print(
-        "[bold green]Gallery[/]: "
-        f"{gallery_workspace.collection_count()} collection(s) with "
-        f"{gallery_workspace.image_count()} image(s); "
-        f"{len(gallery_workspace.collection_writes)} collection sidecar(s) "
-        f"and {len(gallery_workspace.image_writes)} image sidecar(s) updated; "
-        f"{outputs.gallery_updates} derivative mapping(s) refreshed"
-    )
+    if config.gallery.enabled:
+        console.print(
+            "[bold green]Gallery[/]: "
+            f"{gallery_workspace.collection_count()} collection(s) with "
+            f"{gallery_workspace.image_count()} image(s); "
+            f"{len(gallery_workspace.collection_writes)} collection sidecar(s) "
+            f"and {len(gallery_workspace.image_writes)} image sidecar(s) updated; "
+            f"{outputs.gallery_updates} derivative mapping(s) refreshed"
+        )
+    else:
+        console.print("[bold blue]Gallery[/]: feature disabled.")
 
 
 def _stage_static_assets(
@@ -365,8 +375,12 @@ def _stage_static_assets(
     template_assets = TemplateAssets(config)
     template_assets.write_site_config()
     article_pages = write_article_pages(documents, config, assets=template_assets)
-    gallery_page = write_gallery_page(config, template_assets)
-    export_gallery_datasets(gallery_workspace, config)
+    gallery_page: Path | None = None
+    if config.gallery.enabled:
+        gallery_page = write_gallery_page(config, template_assets)
+        export_gallery_datasets(gallery_workspace, config)
+    else:
+        _prune_gallery_outputs(config)
     music_page: Path | None = None
     music_result: MusicExportResult | None = None
     if config.music.enabled:
@@ -381,6 +395,15 @@ def _stage_static_assets(
         music_page=music_page,
         music_result=music_result,
     )
+
+
+def _prune_gallery_outputs(config: Config) -> None:
+    """Remove gallery artifacts when the feature is disabled."""
+    gallery_page_dir = config.output_dir / "gallery"
+    gallery_data_dir = config.output_dir / config.gallery.data_subdir
+    for path in (gallery_page_dir, gallery_data_dir):
+        if path.exists():
+            shutil.rmtree(path, ignore_errors=True)
 
 
 def _prune_music_outputs(config: Config) -> None:
@@ -421,10 +444,15 @@ def _print_stage_summary(
             f"rendered {len(stage_artifacts.article_pages)} page(s) in "
             f"{_display_path(config.output_dir / 'posts')}"
         )
-    console.print(
-        "[bold green]Gallery page[/]: "
-        f"rendered {_display_path(stage_artifacts.gallery_page)}"
-    )
+    if stage_artifacts.gallery_page is not None:
+        console.print(
+            "[bold green]Gallery page[/]: "
+            f"rendered {_display_path(stage_artifacts.gallery_page)}"
+        )
+    elif config.gallery.enabled:
+        console.print("[bold yellow]Gallery page[/]: no page rendered.")
+    else:
+        console.print("[bold blue]Gallery page[/]: feature disabled.")
     if stage_artifacts.music_page is not None:
         console.print(
             "[bold green]Music page[/]: "
@@ -435,12 +463,14 @@ def _print_stage_summary(
     else:
         console.print("[bold blue]Music page[/]: feature disabled.")
 
-    if gallery_workspace.data_writes:
+    if config.gallery.enabled and gallery_workspace.data_writes:
         console.print(
             "[bold green]Gallery data[/]: "
             f"wrote {len(gallery_workspace.data_writes)} file(s) to "
             f"{_display_path(config.output_dir / config.gallery.data_subdir)}"
         )
+    elif not config.gallery.enabled:
+        console.print("[bold blue]Gallery data[/]: feature disabled.")
 
     if stage_artifacts.music_result and stage_artifacts.music_result.written:
         console.print(
