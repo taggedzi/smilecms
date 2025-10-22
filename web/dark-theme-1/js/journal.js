@@ -49,7 +49,6 @@ function renderSiteChrome(siteConfig) {
   navEl.innerHTML = "";
   footerEl.innerHTML = "";
 
-  attachThemeToggle(headerEl);
   renderHeader(headerEl, siteConfig.site);
   renderNavigation(navEl, siteConfig.navigation);
   renderFooter(footerEl, siteConfig.footer);
@@ -459,24 +458,6 @@ function useTemplate(id) {
     throw new Error(`Template ${id} not found`);
   }
   return template.content || template;
-}
-
-function attachThemeToggle(headerEl) {
-  const shell = document.getElementById("app-shell");
-  if (!shell) return;
-
-  headerEl.addEventListener("click", (event) => {
-    const target = event.target;
-    if (
-      target instanceof HTMLElement &&
-      target.matches("[data-theme-toggle]")
-    ) {
-      const isDark = shell.dataset.theme !== "dark";
-      shell.dataset.theme = isDark ? "dark" : "light";
-      document.documentElement.dataset.theme = shell.dataset.theme;
-      target.setAttribute("aria-pressed", String(isDark));
-    }
-  });
 }
 
 function normalizeFooterEntry(entry = {}) {

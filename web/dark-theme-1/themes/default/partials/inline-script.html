@@ -64,15 +64,6 @@
   if (shell && shell.dataset.theme) {
     document.documentElement.dataset.theme = shell.dataset.theme;
   }
-  const themeToggle = document.querySelector('[data-theme-toggle]');
-  if (shell && themeToggle) {
-    themeToggle.addEventListener('click', () => {
-      const next = shell.dataset.theme === 'dark' ? 'light' : 'dark';
-      shell.dataset.theme = next;
-      document.documentElement.dataset.theme = next;
-      themeToggle.setAttribute('aria-pressed', String(next === 'dark'));
-    });
-  }
   const navToggle = document.querySelector('.nav-toggle');
   const navMenu = document.getElementById('nav-menu');
   if (navToggle && navMenu) {

@@ -725,19 +725,12 @@ function renderSiteChrome(siteConfig) {
   const footerConfig = siteConfig?.footer ?? {};
 
   if (header) {
-    const shell = document.getElementById("app-shell");
-    const isDark = (shell?.dataset.theme || "dark") !== "light";
     const tagline = site.tagline || "SmileCMS";
     const title = site.title || "SmileCMS";
     header.innerHTML = `
       <div class="site-brand">
         <span class="pill">${escapeHtml(tagline)}</span>
         <h1 class="headline-2">${escapeHtml(title)}</h1>
-      </div>
-      <div class="site-actions">
-        <button class="button button--secondary" data-theme-toggle aria-pressed="${String(isDark)}">
-          Toggle theme
-        </button>
       </div>
     `;
   }
@@ -810,24 +803,6 @@ function renderSiteChrome(siteConfig) {
   if (footer) {
     renderFooterSection(footer, footerConfig);
   }
-
-  attachThemeToggle(header);
-}
-
-function attachThemeToggle(header) {
-  if (!header) return;
-  const shell = document.getElementById("app-shell");
-  if (!shell) return;
-
-  header.addEventListener("click", (event) => {
-    const target = event.target;
-    if (target instanceof HTMLElement && target.matches("[data-theme-toggle]")) {
-      const next = shell.dataset.theme === "dark" ? "light" : "dark";
-      shell.dataset.theme = next;
-      document.documentElement.dataset.theme = next;
-      target.setAttribute("aria-pressed", String(next === "dark"));
-    }
-  });
 }
 
 function renderFooterSection(container, footer = {}) {

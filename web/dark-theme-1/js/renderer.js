@@ -64,7 +64,6 @@ function renderSite({ manifest, siteConfig }) {
   mainEl.innerHTML = "";
   footerEl.innerHTML = "";
 
-  attachThemeToggle(headerEl);
   renderHeader(headerEl, siteConfig.site);
   renderNavigation(navEl, siteConfig.navigation);
   renderHero(mainEl, siteConfig.hero);
@@ -648,24 +647,6 @@ function formatTags(tags = [], limit) {
   if (!tags.length) return "";
   const subset = limit ? tags.slice(0, limit) : tags;
   return subset.map((tag) => `#${tag}`).join(" ");
-}
-
-function attachThemeToggle(headerEl) {
-  const shell = document.getElementById("app-shell");
-  if (!shell) return;
-
-  headerEl.addEventListener("click", (event) => {
-    const target = event.target;
-    if (
-      target instanceof HTMLElement &&
-      target.matches("[data-theme-toggle]")
-    ) {
-      const isDark = shell.dataset.theme !== "dark";
-      shell.dataset.theme = isDark ? "dark" : "light";
-      document.documentElement.dataset.theme = shell.dataset.theme;
-      target.setAttribute("aria-pressed", String(isDark));
-    }
-  });
 }
 
 function normalizeList(value, fallback) {

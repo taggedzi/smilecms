@@ -70,7 +70,7 @@ All page entrypoints inherit a shared context surface; individual pages (for exa
 | `article` | `{ "summary": str, "meta_items": [str], "tags": [str], "hero": {"url", "alt"}?, "body_html": Markup, "back": {"href","label"}, "footer": {"href","copy"} }`. |
 | `gallery` | `{ "loading_message": str }` supplied when rendering `pages/gallery.html`. |
 | `music` | `{ "loading_message": str }` supplied when rendering `pages/music.html`. |
-| `shell` | `{ "theme": str, "data_attributes": { "site-config": str, ... } }` seeds theme toggles and data attributes. |
+| `shell` | `{ "theme": str, "data_attributes": { "site-config": str, ... } }` seeds theme-related data attributes. |
 | `assets` | Dictionary derived from the manifest (`styles`, `scripts`). |
 | `feeds` | Convenience mapping for `/feed.xml`, `/atom.xml`, `/feed.json`. |
 
