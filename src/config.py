@@ -180,7 +180,11 @@ class Config(BaseModel):
     media_dir: Path = Field(default=Path("media"))
     article_media_dir: Path = Field(default=Path("content/media"))
     output_dir: Path = Field(default=Path("site"))
-    templates_dir: Path = Field(default=Path("web"))
+    templates_dir: Path = Field(default=Path("web/dark-theme-1"))
+    site_theme: str | None = Field(
+        default=None,
+        description="Optional theme folder located under templates_dir to stage for the build.",
+    )
     themes_dir: Path | None = Field(default=None)
     theme_name: str = Field(default="default")
     cache_dir: Path = Field(default=Path(".cache"))
@@ -219,7 +223,13 @@ class Config(BaseModel):
     def themes_root(self) -> Path:
         if self.themes_dir is not None:
             return self.themes_dir
-        return self.templates_dir / "themes"
+        return self.resolved_templates_dir / "themes"
+
+    @property
+    def resolved_templates_dir(self) -> Path:
+        if not self.site_theme:
+            return self.templates_dir
+        return self.templates_dir / self.site_theme
 
 
 def load_config(path: str | Path) -> Config:

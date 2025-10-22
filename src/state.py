@@ -99,7 +99,7 @@ class BuildTracker:
             "article_media_dir": _hash_tree(config.article_media_dir),
             "gallery_dir": _hash_tree(config.gallery.source_dir),
             "music_dir": _hash_tree(config.music.source_dir),
-            "templates_dir": _hash_tree(config.templates_dir),
+            "templates_dir": _hash_tree(config.resolved_templates_dir),
         }
 
     def summarize_changes(self, current: Mapping[str, str]) -> ChangeSummary:

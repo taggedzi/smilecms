@@ -33,7 +33,7 @@ class TemplateAssets:
         self.feed_links = self._build_feed_links()
 
     def _load_site_config(self) -> dict[str, Any]:
-        config_path = self.config.templates_dir / "config" / "site.json"
+        config_path = self.config.resolved_templates_dir / "config" / "site.json"
         if not config_path.exists():
             logger.warning("Site configuration not found at %s; using defaults.", config_path)
             return {}

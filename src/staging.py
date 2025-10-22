@@ -40,7 +40,7 @@ def stage_static_site(
     """
     result = StagingResult()
 
-    template_root = config.templates_dir
+    template_root = config.resolved_templates_dir
     output_root = config.output_dir
     output_root.mkdir(parents=True, exist_ok=True)
 
