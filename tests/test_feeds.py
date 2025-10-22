@@ -34,7 +34,7 @@ def _manifest_item(slug: str) -> ManifestItem:
 
 
 def test_generate_feeds_writes_all_formats(tmp_path: Path) -> None:
-    template_dir = tmp_path / "web"
+    template_dir = tmp_path / "web" / "dark-theme-1"
     (template_dir / "config").mkdir(parents=True)
     (template_dir / "config" / "site.json").write_text(
         json.dumps(
@@ -82,7 +82,7 @@ def test_generate_feeds_writes_all_formats(tmp_path: Path) -> None:
 
 
 def test_generate_feeds_respects_disabled(tmp_path: Path) -> None:
-    template_dir = tmp_path / "web"
+    template_dir = tmp_path / "web" / "dark-theme-1"
     (template_dir / "config").mkdir(parents=True)
     (template_dir / "config" / "site.json").write_text("{}", encoding="utf-8")
 

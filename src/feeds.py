@@ -155,7 +155,7 @@ def _load_site_metadata(config: Config, base_url: str | None) -> dict[str, str]:
     site_path = (
         settings.site_config_path
         if settings.site_config_path is not None
-        else config.templates_dir / "config" / "site.json"
+        else config.resolved_templates_dir / "config" / "site.json"
     )
 
     data: dict[str, Any] = {}

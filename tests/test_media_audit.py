@@ -43,7 +43,7 @@ def _config(tmp_path: Path) -> Config:
         article_media_dir=article_media_dir,
         media_dir=media_dir,
         output_dir=tmp_path / "site",
-        templates_dir=tmp_path / "web",
+        templates_dir=tmp_path / "web" / "dark-theme-1",
         cache_dir=tmp_path / ".cache",
         media_processing=MediaProcessingConfig(
             source_dir=article_media_dir,

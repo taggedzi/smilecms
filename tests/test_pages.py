@@ -8,7 +8,7 @@ from src.config import Config
 from src.pages import write_gallery_page, write_music_page
 from src.templates import TemplateAssets
 
-THEME_SOURCE = Path(__file__).resolve().parents[1] / "web" / "themes" / "default"
+THEME_SOURCE = Path(__file__).resolve().parents[1] / "web" / "dark-theme-1" / "themes" / "default"
 
 
 def _copy_default_theme(destination: Path) -> None:
@@ -58,7 +58,7 @@ def _write_site_config(path: Path) -> None:
 
 
 def test_write_gallery_page_uses_theme_layout(tmp_path: Path) -> None:
-    templates_dir = tmp_path / "web"
+    templates_dir = tmp_path / "web" / "dark-theme-1"
     output_dir = tmp_path / "site"
     _copy_default_theme(templates_dir / "themes" / "default")
     _write_site_config(templates_dir / "config" / "site.json")
@@ -83,7 +83,7 @@ def test_write_gallery_page_uses_theme_layout(tmp_path: Path) -> None:
 
 
 def test_write_music_page_uses_theme_layout(tmp_path: Path) -> None:
-    templates_dir = tmp_path / "web"
+    templates_dir = tmp_path / "web" / "dark-theme-1"
     output_dir = tmp_path / "site"
     _copy_default_theme(templates_dir / "themes" / "default")
     _write_site_config(templates_dir / "config" / "site.json")
@@ -104,7 +104,7 @@ def test_write_music_page_uses_theme_layout(tmp_path: Path) -> None:
 
 
 def test_disabling_music_prunes_navigation_and_data_attributes(tmp_path: Path) -> None:
-    templates_dir = tmp_path / "web"
+    templates_dir = tmp_path / "web" / "dark-theme-1"
     output_dir = tmp_path / "site"
     _copy_default_theme(templates_dir / "themes" / "default")
     _write_site_config(templates_dir / "config" / "site.json")
@@ -165,7 +165,7 @@ def test_disabling_music_prunes_navigation_and_data_attributes(tmp_path: Path) -
 
 
 def test_disabling_gallery_prunes_navigation_and_data_attributes(tmp_path: Path) -> None:
-    templates_dir = tmp_path / "web"
+    templates_dir = tmp_path / "web" / "dark-theme-1"
     output_dir = tmp_path / "site"
     _copy_default_theme(templates_dir / "themes" / "default")
     _write_site_config(templates_dir / "config" / "site.json")

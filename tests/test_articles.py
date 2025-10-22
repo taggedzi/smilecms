@@ -9,7 +9,7 @@ from src.articles import ArticleBodyRenderer, write_article_pages
 from src.config import Config
 from src.content import ContentDocument, ContentMeta, ContentStatus, MediaReference
 
-THEME_SOURCE = Path(__file__).resolve().parents[1] / "web" / "themes" / "default"
+THEME_SOURCE = Path(__file__).resolve().parents[1] / "web" / "dark-theme-1" / "themes" / "default"
 
 
 def _make_document(slug: str = "sample-post") -> ContentDocument:
@@ -57,7 +57,7 @@ def _expected_asset_prefix(slug: str) -> str:
 
 
 def test_write_article_page_uses_theme_layout(tmp_path: Path) -> None:
-    templates_dir = tmp_path / "web"
+    templates_dir = tmp_path / "web" / "dark-theme-1"
     output_dir = tmp_path / "site"
     _copy_default_theme(templates_dir / "themes" / "default")
     _write_site_config(templates_dir / "config" / "site.json")
@@ -86,7 +86,7 @@ def test_write_article_page_uses_theme_layout(tmp_path: Path) -> None:
 
 
 def test_write_article_page_uses_fallback_theme(tmp_path: Path) -> None:
-    templates_dir = tmp_path / "web"
+    templates_dir = tmp_path / "web" / "dark-theme-1"
     output_dir = tmp_path / "site"
     _copy_default_theme(templates_dir / "themes" / "default")
     _write_site_config(templates_dir / "config" / "site.json")

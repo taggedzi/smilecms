@@ -430,7 +430,7 @@ def _print_stage_summary(
     else:
         console.print(
             "[bold yellow]Static bundle[/]: "
-            f"no template assets found at {_display_path(config.templates_dir)}"
+            f"no template assets found at {_display_path(config.resolved_templates_dir)}"
         )
     if stage_result.removed_templates:
         console.print(
