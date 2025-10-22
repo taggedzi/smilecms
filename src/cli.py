@@ -44,7 +44,7 @@ from .media import (
     process_media_plan,
 )
 from .music import MusicExportResult, export_music_catalog
-from .pages import write_gallery_page, write_music_page
+from .pages import write_error_pages, write_gallery_page, write_music_page
 from .reporting import (
     BuildReport,
     assemble_report,
@@ -111,6 +111,7 @@ class StageArtifacts:
     gallery_page: Path | None
     music_page: Path | None
     music_result: MusicExportResult | None
+    error_pages: list[Path]
 
 
 @app.command()
@@ -388,12 +389,14 @@ def _stage_static_assets(
         music_result = export_music_catalog(documents, config)
     else:
         _prune_music_outputs(config)
+    error_pages = write_error_pages(config, template_assets)
     return StageArtifacts(
         stage_result=stage_result,
         article_pages=article_pages,
         gallery_page=gallery_page,
         music_page=music_page,
         music_result=music_result,
+        error_pages=error_pages,
     )
 
 
@@ -462,6 +465,12 @@ def _print_stage_summary(
         console.print("[bold yellow]Music page[/]: no page rendered.")
     else:
         console.print("[bold blue]Music page[/]: feature disabled.")
+    if stage_artifacts.error_pages:
+        console.print(
+            "[bold green]Error pages[/]: "
+            f"rendered {len(stage_artifacts.error_pages)} file(s) in "
+            f"{_display_path(config.output_dir)}"
+        )
 
     if config.gallery.enabled and gallery_workspace.data_writes:
         console.print(

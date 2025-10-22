@@ -4,8 +4,17 @@ import json
 import shutil
 from pathlib import Path
 
+import pytest
+
 from src.config import Config
-from src.pages import write_gallery_page, write_music_page
+from src.pages import (
+    DEFAULT_ERROR_PAGES,
+    ErrorPageAction,
+    ErrorPageDefinition,
+    write_error_pages,
+    write_gallery_page,
+    write_music_page,
+)
 from src.templates import TemplateAssets
 
 THEME_SOURCE = Path(__file__).resolve().parents[1] / "web" / "dark-theme-1" / "themes" / "default"
@@ -101,6 +110,80 @@ def test_write_music_page_uses_theme_layout(tmp_path: Path) -> None:
     assert 'href="../styles/music.css"' in page
     assert '<script type="module" src="../js/music.js"></script>' in page
     assert "window.__SMILE_DATA__" in page
+
+
+def test_write_error_pages_produces_plain_markup(tmp_path: Path) -> None:
+    templates_dir = tmp_path / "web" / "dark-theme-1"
+    output_dir = tmp_path / "site"
+    _copy_default_theme(templates_dir / "themes" / "default")
+    _write_site_config(templates_dir / "config" / "site.json")
+
+    config = Config(output_dir=output_dir, templates_dir=templates_dir)
+    assets = TemplateAssets(config)
+
+    written_paths = write_error_pages(config, assets)
+
+    assert len(written_paths) == len(DEFAULT_ERROR_PAGES)
+
+    page_404 = next(path for path in written_paths if path.name == "404.html")
+    html_404 = page_404.read_text(encoding="utf-8")
+
+    assert "<title>404 Page Not Found | Test Site</title>" in html_404
+    assert "<style>" in html_404
+    assert 'class="error-card"' in html_404
+    assert 'class="site-header"' not in html_404
+    assert '<a class="error-link" href="/">Return Home</a>' in html_404
+    assert "Check the URL for typos" in html_404
+    assert '<link rel="stylesheet"' not in html_404
+
+
+def test_write_error_pages_supports_custom_paths(tmp_path: Path) -> None:
+    templates_dir = tmp_path / "web" / "dark-theme-1"
+    output_dir = tmp_path / "site"
+    _copy_default_theme(templates_dir / "themes" / "default")
+    _write_site_config(templates_dir / "config" / "site.json")
+
+    config = Config(output_dir=output_dir, templates_dir=templates_dir)
+    assets = TemplateAssets(config)
+
+    custom_definition = ErrorPageDefinition(
+        code=451,
+        title="Unavailable for Legal Reasons",
+        message="Access to this resource is restricted.",
+        suggestions=("Contact support if you believe this is an error.",),
+        actions=(ErrorPageAction(label="Contact Support", href="/contact/"),),
+        filename="errors/legal/451.html",
+    )
+
+    written_paths = write_error_pages(config, assets, definitions=[custom_definition])
+
+    assert written_paths == [output_dir / "errors" / "legal" / "451.html"]
+    html = written_paths[0].read_text(encoding="utf-8")
+    assert "<title>451 Unavailable for Legal Reasons | Test Site</title>" in html
+    assert "Access to this resource is restricted." in html
+    assert "Contact support if you believe this is an error." in html
+    assert '<a class="error-link" href="/contact/">Contact Support</a>' in html
+    assert '<a class="error-link" href="/">Return Home</a>' in html
+
+
+def test_write_error_pages_rejects_non_relative_paths(tmp_path: Path) -> None:
+    templates_dir = tmp_path / "web" / "dark-theme-1"
+    output_dir = tmp_path / "site"
+    _copy_default_theme(templates_dir / "themes" / "default")
+    _write_site_config(templates_dir / "config" / "site.json")
+
+    config = Config(output_dir=output_dir, templates_dir=templates_dir)
+    assets = TemplateAssets(config)
+
+    unsafe_definition = ErrorPageDefinition(
+        code=418,
+        title="I'm a teapot",
+        message="Short and stout.",
+        filename="../outside.html",
+    )
+
+    with pytest.raises(ValueError, match="relative to the site root"):
+        write_error_pages(config, assets, definitions=[unsafe_definition])
 
 
 def test_disabling_music_prunes_navigation_and_data_attributes(tmp_path: Path) -> None:
