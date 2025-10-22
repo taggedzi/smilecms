@@ -18,9 +18,10 @@ media_processing:
       format: "jpg"
       quality: 85
 gallery:
+  enabled: true
   source_dir: "media/image_gallery_raw"
   metadata_filename: "meta.yml"
 music:
-  enabled: false
+  enabled: true
   source_dir: "media/music_collection"
   metadata_filename: "meta.yml"

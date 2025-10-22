@@ -37,6 +37,10 @@ class MediaProcessingConfig(BaseModel):
 class GalleryConfig(BaseModel):
     """Configuration for gallery collection ingestion and publication."""
 
+    enabled: bool = Field(
+        default=True,
+        description="Toggle gallery ingestion and publication.",
+    )
     source_dir: Path = Field(default=Path("media/image_gallery_raw"))
     metadata_filename: str = Field(
         default="collection.json",

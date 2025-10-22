@@ -31,8 +31,8 @@ The preview and verification commands operate on the generated bundle in `site/`
 - **Options:**
   - `--config PATH`: choose a different config file.
   - `--force`, `-f`: delete the output directories (`site/`, media derivatives) before rebuilding.
-- **Inputs:** `smilecms.yml` (or the path passed via `--config`), source Markdown in `content/`, gallery collections under `media/image_gallery_raw/`, optional music collections under `media/music_collection/`, and templates in `web/`.
-- **Outputs:** refreshed `site/` bundle (HTML, CSS/JS, manifests), `media/derived/` assets, gallery datasets under `site/data/`, music exports when enabled, and a build report (`site/report.json`). The console prints a structured summary highlighting counts, locations, and any warnings gathered during the run.
+- **Inputs:** `smilecms.yml` (or the path passed via `--config`), source Markdown in `content/`, optional gallery collections under `media/image_gallery_raw/`, optional music collections under `media/music_collection/`, and templates in `web/`.
+- **Outputs:** refreshed `site/` bundle (HTML, CSS/JS, manifests), `media/derived/` assets, gallery datasets under `site/data/` when enabled, music exports when enabled, and a build report (`site/report.json`). The console prints a structured summary highlighting counts, locations, and any warnings gathered during the run.
 - **Example:**
   ```bash
   smilecms build
