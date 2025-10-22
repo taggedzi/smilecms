@@ -107,8 +107,8 @@ class StageArtifacts:
     stage_result: StagingResult
     article_pages: list[Path]
     gallery_page: Path
-    music_page: Path
-    music_result: MusicExportResult
+    music_page: Path | None
+    music_result: MusicExportResult | None
 
 
 @app.command()
@@ -363,11 +363,17 @@ def _stage_static_assets(
         previous_template_paths=previous_templates,
     )
     template_assets = TemplateAssets(config)
+    template_assets.write_site_config()
     article_pages = write_article_pages(documents, config, assets=template_assets)
     gallery_page = write_gallery_page(config, template_assets)
-    music_page = write_music_page(config, template_assets)
     export_gallery_datasets(gallery_workspace, config)
-    music_result = export_music_catalog(documents, config)
+    music_page: Path | None = None
+    music_result: MusicExportResult | None = None
+    if config.music.enabled:
+        music_page = write_music_page(config, template_assets)
+        music_result = export_music_catalog(documents, config)
+    else:
+        _prune_music_outputs(config)
     return StageArtifacts(
         stage_result=stage_result,
         article_pages=article_pages,
@@ -375,6 +381,15 @@ def _stage_static_assets(
         music_page=music_page,
         music_result=music_result,
     )
+
+
+def _prune_music_outputs(config: Config) -> None:
+    """Remove music artifacts when the feature is disabled."""
+    music_page_dir = config.output_dir / "music"
+    music_data_dir = config.output_dir / config.music.data_subdir
+    for path in (music_page_dir, music_data_dir):
+        if path.exists():
+            shutil.rmtree(path, ignore_errors=True)
 
 
 def _print_stage_summary(
@@ -410,10 +425,15 @@ def _print_stage_summary(
         "[bold green]Gallery page[/]: "
         f"rendered {_display_path(stage_artifacts.gallery_page)}"
     )
-    console.print(
-        "[bold green]Music page[/]: "
-        f"rendered {_display_path(stage_artifacts.music_page)}"
-    )
+    if stage_artifacts.music_page is not None:
+        console.print(
+            "[bold green]Music page[/]: "
+            f"rendered {_display_path(stage_artifacts.music_page)}"
+        )
+    elif config.music.enabled:
+        console.print("[bold yellow]Music page[/]: no page rendered.")
+    else:
+        console.print("[bold blue]Music page[/]: feature disabled.")
 
     if gallery_workspace.data_writes:
         console.print(
@@ -422,13 +442,15 @@ def _print_stage_summary(
             f"{_display_path(config.output_dir / config.gallery.data_subdir)}"
         )
 
-    if stage_artifacts.music_result.written:
+    if stage_artifacts.music_result and stage_artifacts.music_result.written:
         console.print(
             "[bold green]Music catalog[/]: "
             f"exported {stage_artifacts.music_result.tracks} track(s); wrote "
             f"{len(stage_artifacts.music_result.written)} file(s) to "
             f"{_display_path(config.output_dir / config.music.data_subdir)}"
         )
+    elif not config.music.enabled:
+        console.print("[bold blue]Music catalog[/]: feature disabled.")
 
     console.print(
         "[bold green]Report[/]: "
@@ -440,11 +462,12 @@ def _print_stage_summary(
 def _print_accumulated_warnings(
     report: BuildReport,
     gallery_workspace: "GalleryWorkspace",
-    music_result: MusicExportResult,
+    music_result: MusicExportResult | None,
 ) -> None:
     warnings = list(report.warnings)
     warnings.extend(gallery_workspace.warnings)
-    warnings.extend(music_result.warnings)
+    if music_result:
+        warnings.extend(music_result.warnings)
     if warnings:
         console.print("[bold yellow]Warnings:[/]")
         for warning in warnings:

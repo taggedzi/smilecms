@@ -78,3 +78,60 @@ def test_write_music_page_uses_theme_layout(tmp_path: Path) -> None:
     assert 'href="../styles/music.css"' in page
     assert '<script type="module" src="../js/music.js"></script>' in page
     assert "window.__SMILE_DATA__" in page
+
+
+def test_disabling_music_prunes_navigation_and_data_attributes(tmp_path: Path) -> None:
+    templates_dir = tmp_path / "web"
+    output_dir = tmp_path / "site"
+    _copy_default_theme(templates_dir / "themes" / "default")
+    _write_site_config(templates_dir / "config" / "site.json")
+
+    config = Config(output_dir=output_dir, templates_dir=templates_dir, music={"enabled": False})
+    assets = TemplateAssets(config)
+    written_config_path = assets.write_site_config(output_dir / "config" / "site.json")
+
+    page_path = write_gallery_page(config, assets)
+    page = page_path.read_text(encoding="utf-8")
+
+    assert 'href="/music/' not in page
+    assert "js/music.js" not in page
+    assert "data-music-tracks" not in page
+
+    navigation = assets.site_config.get("navigation", [])
+    assert isinstance(navigation, list)
+    assert all(
+        not (isinstance(item, dict) and str(item.get("label") or "").strip().lower() == "music")
+        for item in navigation
+    )
+
+    hero = assets.site_config.get("hero", {})
+    actions = hero.get("actions") if isinstance(hero, dict) else None
+    if isinstance(actions, list):
+        assert all(
+            not (
+                isinstance(action, dict)
+                and str(action.get("href") or "").strip().rstrip("/").endswith("music")
+            )
+            for action in actions
+        )
+
+    sections = assets.site_config.get("sections", [])
+    if isinstance(sections, list):
+        assert all(
+            not (
+                isinstance(section, dict)
+                and str(section.get("type") or "").strip().lower() == "audio"
+            )
+            for section in sections
+        )
+
+    written_config = json.loads(written_config_path.read_text(encoding="utf-8"))
+    sections_from_file = written_config.get("sections", [])
+    if isinstance(sections_from_file, list):
+        assert all(
+            not (
+                isinstance(section, dict)
+                and str(section.get("type") or "").strip().lower() == "audio"
+            )
+            for section in sections_from_file
+        )
