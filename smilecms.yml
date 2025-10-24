@@ -18,6 +18,22 @@ media_processing:
       width: 1920
       format: "jpg"
       quality: 85
+  watermark:
+    enabled: true
+    text: "© Your Site Name"
+    opacity: 32
+    color: "#FFFFFF"
+    angle: 30
+    font_path: "media/fonts/Inter-SemiBold.ttf"
+    font_size_ratio: 0.05
+    spacing_ratio: 0.6
+    min_size: 256
+  embed_metadata:
+    enabled: true
+    artist: "Your Name or Org"
+    copyright: "© 2025 Your Name"
+    license: "CC BY-NC-SA 4.0"
+    url: "https://example.com"
 gallery:
   enabled: true
   source_dir: "media/image_gallery_raw"
