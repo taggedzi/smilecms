@@ -321,13 +321,15 @@ def _apply_watermark(image: Image.Image, wm: MediaWatermarkConfig) -> Image.Imag
 
     shorter = max(1, min(width, height))
     font_size = max(1, int(shorter * wm.font_size_ratio))
-    try:
-        if wm.font_path:
+    # Ensure consistent type across code paths for mypy
+    font: ImageFont.ImageFont
+    if wm.font_path:
+        try:
             font = ImageFont.truetype(str(wm.font_path), font_size)
-        else:
-            # load_default doesn't scale; still usable as fallback
+        except Exception:
             font = ImageFont.load_default()
-    except Exception:
+    else:
+        # load_default doesn't scale; still usable as fallback
         font = ImageFont.load_default()
 
     # Create a large transparent canvas to allow rotation without clipping, then crop
