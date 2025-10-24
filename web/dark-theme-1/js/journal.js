@@ -11,6 +11,9 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeJournal();
 });
 
+// Maximum number of tags to show per card before summarizing
+const MAX_TAGS_PER_CARD = 6;
+
 async function initializeJournal() {
   const main = document.getElementById("main");
   if (!main) return;
@@ -218,11 +221,21 @@ function renderJournal(container, articles) {
 }
 
 function renderTags(tags = []) {
-  if (!tags.length) return "";
-  const tagMarkup = tags
+  if (!Array.isArray(tags) || tags.length === 0) return "";
+
+  const visible = tags.slice(0, Math.max(0, MAX_TAGS_PER_CARD));
+  const hiddenCount = Math.max(0, tags.length - visible.length);
+
+  const pills = visible
     .map((tag) => `<li><span class="pill pill--light">#${escapeHtml(tag)}</span></li>`)
     .join("");
-  return `<ul class="journal-card__tags">${tagMarkup}</ul>`;
+
+  const more =
+    hiddenCount > 0
+      ? `<li><span class="pill pill--light" title="${escapeHtml(tags.join(", "))}">+${hiddenCount} more</span></li>`
+      : "";
+
+  return `<ul class="journal-card__tags">${pills}${more}</ul>`;
 }
 
 function compareDates(a, b) {
