@@ -7,7 +7,7 @@ import logging
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, Set, Any
+from typing import Dict, Iterable, Set, Any, Union, cast
 
 import math
 from PIL import Image, ImageDraw, ImageFont
@@ -322,7 +322,7 @@ def _apply_watermark(image: Image.Image, wm: MediaWatermarkConfig) -> Image.Imag
     shorter = max(1, min(width, height))
     font_size = max(1, int(shorter * wm.font_size_ratio))
     # Ensure consistent type across code paths for mypy
-    font: ImageFont.ImageFont
+    font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
     if wm.font_path:
         try:
             font = ImageFont.truetype(str(wm.font_path), font_size)
@@ -340,7 +340,7 @@ def _apply_watermark(image: Image.Image, wm: MediaWatermarkConfig) -> Image.Imag
     text = wm.text
     # Measure text
     try:
-        bbox = draw.textbbox((0, 0), text, font=font)
+        bbox = draw.textbbox((0, 0), text, font=cast(ImageFont.ImageFont, font))
         text_w = max(1, bbox[2] - bbox[0])
         text_h = max(1, bbox[3] - bbox[1])
     except Exception:
@@ -358,7 +358,7 @@ def _apply_watermark(image: Image.Image, wm: MediaWatermarkConfig) -> Image.Imag
         # offset every other row for a nice pattern
         x_offset = 0 if ((y // step_y) % 2 == 0) else step_x // 2
         for x in range(-step_x, diag + step_x, step_x):
-            draw.text((x + x_offset, y), text, font=font, fill=fill)
+            draw.text((x + x_offset, y), text, font=cast(ImageFont.ImageFont, font), fill=fill)
 
     # Rotate and crop the overlay back to image size
     rotated = overlay.rotate(wm.angle, resample=Image.Resampling.BICUBIC, expand=True)
