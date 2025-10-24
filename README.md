@@ -81,3 +81,8 @@ For a quick local preview of the production bundle, run `smilecms preview` and v
 - [`docs/requirements.md`](docs/requirements.md) — product requirements and technical goals.
 
 Keep the docs in sync with pipeline changes so future contributors can pick up the project without guesswork.
+
+## Themes
+
+- `web/dark-theme-1/` - original SmileCMS theme with a moody, cinematic palette.
+- `web/bold-theme-1/` - new high-contrast "Bold Theme 1" inspired by the provided concept art. Copy the directory or point `smilecms.yml` at it via `site_theme` to stage the new experience.

@@ -1,0 +1,13 @@
+{% extends theme.entrypoints.base %}
+
+{% block title %}
+{{ page.title }}
+{% endblock %}
+
+{% block main %}
+<main id="main" class="site-main" tabindex="-1">
+  <section class="loading-state" aria-live="polite">
+    <p>{{ index.placeholder }}</p>
+  </section>
+</main>
+{% endblock %}

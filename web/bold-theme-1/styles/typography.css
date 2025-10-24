@@ -1,0 +1,49 @@
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-family-heading);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+p {
+  margin: 0 0 var(--space-md);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-base);
+}
+
+.headline-1 {
+  font-size: clamp(2rem, 4vw, var(--font-size-xxl));
+}
+
+.headline-2 {
+  font-size: clamp(1.5rem, 3vw, var(--font-size-xl));
+}
+
+.headline-3 {
+  font-size: clamp(1.25rem, 2vw, var(--font-size-lg));
+}
+
+.caption {
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}

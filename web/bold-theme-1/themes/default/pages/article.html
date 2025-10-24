@@ -1,0 +1,50 @@
+{% extends theme.entrypoints.base %}
+
+{% block title %}{{ document.title }} - {{ site.title or document.slug }}{% endblock %}
+
+{% block main %}
+<main id="main" class="article-main" tabindex="-1">
+  <div class="article-shell">
+    <header class="article-header">
+      <nav class="article-nav">
+        <a class="article-nav__back" href="{{ article.back.href }}">{{ article.back.label }}</a>
+      </nav>
+    </header>
+    <section id="article" class="article-content" aria-labelledby="article-title">
+      <article class="article-card">
+        <header class="article-card__header">
+          <h1 id="article-title">{{ document.title }}</h1>
+          {% if article.summary %}
+          <p>{{ article.summary }}</p>
+          {% endif %}
+          {% if article.meta_items %}
+          <div class="article-card__meta">
+            {% for item in article.meta_items %}
+            <span>{{ item }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if article.tags %}
+          <ul class="article-card__tags">
+            {% for tag in article.tags %}
+            <li><span class="pill pill--light">#{{ tag }}</span></li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </header>
+        {% if article.hero %}
+        <figure class="article-hero">
+          <img src="{{ article.hero.url }}" alt="{{ article.hero.alt }}" loading="lazy" />
+        </figure>
+        {% endif %}
+        <div class="article-card__body">
+          {{ article.body_html | safe }}
+        </div>
+      </article>
+    </section>
+    <footer class="article-footer">
+      <a href="{{ article.footer.href }}">{{ article.footer["copy"] }}</a>
+    </footer>
+  </div>
+</main>
+{% endblock %}

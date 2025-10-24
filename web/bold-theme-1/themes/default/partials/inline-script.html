@@ -1,0 +1,80 @@
+<script>
+(function () {
+  const shell = document.getElementById('app-shell');
+  const existingData = window.__SMILE_DATA__ || {};
+  const parseList = (value) =>
+    typeof value === 'string'
+      ? value
+          .split(/\s+/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [];
+  const normalizeList = (value) => {
+    if (Array.isArray(value)) {
+      return value.filter(Boolean);
+    }
+    if (typeof value === 'string') {
+      return parseList(value);
+    }
+    if (value) {
+      return [String(value)];
+    }
+    return [];
+  };
+  const mergeList = (attrValue, fallback) => {
+    const parsed = parseList(attrValue);
+    if (parsed.length) {
+      return parsed;
+    }
+    return normalizeList(fallback);
+  };
+  const mergeRecord = (attrMap, existingRecord) => {
+    const record = { ...(existingRecord || {}) };
+    for (const [key, attrValue] of Object.entries(attrMap)) {
+      const merged = mergeList(attrValue, existingRecord ? existingRecord[key] : undefined);
+      if (merged.length) {
+        record[key] = merged;
+      }
+    }
+    return record;
+  };
+
+  const nextData = { ...existingData };
+  if (shell) {
+    nextData.manifestBases = mergeList(shell.dataset.manifestBases, existingData.manifestBases);
+    nextData.siteConfig = mergeList(shell.dataset.siteConfig, existingData.siteConfig);
+    nextData.gallery = mergeRecord(
+      {
+        collections: shell.dataset.galleryCollections,
+        manifest: shell.dataset.galleryManifest,
+        images: shell.dataset.galleryImages,
+      },
+      existingData.gallery
+    );
+    nextData.music = mergeRecord(
+      {
+        tracks: shell.dataset.musicTracks,
+        manifest: shell.dataset.musicManifest,
+        summary: shell.dataset.musicSummary,
+      },
+      existingData.music
+    );
+  }
+  window.__SMILE_DATA__ = nextData;
+  if (shell) {
+    const desiredTheme = shell.dataset.theme && shell.dataset.theme.trim() ? shell.dataset.theme.trim() : "light";
+    shell.dataset.theme = desiredTheme;
+    document.documentElement.dataset.theme = desiredTheme;
+  }
+  const navToggle = document.querySelector('.nav-toggle');
+  const navMenu = document.getElementById('nav-menu');
+  if (navToggle && navMenu) {
+    navToggle.addEventListener('click', () => {
+      const isOpen = navMenu.dataset.open === 'true';
+      const next = isOpen ? 'false' : 'true';
+      navMenu.dataset.open = next;
+      navToggle.setAttribute('aria-expanded', String(next === 'true'));
+    });
+  }
+})();
+</script>

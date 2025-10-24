@@ -1,0 +1,23 @@
+<header class="site-header" id="site-header" aria-live="polite">
+  <div class="site-header__stripe"></div>
+  <div class="site-header__inner">
+    <div class="site-header__identity">
+      {% if site.tagline %}
+      <span class="pill">{{ site.tagline }}</span>
+      {% endif %}
+      <h1 class="site-header__title">{{ site.title }}</h1>
+      {% if page.title and page.title != site.title %}
+      <span class="site-header__page">{{ page.title }}</span>
+      {% endif %}
+    </div>
+    <nav class="site-nav" id="site-nav" aria-label="Primary">
+      <ul class="site-nav__list">
+        {% for item in navigation["items"] %}
+        <li>
+          <a class="site-nav__link" href="{{ item.href }}" {% if item.active %}aria-current="page"{% endif %}>{{ item.label }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </nav>
+  </div>
+</header>

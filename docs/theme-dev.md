@@ -12,6 +12,8 @@ Site themes now live under `web/<site-theme>/`. Each site theme bundles the stat
 - `themes/default/` - the Jinja theme that drives templated pages.
 - `index.html` - static files published at the site root.
 
+For a second example, this repository now ships with **Bold Theme 1** (`web/bold-theme-1/`). It reuses the same layout primitives but demonstrates a high-contrast look inspired by print zines. Use it as a reference for how far you can push the presentation layer without touching the build pipeline.
+
 During a build SmileCMS resolves the active site theme using two configuration values:
 
 - `Config.templates_dir` points at the directory that holds available site themes. The default value is `web/dark-theme-1/` so existing installs continue to work.

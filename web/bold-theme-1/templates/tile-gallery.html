@@ -1,0 +1,23 @@
+<template id="tmpl-tile-gallery">
+  <article class="tile tile--gallery">
+    <figure class="tile__media">
+      <a href="#" data-tile-cover-link>
+        <img data-tile-image alt="" loading="lazy" decoding="async" />
+      </a>
+      <figcaption class="visually-hidden" data-tile-caption></figcaption>
+    </figure>
+    <div class="tile__body">
+      <h3 class="tile__title">
+        <a href="#" data-tile-link></a>
+      </h3>
+      <div class="tile__meta tile__meta--gallery">
+        <span data-tile-date></span>
+        <span data-tile-count></span>
+      </div>
+      <div class="tile__footer">
+        <span class="caption" data-tile-tags></span>
+        <a class="button button--ghost" data-tile-cta href="#">View Gallery</a>
+      </div>
+    </div>
+  </article>
+</template>
