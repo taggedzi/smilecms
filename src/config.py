@@ -22,12 +22,61 @@ def _default_profiles() -> list["DerivativeProfile"]:
     ]
 
 
+class MediaWatermarkConfig(BaseModel):
+    """Controls for optional image watermarking."""
+
+    enabled: bool = Field(default=False, description="Enable watermark overlay on image derivatives.")
+    text: str = Field(
+        default="",
+        description="Watermark text to repeat across the image (empty disables).",
+    )
+    opacity: int = Field(default=32, ge=0, le=255, description="Alpha (0-255) for the watermark text.")
+    color: str = Field(default="#FFFFFF", description="Watermark text color (hex, e.g. #FFFFFF).")
+    angle: float = Field(default=30.0, description="Rotation angle for watermark tiling in degrees.")
+    font_path: Path | None = Field(default=None, description="Optional path to a TTF/OTF font file.")
+    font_size_ratio: float = Field(
+        default=0.05,
+        ge=0.001,
+        le=1.0,
+        description="Font size as a ratio of the shorter image dimension.",
+    )
+    spacing_ratio: float = Field(
+        default=0.6,
+        ge=0.0,
+        le=4.0,
+        description="Extra spacing between repeated texts as a multiple of text size.",
+    )
+    min_size: int = Field(
+        default=256,
+        ge=1,
+        description="Skip watermarking when min(image width, height) is below this size.",
+    )
+
+    @field_validator("font_path", mode="before")
+    def _ensure_path(cls, value: Any) -> Path | None:
+        if value is None or value == "":
+            return None
+        return Path(value)
+
+
+class MediaMetadataEmbedConfig(BaseModel):
+    """Configuration for embedding copyright/licensing metadata into outputs."""
+
+    enabled: bool = Field(default=False, description="Enable embedding of copyright/licensing metadata.")
+    artist: str | None = Field(default=None)
+    copyright: str | None = Field(default=None)
+    license: str | None = Field(default=None)
+    url: str | None = Field(default=None)
+
+
 class MediaProcessingConfig(BaseModel):
     """Configuration for media derivative generation."""
 
     source_dir: Path = Field(default=Path("content/media"))
     output_dir: Path = Field(default=Path("media/derived"))
     profiles: list[DerivativeProfile] = Field(default_factory=_default_profiles)
+    watermark: MediaWatermarkConfig = Field(default_factory=MediaWatermarkConfig)
+    embed_metadata: MediaMetadataEmbedConfig = Field(default_factory=MediaMetadataEmbedConfig)
 
     @field_validator("source_dir", "output_dir", mode="before")
     def _ensure_path(cls, value: Any) -> Path:
