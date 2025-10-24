@@ -409,9 +409,9 @@ function normalizeNavEntry(entry = {}) {
     result.href = "./";
     result.active = true;
   } else if (lower === "gallery") {
-    result.href = "../index.html#gallery";
-  } else if (lower === "audio") {
-    result.href = "../index.html#audio";
+    result.href = "../gallery/";
+  } else if (lower === "audio" || lower === "music") {
+    result.href = "../music/";
   } else {
     result.href = href;
   }
