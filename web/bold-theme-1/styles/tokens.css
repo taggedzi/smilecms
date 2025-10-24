@@ -1,0 +1,70 @@
+:root {
+  --layout-width: 960px;
+
+  /* Color palette */
+  --color-background: #e8eaef;
+  --color-background-grid: rgba(17, 18, 23, 0.04);
+  --color-surface: #ffffff;
+  --color-surface-soft: #f5f6f8;
+  --color-surface-muted: var(--color-surface-soft);
+  --color-border: #c8cad1;
+  --color-border-strong: #14161d;
+  --color-text-primary: #111217;
+  --color-text-secondary: #454850;
+  --color-text-muted: #6f737c;
+  --color-link: #1c1f26;
+  --color-highlight: #ffd84a;
+  --color-highlight-strong: #f1c400;
+  --color-audio-panel: #ffd84a;
+
+  /* Typography */
+  --font-family-base: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-family-heading: "Inter", "Segoe UI Semibold", system-ui, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.15rem;
+  --font-size-xl: 1.5rem;
+  --font-size-xxl: 2rem;
+
+  --line-height-base: 1.5;
+  --line-height-heading: 1.2;
+
+  /* Spacing */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.375rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* Radius & shadow */
+  --radius-none: 0;
+  --shadow-card: 0 2px 6px rgba(17, 18, 23, 0.08);
+  --shadow-card-strong: 0 6px 18px rgba(17, 18, 23, 0.12);
+
+  /* Transitions */
+  --easing-standard: cubic-bezier(0.33, 1, 0.68, 1);
+  --duration-fast: 120ms;
+  --duration-medium: 200ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-background: #1a1c21;
+    --color-background-grid: rgba(255, 255, 255, 0.04);
+    --color-surface: #23262d;
+    --color-surface-soft: #2b2f37;
+    --color-surface-muted: var(--color-surface-soft);
+    --color-border: rgba(255, 255, 255, 0.16);
+    --color-text-primary: #f0f1f5;
+    --color-text-secondary: #c5c7d0;
+    --color-text-muted: #8e929d;
+    --color-link: #f0f1f5;
+    --color-highlight: #f1c400;
+    --color-highlight-strong: #dca700;
+    --color-audio-panel: #f1c400;
+  }
+}

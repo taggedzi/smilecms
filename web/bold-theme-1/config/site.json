@@ -1,0 +1,81 @@
+{
+  "site": {
+    "title": "Site Name",
+    "tagline": "Stories, galleries, and audio dispatches."
+  },
+  "mediaBasePath": "/media/derived",
+  "navigation": [
+    { "label": "Home", "href": "/", "active": true },
+    { "label": "Galleries", "href": "/gallery/" },
+    { "label": "Journal", "href": "/journal/" },
+    { "label": "Audio", "href": "/music/" }
+  ],
+  "hero": {
+    "eyebrow": "",
+    "title": "",
+    "subtitle": "",
+    "actions": []
+  },
+  "sections": [
+    {
+      "id": "posts",
+      "eyebrow": "",
+      "title": "Posts",
+      "type": "article",
+      "limit": 4,
+      "filters": {
+        "status": "published"
+      },
+      "empty": {
+        "message": "No posts published yet. Start writing to fill this space."
+      },
+      "actions": [
+        { "label": "Archives", "href": "/journal/" }
+      ]
+    },
+    {
+      "id": "galleries",
+      "eyebrow": "",
+      "title": "Galleries",
+      "type": "gallery",
+      "limit": 6,
+      "filters": {
+        "status": "published",
+        "tagsAny": ["gallery", "image", "photos"]
+      },
+      "empty": {
+        "message": "Publish a gallery to showcase your visual work."
+      },
+      "actions": [
+        { "label": "Archives", "href": "/gallery/" }
+      ]
+    },
+    {
+      "id": "audio",
+      "eyebrow": "",
+      "title": "Audio Tracks",
+      "type": "audio",
+      "limit": 4,
+      "filters": {
+        "status": "published",
+        "tagsAny": ["audio", "music", "sound", "track"]
+      },
+      "empty": {
+        "message": "Upload tracks to populate the playlist."
+      },
+      "actions": [
+        { "label": "Archives", "href": "/music/" }
+      ]
+    }
+  ],
+  "footer": {
+    "copy": "(c) 2025 SmileCMS. Crafted with care.",
+    "links": [
+      { "label": "GitHub", "href": "https://github.com", "external": true },
+      { "label": "Contact", "href": "mailto:hello@example.com" },
+      { "label": "RSS Feed", "href": "/feed.xml" },
+      { "label": "Atom Feed", "href": "/atom.xml" },
+      { "label": "JSON Feed", "href": "/feed.json" }
+    ]
+  }
+}

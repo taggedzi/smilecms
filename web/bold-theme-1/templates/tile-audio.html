@@ -1,0 +1,22 @@
+<template id="tmpl-tile-audio">
+  <article class="tile tile--audio">
+    <figure class="tile-audio__media" data-tile-media hidden>
+      <img data-tile-image alt="" loading="lazy" decoding="async" />
+    </figure>
+    <div class="tile-audio__body">
+      <header class="tile-audio__header">
+        <span class="badge" data-tile-genre></span>
+        <h3 class="tile-audio__title" data-tile-title>
+          <a href="#" data-tile-title-link></a>
+        </h3>
+        <p class="tile-audio__details" data-tile-description></p>
+      </header>
+      <div class="tile-audio__meta" data-tile-meta></div>
+      <div class="tile-audio__player">
+        <audio controls preload="none" data-tile-audio>
+          Your browser does not support the audio element.
+        </audio>
+      </div>
+    </div>
+  </article>
+</template>

@@ -1,0 +1,26 @@
+<template id="tmpl-tile-article">
+  <article class="tile tile--article">
+    <figure class="tile__media" data-tile-media hidden>
+      <a href="#" data-tile-image-link>
+        <img data-tile-image alt="" loading="lazy" decoding="async" />
+      </a>
+      <figcaption class="visually-hidden" data-tile-image-caption></figcaption>
+    </figure>
+    <div class="tile__body">
+      <div class="tile__header">
+        <div class="tile__meta">
+          <span data-tile-date></span>
+          <span data-tile-tags></span>
+        </div>
+        <h3 class="tile__title">
+          <a href="#" data-tile-link></a>
+        </h3>
+      </div>
+      <p class="tile__excerpt" data-tile-excerpt></p>
+      <div class="tile__footer">
+        <span class="caption" data-tile-reading-time></span>
+        <a class="button button--ghost" data-tile-cta href="#">Read Post</a>
+      </div>
+    </div>
+  </article>
+</template>

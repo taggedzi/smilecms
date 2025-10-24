@@ -1,0 +1,16 @@
+{% extends theme.entrypoints.base %}
+
+{% block title %}{{ page.title }}{% endblock %}
+
+{% block main %}
+<main id="main" class="site-main gallery-main" tabindex="-1">
+  <section class="loading-state" aria-live="polite">
+    <p>{{ gallery.loading_message }}</p>
+  </section>
+</main>
+{% endblock %}
+
+{% block body_extra %}
+  {{ super() }}
+  <div id="gallery-modal-root"></div>
+{% endblock %}
