@@ -7,7 +7,7 @@ import logging
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, Set
+from typing import Dict, Iterable, Set, Any
 
 import math
 from PIL import Image, ImageDraw, ImageFont
@@ -388,7 +388,7 @@ def _parse_hex_rgb(value: str) -> tuple[int, int, int]:
 
 def _prepare_metadata_kwargs(
     image: Image.Image, fmt: str, meta: MediaMetadataEmbedConfig
-) -> dict:
+) -> dict[str, Any]:
     # Only embed when values exist
     has_values = any([meta.artist, meta.copyright, meta.license, meta.url])
     if not has_values:
