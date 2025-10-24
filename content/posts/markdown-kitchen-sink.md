@@ -5,6 +5,20 @@ published_at: 2025-10-20T00:00:00Z
 description: "A comprehensive sample exercising CommonMark + GFM features (headings, lists, code, tables, links, images, blockquotes, footnotes, tasks, etc.)."
 author: "Test Fixture"
 date: "2025-10-20"
+tags: 
+  - "test 1"
+  - "election"
+  - "opinion"
+  - "politics"
+  - "republicans"
+  - "test 2"
+  - "test 3"
+  - "test 4"
+  - "test 5"
+  - "test 6"
+  - "test 7"
+  - "test 8"
+  - "test 9"
 ---
 
 # H1 — Heading Level 1
