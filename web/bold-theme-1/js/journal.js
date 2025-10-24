@@ -324,6 +324,20 @@ function renderHeader(container, site = {}) {
   titleEl.textContent = site.title || "SmileCMS";
   identity.appendChild(titleEl);
 
+  // Add page label to match gallery/music behavior
+  const pageLabelText =
+    container.dataset.pageLabel ||
+    site.pageLabel ||
+    site.pageTitle ||
+    (titleEl.textContent ? `${titleEl.textContent} Journal` : "Journal");
+
+  if (pageLabelText) {
+    const pageLabel = document.createElement("span");
+    pageLabel.className = "site-header__page";
+    pageLabel.textContent = pageLabelText;
+    identity.appendChild(pageLabel);
+  }
+
   inner.appendChild(identity);
 
   const nav = document.createElement("nav");
