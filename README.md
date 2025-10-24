@@ -79,6 +79,7 @@ For a quick local preview of the production bundle, run `smilecms preview` and v
 - [`docs/content-workflows.md`](docs/content-workflows.md) — authoring pipeline, build loop, and deployment checklists for journal entries and galleries.
 - [`docs/frontend.md`](docs/frontend.md) — layout, design, and front-end module overview.
 - [`docs/requirements.md`](docs/requirements.md) — product requirements and technical goals.
+- [`docs/media-processing.md`](docs/media-processing.md) — image derivatives, watermarking, and embedded metadata configuration.
 
 Keep the docs in sync with pipeline changes so future contributors can pick up the project without guesswork.
 
