@@ -1,7 +1,3 @@
-.gallery-page .app-shell {
-  max-width: 1280px;
-}
-
 .gallery-main {
   display: grid;
   gap: var(--space-xl);
