@@ -44,6 +44,15 @@ const state = {
   routeListenerAttached: false,
 };
 
+// Prevent immediate re-open due to click-through after closing
+let reopenGuardUntil = 0;
+function guardReopenDelay(ms = 250) {
+  reopenGuardUntil = Date.now() + ms;
+}
+function canOpenModal() {
+  return Date.now() >= reopenGuardUntil;
+}
+
 let isSyncingRoute = false;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -395,6 +404,7 @@ function destroyObserver() {
 }
 
 function openModal(track, options = {}) {
+  if (!canOpenModal()) { return; }
   const { skipRouteUpdate = false } = options;
   if (!state.modal) {
     state.modal = createModal();
@@ -492,11 +502,19 @@ function openModal(track, options = {}) {
 
   const handleKey = (event) => {
     if (event.key === "Escape") {
-      closeModal();
+      closeModal(event);
     }
   };
   root.addEventListener("keydown", handleKey, { once: false });
+  // Also listen on document to catch focus inside native audio controls (Firefox)
+  const docKey = (event) => {
+    if (event.key === "Escape") {
+      closeModal(event);
+    }
+  };
+  document.addEventListener("keydown", docKey, { once: false });
   state.modal.handleKey = handleKey;
+  state.modal.docHandleKey = docKey;
   state.activeTrackId = track.id;
 
   if (!skipRouteUpdate) {
@@ -508,17 +526,23 @@ function closeModal(options) {
   let skipRouteUpdate = false;
   if (options instanceof Event) {
     options.preventDefault?.();
+    options.stopPropagation?.();
+    options.stopImmediatePropagation?.();
   } else if (options && typeof options === "object") {
     skipRouteUpdate = Boolean(options.skipRoute);
   }
   if (!state.modal) return;
 
-  const { root, handleKey, closeButton, audioEl } = state.modal;
+  const { root, handleKey, docHandleKey, closeButton, audioEl } = state.modal;
   root.classList.remove("is-open");
   root.setAttribute("hidden", "true");
   if (handleKey) {
     root.removeEventListener("keydown", handleKey);
     state.modal.handleKey = null;
+  }
+  if (docHandleKey) {
+    document.removeEventListener("keydown", docHandleKey);
+    state.modal.docHandleKey = null;
   }
   audioEl.pause();
   audioEl.currentTime = 0;
@@ -531,6 +555,16 @@ function closeModal(options) {
   if (!skipRouteUpdate) {
     updateRoute({ trackId: null }, { replace: true });
   }
+  try { root.style.display = "none"; } catch {}
+  // Remove modal from DOM to avoid lingering display state
+  try {
+    if (root.parentNode) {
+      root.parentNode.removeChild(root);
+    }
+  } catch {}
+  state.modal = null;
+  // Guard against immediate reopen from click-through
+  reopenGuardUntil = Date.now() + 300;
 }
 
 function createModal() {
@@ -640,7 +674,7 @@ function createModal() {
 
   root.addEventListener("click", (event) => {
     if (event.target === root || event.target === overlay) {
-      closeModal();
+      closeModal(event);
     }
   });
 

@@ -6,6 +6,7 @@
   --color-background-grid: rgba(17, 18, 23, 0.04);
   --color-surface: #ffffff;
   --color-surface-soft: #f5f6f8;
+  --color-surface-muted: var(--color-surface-soft);
   --color-border: #c8cad1;
   --color-border-strong: #14161d;
   --color-text-primary: #111217;
@@ -56,6 +57,7 @@
     --color-background-grid: rgba(255, 255, 255, 0.04);
     --color-surface: #23262d;
     --color-surface-soft: #2b2f37;
+    --color-surface-muted: var(--color-surface-soft);
     --color-border: rgba(255, 255, 255, 0.16);
     --color-text-primary: #f0f1f5;
     --color-text-secondary: #c5c7d0;

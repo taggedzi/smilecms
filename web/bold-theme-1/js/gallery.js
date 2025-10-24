@@ -1044,6 +1044,7 @@ function closeModal(options) {
   let skipRouteUpdate = false;
   if (options instanceof Event) {
     options.preventDefault?.();
+    options.stopPropagation?.();
   } else if (options && typeof options === "object") {
     skipRouteUpdate = Boolean(options.skipRoute);
   }
@@ -1064,6 +1065,11 @@ function closeModal(options) {
   if (!skipRouteUpdate) {
     updateRoute({ collectionId: state.currentCollection?.id || null, imageId: null }, { replace: true });
   }
+  // Remove modal from DOM to avoid lingering visual state or event reuse
+  try {
+    root.parentNode && root.parentNode.removeChild(root);
+  } catch {}
+  state.modal = null;
 }
 
 function createModal() {
@@ -1149,7 +1155,7 @@ function createModal() {
 
   root.addEventListener("click", (event) => {
     if (event.target === root || event.target === overlay) {
-      closeModal();
+      closeModal(event);
     }
   });
 

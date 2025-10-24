@@ -162,6 +162,8 @@
   width: min(92vw, 900px);
   max-height: 92vh;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
 }
 
 .music-modal__header {
@@ -205,12 +207,23 @@
   display: grid;
   gap: var(--space-lg);
   overflow: auto;
+  min-height: 0; /* allow scrolling area within grid */
 }
 
 .music-modal__media {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+.music-modal__media img {
+  width: 100%;
+  height: auto;
+  max-height: 50vh;
+  object-fit: contain;
+  border: 3px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
 }
 
 .music-modal__audio audio {
@@ -288,5 +301,9 @@
   .music-toolbar__group {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .music-modal__media img {
+    max-height: 35vh;
   }
 }
