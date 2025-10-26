@@ -193,6 +193,13 @@ def lint(
 def build(
     config_path: ConfigPathOption = "smilecms.yml",
     force: ForceFlag = False,
+    refresh_gallery: Annotated[
+        bool,
+        typer.Option(
+            "--refresh-gallery/--no-refresh-gallery",
+            help="Regenerate gallery sidecars and ML metadata, overwriting existing sidecars.",
+        ),
+    ] = False,
 ) -> None:
     """Run a full rebuild of site artifacts."""
     config: Config = _load(config_path)
@@ -203,12 +210,12 @@ def build(
     _prepare_output_directories(config, change_summary, force)
 
     if config.gallery.enabled:
-        gallery_workspace = prepare_gallery_workspace(config)
+        gallery_workspace = prepare_gallery_workspace(config, refresh=refresh_gallery)
     else:
         gallery_workspace = GalleryWorkspace(root=config.gallery.source_dir)
     documents = _load_build_documents(config, gallery_workspace)
 
-    outputs = _generate_site_artifacts(config, documents, gallery_workspace)
+    outputs = _generate_site_artifacts(config, documents, gallery_workspace, refresh_gallery)
 
     _print_primary_summary(outputs, config, gallery_workspace)
 
@@ -268,6 +275,7 @@ def _generate_site_artifacts(
     config: Config,
     documents: Sequence["ContentDocument"],
     gallery_workspace: "GalleryWorkspace",
+    refresh_gallery: bool,
 ) -> BuildOutputs:
     start = time.perf_counter()
 
@@ -276,7 +284,7 @@ def _generate_site_artifacts(
     apply_variants_to_documents(documents, media_result.variants)
     updated_gallery = 0
     if config.gallery.enabled:
-        updated_gallery = apply_gallery_derivatives(gallery_workspace, media_result, config)
+        updated_gallery = apply_gallery_derivatives(gallery_workspace, media_result, config, refresh=refresh_gallery)
 
     pages = ManifestGenerator().build_pages(documents, prefix="content")
     manifest_paths = write_manifest_pages(pages, config.output_dir / "manifests")

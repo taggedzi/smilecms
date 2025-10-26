@@ -29,6 +29,7 @@ python -m venv .venv
 pip install -e .        # add extras like `.[dev]` or `.[ml]` when needed
 
 smilecms build            # full rebuild using smilecms.yml
+smilecms build --refresh-gallery  # one-shot: regenerate and overwrite gallery sidecars
 smilecms preview --port 8000  # serve ./site at http://127.0.0.1:8000/
 smilecms clean            # remove generated artifacts (add --cache to drop .cache/)
 smilecms audit media      # surface missing/orphaned media (use --json for machine output)
@@ -36,7 +37,11 @@ smilecms lint             # run fast content checks (add --strict to fail on war
 smilecms verify           # crawl generated HTML + validate HTML/JS (--no-html-validation / --no-js-validation to skip; add --report report.txt)
 ```
 
-The `smilecms build` command incrementally regenerates the site: it reuses cached derivatives, prunes stale artifacts, writes manifests, renders article pages, exports gallery datasets, and stages the static `web/` assets into `site/`. Use `smilecms clean` (or `smilecms build --force`) to remove generated artifacts (`site/`, `media/derived/`, and optionally `.cache/`) before a fresh build.
+The `smilecms build` command incrementally regenerates the site: it reuses cached derivatives, prunes stale artifacts, writes manifests, renders article pages, exports gallery datasets, and stages the static `web/` assets into `site/`.
+
+- Gallery sidecars are frozen by default: existing image/collection sidecar files are never modified during a normal build; only missing sidecars are generated. This lets you hand-edit sidecars safely and keeps builds fast by skipping ML for existing images. Delete a sidecar to regenerate it, or pass `--refresh-gallery` to overwrite all gallery sidecars in one run.
+
+Use `smilecms clean` (or `smilecms build --force`) to remove generated artifacts (`site/`, `media/derived/`, and optionally `.cache/`) before a fresh build.
 
 Use `smilecms new post|gallery|track <slug> --title "Display Title"` to scaffold content with the recommended metadata and directory layout before you start writing or dropping in media.
 

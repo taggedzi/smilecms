@@ -83,6 +83,12 @@ smilecms build
 
 Alternatively, touch/replace the original source images to force regeneration.
 
+### Gallery integration and sidecars
+
+- Gallery sidecars are treated as user-owned metadata files. During a normal build, existing sidecars are not modified; only missing sidecars are generated for new images.
+- ML captioning/tagging (when enabled) runs only for images missing sidecars to keep large galleries fast.
+- To regenerate one image’s sidecar, delete its sidecar file and run `smilecms build`. To refresh all gallery sidecars at once, run `smilecms build --refresh-gallery`.
+
 ## Troubleshooting
 
 - Watermark not visible: increase `opacity`, reduce `spacing_ratio`, or lower `min_size` to include thumbnails.

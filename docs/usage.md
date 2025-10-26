@@ -31,6 +31,7 @@ The preview and verification commands operate on the generated bundle in `site/`
 - **Options:**
   - `--config PATH`: choose a different config file.
   - `--force`, `-f`: delete the output directories (`site/`, media derivatives) before rebuilding.
+  - `--refresh-gallery/--no-refresh-gallery`: one-shot refresh that regenerates and overwrites existing gallery sidecars (metadata + ML/LLM fields). Default is `--no-refresh-gallery`.
 - **Inputs:** `smilecms.yml` (or the path passed via `--config`), source Markdown in `content/`, optional gallery collections under `media/image_gallery_raw/`, optional music collections under `media/music_collection/`, and templates in `web/`.
 - **Outputs:** refreshed `site/` bundle (HTML, CSS/JS, manifests), `media/derived/` assets, gallery datasets under `site/data/` when enabled, music exports when enabled, and a build report (`site/report.json`). The console prints a structured summary highlighting counts, locations, and any warnings gathered during the run.
 - **Example:**
@@ -38,7 +39,15 @@ The preview and verification commands operate on the generated bundle in `site/`
   smilecms build
   # -> prints incremental/force status, document and media statistics,
   #    lists staged assets, and writes site/report.json
+  
+  # Regenerate and overwrite gallery sidecars (use sparingly)
+  smilecms build --refresh-gallery
   ```
+
+#### Gallery sidecars: frozen by default
+
+- Existing gallery sidecars are never modified during a normal build. Only missing sidecars are generated, and ML captioning/tagging runs only for new images.
+- Delete a sidecar file to force regeneration for that image/collection, or use `--refresh-gallery` to refresh all gallery sidecars in a single run.
 
 ### `smilecms new`
 - **Purpose:** Scaffold content skeletons for posts, galleries, or music tracks using the project conventions.
