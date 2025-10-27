@@ -459,23 +459,7 @@ def _apply_tagging(
         metadata.tag_scores = scores
         changed = True
 
-    if annotation.rating:
-        current_rating = getattr(metadata, "rating", None)
-        if current_rating != annotation.rating:
-            metadata.rating = annotation.rating
-            changed = True
-        if annotation.rating != "rating:safe":
-            note = f"Image flagged as {annotation.rating}"
-            if note not in metadata.notes:
-                metadata.notes.append(note)
-                changed = True
-            workspace.add_warning(
-                f"{metadata.collection_id}/{metadata.filename} flagged as {annotation.rating}"
-            )
-
-    if metadata.ai_confidence != annotation.confidence:
-        metadata.ai_confidence = annotation.confidence
-        changed = True
+    # Rating and confidence removed in caption-derived tagging path.
 
     if source_hash and metadata.ml_source_hash != source_hash:
         metadata.ml_source_hash = source_hash
