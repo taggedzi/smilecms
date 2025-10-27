@@ -369,6 +369,8 @@ class GalleryImageEntry:
     sidecar_path: Path
     metadata: GalleryImageMetadata
     raw_payload: dict[str, Any]
+    # Indicates whether the sidecar file existed when the workspace was loaded.
+    sidecar_existed: bool = False
     changed: bool = False
     warnings: list[str] = field(default_factory=list)
 
@@ -385,6 +387,8 @@ class GalleryCollectionEntry:
     sidecar_path: Path
     metadata: GalleryCollectionMetadata
     raw_payload: dict[str, Any]
+    # Indicates whether the sidecar file existed when the workspace was loaded.
+    sidecar_existed: bool = False
     images: list[GalleryImageEntry] = field(default_factory=list)
     changed: bool = False
     warnings: list[str] = field(default_factory=list)

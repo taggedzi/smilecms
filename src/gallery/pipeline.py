@@ -34,6 +34,7 @@ def prepare_workspace(
     *,
     auto_generate: bool = True,
     run_llm_cleanup: bool | None = None,
+    refresh: bool = False,
 ) -> GalleryWorkspace:
     """Discover gallery collections and ensure sidecars exist."""
     if not config.gallery.enabled:
@@ -66,13 +67,20 @@ def prepare_workspace(
         workspace.add_collection(collection)
 
         if auto_generate:
-            if generate_collection_defaults(collection, now):
-                collection.mark_changed()
+            # Generate defaults for new collections, or refresh all when requested
+            if not collection.sidecar_existed or refresh:
+                if generate_collection_defaults(collection, now):
+                    collection.mark_changed()
+
+            # For images, only process those missing sidecars unless refresh is requested
             for image_entry in collection.images:
-                if generate_image_metadata(image_entry, collection, now):
-                    image_entry.mark_changed()
+                if not image_entry.sidecar_existed or refresh:
+                    if generate_image_metadata(image_entry, collection, now):
+                        image_entry.mark_changed()
             if tagging_session is not None:
                 for image_entry in collection.images:
+                    if image_entry.sidecar_existed and not refresh:
+                        continue
                     try:
                         if _apply_tagging(image_entry, tagging_session, workspace, now):
                             image_entry.mark_changed()
@@ -83,18 +91,23 @@ def prepare_workspace(
                         image_entry.warnings.append(message)
             if run_llm:
                 for image_entry in collection.images:
+                    if image_entry.sidecar_existed and not refresh:
+                        continue
                     if clean_metadata(image_entry, now):
                         image_entry.mark_changed()
 
     if auto_generate:
-        persist_workspace(workspace)
+        persist_workspace(workspace, refresh=refresh)
 
     return workspace
 
 
-def persist_workspace(workspace: GalleryWorkspace) -> None:
+def persist_workspace(workspace: GalleryWorkspace, *, refresh: bool = False) -> None:
     """Write any mutated sidecars back to disk."""
     for collection in workspace.iter_collections():
+        # In refresh mode, allow overwriting existing sidecars; otherwise, write only new files.
+        if collection.sidecar_existed and not refresh:
+            continue
         payload = collection.metadata.model_dump(mode="json", exclude_none=False)
         if payload != collection.raw_payload or collection.changed:
             write_json(collection.sidecar_path, payload)
@@ -103,6 +116,9 @@ def persist_workspace(workspace: GalleryWorkspace) -> None:
             workspace.record_collection_write(collection.sidecar_path)
 
     for image in workspace.iter_images():
+        # In refresh mode, allow overwriting existing sidecars; otherwise, write only new files.
+        if image.sidecar_existed and not refresh:
+            continue
         payload = image.metadata.model_dump(mode="json", exclude_none=False)
         if payload != image.raw_payload or image.changed:
             write_json(image.sidecar_path, payload)
@@ -115,6 +131,8 @@ def apply_derivatives(
     workspace: GalleryWorkspace,
     media_result: MediaProcessingResult,
     config: Config,
+    *,
+    refresh: bool = False,
 ) -> int:
     """Attach derivative paths from media processing to image metadata."""
     if not config.gallery.enabled:
@@ -146,12 +164,15 @@ def apply_derivatives(
             changed = True
 
         if changed:
+            # Always update in-memory derived values for downstream exports.
             image.metadata.derived = derived
-            image.mark_changed()
-            updated += 1
+            if refresh or not image.sidecar_existed:
+                image.mark_changed()
+                updated += 1
 
     if updated:
-        persist_workspace(workspace)
+        # Persist changes honoring refresh behavior.
+        persist_workspace(workspace, refresh=refresh)
 
     return updated
 
@@ -221,6 +242,7 @@ def export_datasets(workspace: GalleryWorkspace, config: Config) -> None:
 def _load_collection(directory: Path, config: Config) -> GalleryCollectionEntry:
     collection_id = directory.name
     sidecar_path = directory / config.gallery.metadata_filename
+    existed_on_load = sidecar_path.exists()
     raw_payload: dict[str, object]
     try:
         raw_payload = read_json(sidecar_path)
@@ -237,6 +259,7 @@ def _load_collection(directory: Path, config: Config) -> GalleryCollectionEntry:
         id=metadata.id,
         directory=directory,
         sidecar_path=sidecar_path,
+        sidecar_existed=existed_on_load,
         metadata=metadata,
         raw_payload=raw_payload,
     )
@@ -257,6 +280,7 @@ def _load_collection(directory: Path, config: Config) -> GalleryCollectionEntry:
 def _load_image(path: Path, collection: GalleryCollectionEntry, config: Config) -> GalleryImageEntry:
     stem = path.stem
     sidecar_path = path.with_suffix(config.gallery.image_sidecar_extension)
+    existed_on_load = sidecar_path.exists()
 
     raw_payload: dict[str, object]
     try:
@@ -285,6 +309,7 @@ def _load_image(path: Path, collection: GalleryCollectionEntry, config: Config) 
         collection_id=metadata.collection_id,
         source_path=path,
         sidecar_path=sidecar_path,
+        sidecar_existed=existed_on_load,
         metadata=metadata,
         raw_payload=raw_payload,
     )

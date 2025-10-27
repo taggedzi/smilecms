@@ -18,7 +18,7 @@
 1. **Workspace prep**: `src.gallery.prepare_workspace` and `src.staging.reset_directory` prepare staging directories, hydrate gallery sidecars, and capture change fingerprints via `src.state.BuildTracker`.
 2. **Content ingest**: `src.ingest.load_documents` converts Markdown posts, gallery collections, and music collections into `ContentDocument` models, applying schema validation (`src.validation.validate_document`).
 3. **Media planning**: `src.media.pipeline.collect_media_plan` discovers required derivatives and static copies; `src.media.processor.process_media_plan` generates or reuses cached variants under `media/derived/`.
-4. **Gallery enrichment**: `src.gallery.pipeline` runs optional ML captioning/tagging (`src.gallery.inference`, `src.gallery.wdtagger`) and merges metadata into collection/image sidecars.
+4. **Gallery enrichment**: `src.gallery.pipeline` runs optional ML captioning/tagging (`src.gallery.inference`, `src.gallery.wdtagger`). Sidecars are frozen by default—existing files are not modified; new sidecars are generated for missing images. Use `--refresh-gallery` to force a one-shot overwrite of existing sidecars when needed.
 5. **Manifest export**: `src.manifests.ManifestGenerator` and `src.manifests.write_manifest_pages` emit paginated JSON manifests for posts, galleries, and tracks; `src.feeds.generate_feeds` handles RSS/Atom/JSON feed files when enabled.
 6. **HTML rendering**: `src.articles.write_article_pages` renders article detail pages using HTML templates in `web/templates/`, wiring media shortcodes to generated derivatives.
 7. **Dataset staging**: `src.gallery.export_datasets` and `src.music.export_music_catalog` generate JSONL datasets consumed by the front-end infinite-scroll views.

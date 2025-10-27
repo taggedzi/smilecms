@@ -36,7 +36,7 @@ The CLI entry point is exposed as `smilecms` (via `pyproject.toml`). Running a b
 1. **Workspace preparation** – resets `site/` and the derivative media directory, scans gallery collections, and ensures sidecar metadata files exist.
 2. **Content ingest** – parses Markdown posts into structured `ContentDocument` objects, validates required front matter, and collects referenced media.
 3. **Media processing** – copies or resizes media into `media/derived/` following the profiles configured in `smilecms.yml`. Image derivatives (`thumb`, `large`) are generated with Pillow; non-image assets are copied as-is.
-4. **Gallery enrichment** – updates collection and image sidecars with generated captions/tags (when ML extras are available), cleans metadata with the lightweight LLM helper, and attaches derivative paths back onto each image record.
+4. **Gallery enrichment** – sidecars are frozen by default. The pipeline generates sidecars only when missing, optionally runs ML captioning/tagging and LLM cleanup for those new images, and attaches derivative paths in memory for export. Existing sidecars are not modified unless you explicitly refresh (see below).
 5. **Manifest and article output** – writes paginated JSON manifests under `site/manifests/` and renders individual article pages to `site/posts/<slug>/index.html` using the HTML templates packaged in `web/`.
 6. **Gallery datasets** – emits `collections.json`, per-collection `*.jsonl`, and a global `images.jsonl` under `site/data/gallery/` for the front-end gallery experience.
 7. **Report & logs** – saves a build report (`site/report.json`) and prints stats to the console, including any warnings about missing media or gallery issues.
@@ -45,8 +45,11 @@ The CLI entry point is exposed as `smilecms` (via `pyproject.toml`). Running a b
 Command examples:
 
 ```bash
-smilecms build            # full rebuild using smilecms.yml
+smilecms build                      # full rebuild using smilecms.yml
 smilecms build --config custom.yml  # point to an alternate config file
+
+# One-shot: refresh and overwrite existing gallery sidecars
+smilecms build --refresh-gallery
 ```
 
 Run `smilecms lint` to catch missing alt text, unpublished drafts, or broken hero media before kicking off a full build. Add `--strict` when you want warnings to fail the command (handy for CI or pre-commit hooks).
@@ -188,14 +191,19 @@ Run `smilecms new gallery <slug> --title "Display Title"` to bootstrap the folde
 - `site/data/gallery/collections.json` – summary plus list of collections used by `web/js/gallery.js`.
 - `site/data/gallery/<collection>.jsonl` – line-delimited records for the collection view (the front-end streams these for infinite scroll).
 - `site/data/gallery/images.jsonl` – global index combining all collections (used for search/autocomplete).
-- Updated sidecars back in `media/image_gallery_raw/...` reflecting derivatives, captions, tags, and quality checks.
+- Sidecars for new images only (generated when missing). Existing sidecars are unchanged by default; use `--refresh-gallery` to overwrite them in a single run.
 
 ### Publishing workflow
 
 1. Place new raw images inside the collection folder (or create a new folder for a new collection).
-2. Optionally edit `meta.yml` to provide human-friendly titles/descriptions or to lock fields before the pipeline runs.
-3. Run `smilecms build`. Watch the console output for warnings about missing media or tagging failures.
+2. Optionally edit sidecars (`collection.json` / `*.json`) to refine titles, captions, tags. Your edits are preserved across builds.
+3. Run `smilecms build`. The pipeline skips ML for existing images and does not rewrite existing sidecars.
 4. Review the generated gallery at `site/gallery/index.html` (via a local static server).
+
+#### Refreshing gallery metadata
+
+- To regenerate a single image, delete its sidecar file (`<image>.<ext>.json`) and run `smilecms build`.
+- To refresh the entire gallery sidecar set (including ML/LLM fields), run `smilecms build --refresh-gallery`.
 
 ---
 
