@@ -263,7 +263,7 @@ def _load_alias_map() -> dict[str, str]:
 
 
 @lru_cache(maxsize=1)
-def _load_spacy():
+def _load_spacy() -> Any | None:
     """Return a loaded spaCy model if available, otherwise None.
 
     - Tries to import spaCy and load 'en_core_web_sm'.
@@ -271,7 +271,7 @@ def _load_spacy():
     - Returns None if spaCy isn't installed or download/load fails.
     """
     try:
-        import spacy  # type: ignore
+        import spacy
     except Exception:
         return None
     try:
@@ -279,7 +279,7 @@ def _load_spacy():
     except Exception:
         # Try to download the small English model and load again
         try:
-            from spacy.cli import download as spacy_download  # type: ignore
+            from spacy.cli import download as spacy_download
         except Exception:
             return None
         try:
