@@ -163,10 +163,7 @@ class GalleryImageMetadata(BaseModel):
     )
     tag_scores: dict[str, float] = Field(
         default_factory=_default_tag_scores,
-        description="Raw probability scores from the ML tagging model.",
-    )
-    rating: str | None = Field(
-        default=None, description="Highest-rated classification label reported by the tagger."
+        description="Raw scores associated with generated tags (optional).",
     )
     width: int | None = Field(default=None, ge=1, description="Pixel width of the source asset.")
     height: int | None = Field(
@@ -186,9 +183,6 @@ class GalleryImageMetadata(BaseModel):
     )
     modified_at: datetime | None = Field(
         default=None, description="Filesystem modified timestamp (UTC)."
-    )
-    ai_confidence: float | None = Field(
-        default=None, description="Confidence score returned by the ML tagging model."
     )
     ml_model_signature: str | None = Field(
         default=None,
@@ -316,8 +310,7 @@ class GalleryImageRecord(BaseModel):
     tags: list[str] = Field(default_factory=_default_tags)
     captured_at: datetime | None = None
     created_at: datetime | None = None
-    rating: str | None = None
-    ai_confidence: float | None = None
+    # rating and ai_confidence removed in caption-derived tagging path
     width: int | None = None
     height: int | None = None
     src: str | None = None
@@ -344,8 +337,7 @@ class GalleryImageRecord(BaseModel):
             caption=metadata.caption,
             description=metadata.description,
             tags=list(metadata.tags),
-            rating=metadata.rating,
-            ai_confidence=metadata.ai_confidence,
+            
             captured_at=metadata.captured_at,
             created_at=metadata.created_at,
             width=metadata.width,

@@ -38,6 +38,12 @@ gallery:
   enabled: true
   source_dir: "media/image_gallery_raw"
   metadata_filename: "meta.yml"
+  # Captioning model: upgrade to BLIP large for better quality
+  caption_model: "Salesforce/blip-image-captioning-large"
+  # Tagging thresholds and limits tuned to reduce noise
+  tagger_general_threshold: 0.55
+  tagger_character_threshold: 0.98
+  tagging_max_tags: 20
 music:
   enabled: true
   source_dir: "media/music_collection"

@@ -17,7 +17,8 @@ dependencies = [
   "torch>=2.3",
   "transformers>=4.41",
   "Jinja2>=3.1",
-  "html5validator>=0.4.2,<0.5"
+  "html5validator>=0.4.2,<0.5",
+  "spacy>=3.7"
 ]
 
 [project.optional-dependencies]
@@ -30,6 +31,10 @@ dev = [
   "pre-commit",
   "pydantic", 
   "types-PyYAML"
+]
+spacy-en = [
+  # Install the small English model for spaCy; version pinned for stability.
+  "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl"
 ]
 
 [project.scripts]

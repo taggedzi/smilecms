@@ -1,7 +1,12 @@
-"""Lightweight metadata cleaning to mimic an LLM guard-rail."""
+"""Lightweight metadata cleaning to mimic an LLM guard-rail.
+
+Extended with optional project-level stopwords and alias maps to improve
+tag quality without external dependencies.
+"""
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
 from typing import Iterable
@@ -84,17 +89,27 @@ def _clean_sentence(
 
 
 def _clean_tags(tags: Iterable[str]) -> tuple[list[str], bool]:
+    # Load optional project stopwords and alias map once per process.
+    stopwords = _load_stopwords()
+    aliases = _load_aliases()
+
     unique: dict[str, str] = {}
     for tag in tags:
         raw = str(tag).strip()
         if not raw:
             continue
         lowered = raw.lower()
-        if lowered in {"image", "photo", "picture"}:
-            # Avoid extremely generic tags; they add no value.
+        base = lowered
+        # Strip known prefix for base matching but preserve original display
+        if base.startswith("character:"):
+            base = base[len("character:") :]
+        # Apply aliases on the base term
+        base = aliases.get(base, base)
+        if base in stopwords or base in {"image", "photo", "picture"}:
             continue
-        if lowered not in unique:
-            unique[lowered] = _format_tag(raw)
+        # Unique by base key; store formatted display
+        if base not in unique:
+            unique[base] = _format_tag(raw)
 
     cleaned = list(unique.values())
     return cleaned, cleaned != list(tags)
@@ -106,3 +121,41 @@ def _format_tag(tag: str) -> str:
     if "-" in tag:
         return tag.lower()
     return tag.capitalize()
+
+
+def _load_stopwords() -> set[str]:
+    # Lazy import to avoid cycle
+    from pathlib import Path
+
+    builtins = {"image", "photo", "picture"}
+    words: set[str] = set(builtins)
+    path = Path("gallery/tag_stopwords.txt")
+    try:
+        if path.is_file():
+            for line in path.read_text(encoding="utf-8").splitlines():
+                term = line.strip().lower()
+                if term and not term.startswith("#"):
+                    words.add(term)
+    except OSError:
+        pass
+    return words
+
+
+def _load_aliases() -> dict[str, str]:
+    # Lazy import to avoid cycle
+    from pathlib import Path
+
+    path = Path("gallery/tag_aliases.json")
+    mapping: dict[str, str] = {}
+    try:
+        if path.is_file():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                for key, value in data.items():
+                    k = str(key).strip().lower()
+                    v = str(value).strip().lower()
+                    if k and v:
+                        mapping[k] = v
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return mapping

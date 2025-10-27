@@ -16,7 +16,7 @@ Allowing support for:
 - Python **3.11+**
 - Recommended tools (installed via extras):
   - `pip install -e .[dev]` for formatting (`ruff`), typing (`mypy`), and testing (`pytest`).
-  - `pip install -e .[ml]` to enable automatic gallery captioning/tagging (CPU-compatible Hugging Face models).
+  - `pip install -e .[spacy-en]` to install the small English spaCy model used to derive tags from captions.
 - Optional external binaries:
   - Image processing relies on Pillow only; ffmpeg is *not* required today.
   - JavaScript validation (used by `smilecms verify`) requires Node.js **14+** when available; otherwise it is skipped.
@@ -46,6 +46,19 @@ Use `smilecms clean` (or `smilecms build --force`) to remove generated artifacts
 Use `smilecms new post|gallery|track <slug> --title "Display Title"` to scaffold content with the recommended metadata and directory layout before you start writing or dropping in media.
 
 Run `smilecms lint` when editing to catch missing alt text, broken media references, and other authoring issues before committing a full build.
+
+## Gallery Tagging and Captions
+
+- Captions are generated with a BLIP model (default: `Salesforce/blip-image-captioning-large`).
+- Tags are derived from the generated text using spaCy when available, with a rule-based fallback otherwise. No WD14/selected_tags.csv is required.
+- Cleanup includes dedupe, simple singularization, optional alias/stopword mapping via:
+  - `gallery/tag_aliases.json` — map variants/misspellings to canonical forms.
+  - `gallery/tag_stopwords.txt` — one term per line to drop generic/unwanted tags.
+
+spaCy installation options:
+- Default install already includes `spacy>=3.7`.
+- To install the English model at install time: `pip install -e .[spacy-en]`.
+- If the model is not present at runtime and internet is available, the build attempts to download `en_core_web_sm` automatically. In offline environments, the rule-based extractor is used instead.
 
 ## Content Layout & Workflows
 
