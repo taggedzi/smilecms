@@ -266,9 +266,9 @@ def _load_alias_map() -> dict[str, str]:
 def _load_spacy() -> Any | None:
     """Return a loaded spaCy model if available, otherwise None.
 
-    - Tries to import spaCy and load 'en_core_web_sm'.
-    - If the model is missing, attempts to download it via spacy.cli.download.
-    - Returns None if spaCy isn't installed or download/load fails.
+    Tries to import spaCy and load 'en_core_web_sm'. If missing, attempts a
+    best-effort runtime download using importlib to access spacy.cli.download,
+    then loads again. Returns None if unavailable.
     """
     try:
         import spacy
@@ -279,14 +279,15 @@ def _load_spacy() -> Any | None:
     except Exception:
         # Try to download the small English model and load again
         try:
-            from spacy.cli import download as spacy_download
+            import importlib
+            cli = importlib.import_module("spacy.cli")
+            downloader = getattr(cli, "download", None)
+            if callable(downloader):
+                downloader("en_core_web_sm")
+                return spacy.load("en_core_web_sm")
         except Exception:
             return None
-        try:
-            spacy_download("en_core_web_sm")
-            return spacy.load("en_core_web_sm")
-        except Exception:
-            return None
+        return None
 
 
 def _rule_based_terms(text: str) -> list[str]:
