@@ -81,6 +81,7 @@ const state = {
     timer: null,
     delayMs: 3000,
     index: -1,
+    loop: true,
     overlay: null,
     overlayImage: null,
     overlayRoot: null,
@@ -88,6 +89,7 @@ const state = {
     overlayPlayBtn: null,
     overlayCloseBtn: null,
     overlayHiddenForModal: false,
+    handleKey: null,
   },
 };
 
@@ -565,10 +567,15 @@ function scheduleNextAdvance() {
 function advanceSlideshow() {
   const next = state.slideshow.index + 1;
   if (next >= state.filteredItems.length) {
-    stopSlideshow();
-    return;
+    if (state.slideshow.loop && state.filteredItems.length > 0) {
+      setActiveSlideIndex(0);
+    } else {
+      stopSlideshow();
+      return;
+    }
+  } else {
+    setActiveSlideIndex(next);
   }
-  setActiveSlideIndex(next);
   scheduleNextAdvance();
 }
 
@@ -672,15 +679,18 @@ function ensureSlideshowOverlay() {
 function showSlideshowOverlay() {
   if (!state.slideshow.overlayRoot) return;
   state.slideshow.overlayRoot.removeAttribute('hidden');
+  attachSlideshowKeybindings();
 }
 
 function hideSlideshowOverlay() {
   if (!state.slideshow.overlayRoot) return;
   state.slideshow.overlayRoot.setAttribute('hidden', 'true');
+  detachSlideshowKeybindings();
 }
 
 function removeSlideshowOverlay() {
   const root = state.slideshow.overlayRoot;
+  detachSlideshowKeybindings();
   if (root && root.parentNode) {
     try { root.parentNode.removeChild(root); } catch {}
   }
@@ -705,6 +715,97 @@ function updateOverlayImage() {
   const src = ensureRelativeAsset(record.src || record.original || record.thumbnail || '');
   img.src = src;
   img.alt = record.alt || record.title || '';
+}
+
+function restartSlideshowTimer() {
+  if (!state.slideshow.isPlaying) return;
+  if (state.slideshow.timer) clearTimeout(state.slideshow.timer);
+  scheduleNextAdvance();
+}
+
+function nextSlide() {
+  if (!state.filteredItems.length) return;
+  const next = state.slideshow.index + 1;
+  if (next >= state.filteredItems.length) {
+    if (state.slideshow.loop) {
+      setActiveSlideIndex(0);
+    } else {
+      setActiveSlideIndex(state.filteredItems.length - 1);
+      return;
+    }
+  } else {
+    setActiveSlideIndex(next);
+  }
+}
+
+function prevSlide() {
+  if (!state.filteredItems.length) return;
+  const prev = state.slideshow.index - 1;
+  if (prev < 0) {
+    if (state.slideshow.loop) {
+      setActiveSlideIndex(state.filteredItems.length - 1);
+    } else {
+      setActiveSlideIndex(0);
+      return;
+    }
+  } else {
+    setActiveSlideIndex(prev);
+  }
+}
+
+function togglePlayPause() {
+  if (state.slideshow.isPlaying) {
+    pauseSlideshow();
+  } else {
+    startSlideshow({ resume: true });
+  }
+}
+
+function attachSlideshowKeybindings() {
+  detachSlideshowKeybindings();
+  const handler = (e) => {
+    // Ignore if a form field is focused
+    const active = document.activeElement;
+    const tag = active && active.tagName ? active.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || active?.isContentEditable) return;
+    if (!state.slideshow.overlayRoot || state.slideshow.overlayRoot.hasAttribute('hidden')) return;
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        stopSlideshow();
+        break;
+      case ' ': // Space
+      case 'Spacebar':
+      case 'k':
+      case 'K':
+        e.preventDefault();
+        togglePlayPause();
+        break;
+      case 'ArrowRight':
+      case 'l':
+      case 'L':
+        e.preventDefault();
+        nextSlide();
+        restartSlideshowTimer();
+        break;
+      case 'ArrowLeft':
+      case 'h':
+      case 'H':
+        e.preventDefault();
+        prevSlide();
+        restartSlideshowTimer();
+        break;
+    }
+  };
+  window.addEventListener('keydown', handler);
+  state.slideshow.handleKey = handler;
+}
+
+function detachSlideshowKeybindings() {
+  if (state.slideshow.handleKey) {
+    window.removeEventListener('keydown', state.slideshow.handleKey);
+    state.slideshow.handleKey = null;
+  }
 }
 
 function setupObserver() {
