@@ -76,6 +76,18 @@ const state = {
   activeImageId: null,
   routeListenerAttached: false,
   collectionRequestToken: 0,
+  slideshow: {
+    isPlaying: false,
+    timer: null,
+    delayMs: 3000,
+    index: -1,
+    overlayRoot: null,
+    overlayImage: null,
+    overlayPauseBtn: null,
+    overlayPlayBtn: null,
+    overlayCloseBtn: null,
+    overlayHiddenForModal: false,
+  },
 };
 
 const ROUTE_KEYS = Object.freeze({
@@ -225,6 +237,9 @@ async function openCollection(collection, options = {}) {
     closeModal({ skipRoute: true });
   }
   state.activeImageId = null;
+  // Reset slideshow when switching collections
+  stopSlideshow();
+  state.slideshow.index = -1;
 
   renderLoading(main, `Loading "${collection.title}"...`);
 
@@ -334,6 +349,13 @@ function renderCollectionView(main, collection) {
       </select>
       <span class="gallery-count" data-gallery-count></span>
     </div>
+    <div class="gallery-toolbar__group gallery-slideshow">
+      <label for="slideshow-delay" class="visually-hidden">Slideshow delay (seconds)</label>
+      <input id="slideshow-delay" type="number" min="1" max="60" step="1" value="3" title="Slideshow delay (seconds)" />
+      <button type="button" class="button" data-ss-play>Play</button>
+      <button type="button" class="button" data-ss-pause disabled>Pause</button>
+      <button type="button" class="button" data-ss-stop disabled>Stop</button>
+    </div>
   `;
 
   const grid = document.createElement("section");
@@ -353,11 +375,13 @@ function renderCollectionView(main, collection) {
   // Event wiring
   toolbar.querySelector("#gallery-search").addEventListener("input", debounce((event) => {
     applyFilters({ query: event.target.value });
+    stopSlideshow();
     resetRenderedGrid();
   }, 120));
 
   toolbar.querySelector("#gallery-sort").addEventListener("change", (event) => {
     applyFilters({ sort: event.target.value });
+    stopSlideshow();
     resetRenderedGrid();
   });
 
@@ -370,7 +394,29 @@ function renderCollectionView(main, collection) {
     count: toolbar.querySelector("[data-gallery-count]"),
     search: toolbar.querySelector("#gallery-search"),
     sort: toolbar.querySelector("#gallery-sort"),
+    ssDelay: toolbar.querySelector("#slideshow-delay"),
+    ssPlay: toolbar.querySelector("[data-ss-play]"),
+    ssPause: toolbar.querySelector("[data-ss-pause]"),
+    ssStop: toolbar.querySelector("[data-ss-stop]"),
   };
+
+  // Slideshow controls
+  if (state.dom.ssDelay) {
+    state.dom.ssDelay.value = String(Math.max(1, Math.round(state.slideshow.delayMs / 1000)));
+    state.dom.ssDelay.addEventListener("change", () => {
+      const secs = Math.max(1, Math.min(60, Number(state.dom.ssDelay.value) || 3));
+      state.slideshow.delayMs = secs * 1000;
+      state.dom.ssDelay.value = String(secs);
+      if (state.slideshow.isPlaying) {
+        pauseSlideshow();
+        startSlideshow({ resume: true });
+      }
+    });
+  }
+
+  state.dom.ssPlay?.addEventListener("click", () => startSlideshow());
+  state.dom.ssPause?.addEventListener("click", () => pauseSlideshow());
+  state.dom.ssStop?.addEventListener("click", () => stopSlideshow());
 
   state.sentinel = sentinel;
   setupObserver();
@@ -458,6 +504,191 @@ function resetRenderedGrid() {
   setupObserver();
 }
 
+// --- Slideshow helpers ---
+function setActiveSlideIndex(nextIndex) {
+  const prev = document.querySelector('.gallery-item[aria-current="true"]');
+  if (prev) prev.removeAttribute('aria-current');
+  state.slideshow.index = nextIndex;
+  if (nextIndex < 0) return;
+  ensureItemRendered(nextIndex);
+  const el = state.dom.grid?.querySelector(`.gallery-item[data-index="${nextIndex}"]`);
+  if (el) {
+    el.setAttribute('aria-current', 'true');
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
+  }
+  updateOverlayImage();
+}
+
+function ensureItemRendered(targetIndex) {
+  if (!state.dom.grid) return;
+  while (state.renderedCount <= targetIndex && state.renderedCount < state.filteredItems.length) {
+    renderNextChunk();
+  }
+}
+
+function startSlideshow(options = {}) {
+  const { resume = false } = options;
+  if (!state.filteredItems.length) return;
+  ensureSlideshowOverlay();
+  if (!resume) {
+    if (state.slideshow.index < 0 || state.slideshow.index >= state.filteredItems.length) {
+      setActiveSlideIndex(0);
+    } else {
+      setActiveSlideIndex(state.slideshow.index);
+    }
+  } else {
+    setActiveSlideIndex(Math.max(0, state.slideshow.index));
+  }
+  showSlideshowOverlay();
+  if (state.slideshow.timer) clearTimeout(state.slideshow.timer);
+  state.slideshow.isPlaying = true;
+  updateSlideshowButtons();
+  scheduleNextAdvance();
+}
+
+function scheduleNextAdvance() {
+  if (!state.slideshow.isPlaying) return;
+  state.slideshow.timer = setTimeout(() => {
+    advanceSlideshow();
+  }, state.slideshow.delayMs);
+}
+
+function advanceSlideshow() {
+  const next = state.slideshow.index + 1;
+  if (next >= state.filteredItems.length) {
+    stopSlideshow();
+    return;
+  }
+  setActiveSlideIndex(next);
+  scheduleNextAdvance();
+}
+
+function pauseSlideshow() {
+  if (state.slideshow.timer) {
+    clearTimeout(state.slideshow.timer);
+    state.slideshow.timer = null;
+  }
+  state.slideshow.isPlaying = false;
+  updateSlideshowButtons();
+}
+
+function stopSlideshow() {
+  if (state.slideshow.timer) {
+    clearTimeout(state.slideshow.timer);
+    state.slideshow.timer = null;
+  }
+  state.slideshow.isPlaying = false;
+  setActiveSlideIndex(-1);
+  updateSlideshowButtons();
+  removeSlideshowOverlay();
+}
+
+function updateSlideshowButtons() {
+  if (!state.dom) return;
+  const { ssPlay, ssPause, ssStop } = state.dom;
+  if (ssPlay) ssPlay.disabled = state.slideshow.isPlaying;
+  if (ssPause) ssPause.disabled = !state.slideshow.isPlaying;
+  if (ssStop) ssStop.disabled = !state.slideshow.isPlaying && state.slideshow.index < 0;
+  if (state.slideshow.overlayPauseBtn) state.slideshow.overlayPauseBtn.hidden = !state.slideshow.isPlaying;
+  if (state.slideshow.overlayPlayBtn) state.slideshow.overlayPlayBtn.hidden = state.slideshow.isPlaying;
+}
+
+function ensureSlideshowOverlay() {
+  if (state.slideshow.overlayRoot) return;
+  const root = document.createElement('div');
+  root.className = 'gallery-slideshow-overlay';
+  root.setAttribute('hidden', 'true');
+  root.setAttribute('aria-live', 'polite');
+
+  const img = document.createElement('img');
+  img.className = 'gallery-slideshow-image';
+  img.alt = '';
+
+  const controls = document.createElement('div');
+  controls.className = 'gallery-slideshow-controls';
+
+  const pauseBtn = document.createElement('button');
+  pauseBtn.type = 'button';
+  pauseBtn.className = 'button ss-overlay-pause';
+  pauseBtn.textContent = 'Pause';
+  pauseBtn.addEventListener('click', (e) => { e.stopPropagation(); pauseSlideshow(); });
+
+  const playBtn = document.createElement('button');
+  playBtn.type = 'button';
+  playBtn.className = 'button ss-overlay-play';
+  playBtn.textContent = 'Play';
+  playBtn.hidden = true;
+  playBtn.addEventListener('click', (e) => { e.stopPropagation(); startSlideshow({ resume: true }); });
+
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'button ss-overlay-close';
+  closeBtn.setAttribute('aria-label', 'Close slideshow');
+  closeBtn.textContent = '×';
+  closeBtn.addEventListener('click', (e) => { e.stopPropagation(); stopSlideshow(); });
+
+  controls.appendChild(pauseBtn);
+  controls.appendChild(playBtn);
+  controls.appendChild(closeBtn);
+
+  img.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const record = getCurrentSlideRecord();
+    if (record) {
+      state.slideshow.overlayHiddenForModal = true;
+      pauseSlideshow();
+      hideSlideshowOverlay();
+      openModal(record);
+    }
+  });
+
+  root.appendChild(img);
+  root.appendChild(controls);
+  document.body.appendChild(root);
+
+  state.slideshow.overlayRoot = root;
+  state.slideshow.overlayImage = img;
+  state.slideshow.overlayPauseBtn = pauseBtn;
+  state.slideshow.overlayPlayBtn = playBtn;
+  state.slideshow.overlayCloseBtn = closeBtn;
+}
+
+function showSlideshowOverlay() {
+  state.slideshow.overlayRoot?.removeAttribute('hidden');
+}
+
+function hideSlideshowOverlay() {
+  state.slideshow.overlayRoot?.setAttribute('hidden', 'true');
+}
+
+function removeSlideshowOverlay() {
+  const root = state.slideshow.overlayRoot;
+  if (root && root.parentNode) {
+    try { root.parentNode.removeChild(root); } catch {}
+  }
+  state.slideshow.overlayRoot = null;
+  state.slideshow.overlayImage = null;
+  state.slideshow.overlayPauseBtn = null;
+  state.slideshow.overlayPlayBtn = null;
+  state.slideshow.overlayCloseBtn = null;
+  state.slideshow.overlayHiddenForModal = false;
+}
+
+function getCurrentSlideRecord() {
+  const i = state.slideshow.index;
+  if (i == null || i < 0 || i >= state.filteredItems.length) return null;
+  return state.filteredItems[i];
+}
+
+function updateOverlayImage() {
+  const record = getCurrentSlideRecord();
+  const img = state.slideshow.overlayImage;
+  if (!record || !img) return;
+  const src = ensureRelativeAsset(record.src || record.original || record.thumbnail || '');
+  img.src = src;
+  img.alt = record.alt || record.title || '';
+}
+
 function setupObserver() {
   if (!state.sentinel) return;
   state.observer = new IntersectionObserver((entries) => {
@@ -483,6 +714,7 @@ function returnToCollections(options = {}) {
   const main = document.getElementById("main");
   if (!main) return;
 
+  stopSlideshow();
   state.collectionRequestToken += 1;
   state.currentCollection = null;
   state.items = [];
@@ -914,6 +1146,8 @@ function normalizeFooterEntry(entry = {}) {
 
 function openModal(record, options = {}) {
   const { skipRouteUpdate = false } = options;
+  // Pause slideshow while viewing details
+  pauseSlideshow();
   if (!state.modal) {
     state.modal = createModal();
     document.body.appendChild(state.modal.root);
@@ -1019,6 +1253,11 @@ function closeModal(options) {
   state.activeImageId = null;
   if (!skipRouteUpdate) {
     updateRoute({ collectionId: state.currentCollection?.id || null, imageId: null }, { replace: true });
+  }
+  // restore overlay if it was hidden for modal
+  if (state.slideshow.overlayRoot && state.slideshow.overlayHiddenForModal) {
+    showSlideshowOverlay();
+    state.slideshow.overlayHiddenForModal = false;
   }
 }
 
