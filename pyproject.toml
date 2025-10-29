@@ -92,6 +92,11 @@ disable_error_code = ["misc"]
 minversion = "8.0"
 addopts = "-q"
 testpaths = ["tests"]
+filterwarnings = [
+  # Silence spaCy/weasel DeprecationWarnings triggered by Click internals
+  "ignore:Importing .*split_arg_string.*:DeprecationWarning:spacy",
+  "ignore:Importing .*split_arg_string.*:DeprecationWarning:weasel",
+]
 
 [tool.coverage.run]
 branch = true
@@ -105,3 +110,4 @@ skip_covered = true
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
+

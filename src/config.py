@@ -77,6 +77,14 @@ class MediaProcessingConfig(BaseModel):
     profiles: list[DerivativeProfile] = Field(default_factory=_default_profiles)
     watermark: MediaWatermarkConfig = Field(default_factory=MediaWatermarkConfig)
     embed_metadata: MediaMetadataEmbedConfig = Field(default_factory=MediaMetadataEmbedConfig)
+    decompression_bomb_limit: int | None = Field(
+        default=None,
+        description=(
+            "Override Pillow's MAX_IMAGE_PIXELS (decompression bomb limit). "
+            "Set to a positive integer to cap allowed pixels; set to 0 to disable the limit; "
+            "leave unset to use Pillow's default."
+        ),
+    )
 
     @field_validator("source_dir", "output_dir", mode="before")
     def _ensure_path(cls, value: Any) -> Path:

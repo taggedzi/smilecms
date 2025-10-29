@@ -163,7 +163,7 @@ def _image_dimensions(path: Path) -> tuple[int | None, int | None]:
         with Image.open(path) as image:
             width, height = cast(tuple[int, int], image.size)
             return width, height
-    except (OSError, FileNotFoundError) as exc:
+    except (OSError, FileNotFoundError, getattr(Image, "DecompressionBombError", Exception)) as exc:
         logger.warning("Unable to determine dimensions for %s: %s", path, exc)
         return None, None
 
@@ -182,7 +182,7 @@ def _extract_captured_at(path: Path) -> datetime | None:
                         return _parse_exif_timestamp(raw_value)
                     except ValueError:
                         continue
-    except (OSError, FileNotFoundError) as exc:
+    except (OSError, FileNotFoundError, getattr(Image, "DecompressionBombError", Exception)) as exc:
         logger.debug("Skipping EXIF extraction for %s: %s", path, exc)
     return None
 

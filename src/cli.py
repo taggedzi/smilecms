@@ -203,6 +203,21 @@ def build(
 ) -> None:
     """Run a full rebuild of site artifacts."""
     config: Config = _load(config_path)
+
+    # Optionally adjust Pillow's decompression bomb limit based on config.
+    # Useful when processing ultra‑high‑resolution assets in a trusted context.
+    try:
+        from PIL import Image  # type: ignore
+
+        limit = getattr(config.media_processing, "decompression_bomb_limit", None)
+        if limit is not None:
+            if int(limit) <= 0:
+                Image.MAX_IMAGE_PIXELS = None  # type: ignore[attr-defined]
+            else:
+                Image.MAX_IMAGE_PIXELS = int(limit)  # type: ignore[attr-defined]
+    except Exception:
+        # If Pillow isn't available or attribute is missing, continue.
+        pass
     tracker = BuildTracker(config, Path(config_path))
     fingerprints = tracker.compute_fingerprints()
     change_summary = tracker.summarize_changes(fingerprints)

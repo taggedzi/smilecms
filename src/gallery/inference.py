@@ -120,13 +120,17 @@ class TaggingSession:
         if not self.available or not self._processor or not self._caption_model:
             return None
 
-        with Image.open(image_path) as base_image:
-            rgb = base_image.convert("RGB")
-            try:
-                caption = self._generate_caption(rgb)
-                tag_result = self._derive_tags_from_text(caption or "")
-            finally:
-                rgb.close()
+        try:
+            with Image.open(image_path) as base_image:
+                rgb = base_image.convert("RGB")
+                try:
+                    caption = self._generate_caption(rgb)
+                    tag_result = self._derive_tags_from_text(caption or "")
+                finally:
+                    rgb.close()
+        except getattr(Image, "DecompressionBombError", Exception) as exc:
+            logger.warning("Skipping ML annotation for oversized image %s: %s", image_path, exc)
+            return None
 
         return AnnotationResult(
             caption=caption,
