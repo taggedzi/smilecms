@@ -8,6 +8,14 @@ site_theme: "bold-theme-1"
 cache_dir: ".cache"
 media_processing:
   output_dir: "media/derived"
+  # Image safety limit (Pillow decompression bomb protection)
+  #
+  # Pillow guards against extremely large images (potential DoS) by limiting
+  # the total pixel count via MAX_IMAGE_PIXELS. You can override that here:
+  #   - Set to a positive integer to cap the maximum pixels (e.g. 250000000)
+  #   - Set to 0 to DISABLE the limit entirely (only recommended for trusted input)
+  #   - Remove or leave unset to use Pillow's default behavior
+  decompression_bomb_limit: 0
   profiles:
     - name: "thumb"
       width: 320

@@ -89,7 +89,21 @@ def process_media_plan(plan: MediaPlan, config: Config) -> MediaProcessingResult
             expected_files.add(destination.resolve())
             continue
 
-        variant = _process_image(source, destination, task.profile, config)
+        try:
+            variant = _process_image(source, destination, task.profile, config)
+        except Exception as exc:
+            try:
+                bomb_error = getattr(Image, "DecompressionBombError")
+            except Exception:
+                bomb_error = Exception  # fallback; won't match below if missing
+            if isinstance(exc, bomb_error):
+                message = f"Oversized image skipped due to limit: {source} ({exc})"
+                logger.warning(message)
+                result.warnings.append(message)
+                result.skipped_tasks += 1
+                continue
+            raise
+
         variant.path = _relative_variant_path(destination, derived_root)
         result.add_task_variant(task.media_path, variant)
         expected_files.add(destination.resolve())
