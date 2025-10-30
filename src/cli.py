@@ -207,14 +207,14 @@ def build(
     # Optionally adjust Pillow's decompression bomb limit based on config.
     # Useful when processing ultra‑high‑resolution assets in a trusted context.
     try:
-        from PIL import Image  # type: ignore
+        from PIL import Image
 
         limit = getattr(config.media_processing, "decompression_bomb_limit", None)
         if limit is not None:
             if int(limit) <= 0:
-                Image.MAX_IMAGE_PIXELS = None  # type: ignore[attr-defined]
+                Image.MAX_IMAGE_PIXELS = None
             else:
-                Image.MAX_IMAGE_PIXELS = int(limit)  # type: ignore[attr-defined]
+                Image.MAX_IMAGE_PIXELS = int(limit)
     except Exception:
         # If Pillow isn't available or attribute is missing, continue.
         pass

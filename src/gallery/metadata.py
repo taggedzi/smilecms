@@ -8,6 +8,12 @@ from pathlib import Path
 from typing import Iterable, cast
 
 from PIL import Image, ExifTags
+# Resolve Pillow's decompression bomb error to a well-typed symbol for "except" clauses.
+try:  # pragma: no cover - import-time resolution only
+    from PIL.Image import DecompressionBombError as _DecompressionBombError
+    DecompressionBombError: type[BaseException] = _DecompressionBombError
+except Exception:  # Fallback for environments without the attribute
+    DecompressionBombError = Exception
 
 from .models import GalleryCollectionEntry, GalleryImageEntry
 from .utils import hash_file, title_from_stem
@@ -163,7 +169,7 @@ def _image_dimensions(path: Path) -> tuple[int | None, int | None]:
         with Image.open(path) as image:
             width, height = cast(tuple[int, int], image.size)
             return width, height
-    except (OSError, FileNotFoundError, getattr(Image, "DecompressionBombError", Exception)) as exc:
+    except (OSError, FileNotFoundError, DecompressionBombError) as exc:
         logger.warning("Unable to determine dimensions for %s: %s", path, exc)
         return None, None
 
@@ -182,7 +188,7 @@ def _extract_captured_at(path: Path) -> datetime | None:
                         return _parse_exif_timestamp(raw_value)
                     except ValueError:
                         continue
-    except (OSError, FileNotFoundError, getattr(Image, "DecompressionBombError", Exception)) as exc:
+    except (OSError, FileNotFoundError, DecompressionBombError) as exc:
         logger.debug("Skipping EXIF extraction for %s: %s", path, exc)
     return None
 

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import pytest
 from PIL import Image
 
 from src.config import Config, DerivativeProfile, GalleryConfig, MediaProcessingConfig
 from src.content.models import ContentDocument, ContentMeta, ContentStatus, MediaReference
+from src.gallery.metadata import _extract_captured_at, _image_dimensions
 from src.media import collect_media_plan, process_media_plan
-from src.gallery.metadata import _image_dimensions, _extract_captured_at
 
 
 def _doc(slug: str, media_paths: list[str]) -> ContentDocument:
@@ -23,11 +24,11 @@ def _doc(slug: str, media_paths: list[str]) -> ContentDocument:
 
 
 def _bombing_open(target: Path, real_open: Callable[..., Any]) -> Callable[..., Any]:
-    BombError = getattr(Image, "DecompressionBombError")
+    BombError = Image.DecompressionBombError
 
     def _raise_on_target(path: Any, *args: Any, **kwargs: Any) -> Any:
         # Pillow may be passed either a str, Path, or file object
-        candidate = Path(path) if isinstance(path, (str, Path)) else None
+        candidate = Path(path) if isinstance(path, str | Path) else None
         if candidate and candidate.resolve() == target.resolve():
             raise BombError("simulated decompression bomb for test")
         return real_open(path, *args, **kwargs)
@@ -35,7 +36,9 @@ def _bombing_open(target: Path, real_open: Callable[..., Any]) -> Callable[..., 
     return _raise_on_target
 
 
-def test_process_media_plan_skips_oversized_images(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_process_media_plan_skips_oversized_images(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     raw_dir = tmp_path / "raw"
     derived_dir = tmp_path / "derived"
     (raw_dir / "gallery").mkdir(parents=True, exist_ok=True)
@@ -72,7 +75,9 @@ def test_process_media_plan_skips_oversized_images(tmp_path: Path, monkeypatch: 
     assert "gallery/huge.png" not in result.variants or not result.variants.get("gallery/huge.png")
 
 
-def test_gallery_metadata_handles_oversized_images(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_gallery_metadata_handles_oversized_images(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Create a placeholder file; patch Image.open to raise bomb error
     img_path = tmp_path / "bomb.png"
     Image.new("RGB", (8, 8), color="blue").save(img_path)
@@ -85,4 +90,3 @@ def test_gallery_metadata_handles_oversized_images(tmp_path: Path, monkeypatch: 
 
     captured = _extract_captured_at(img_path)
     assert captured is None
-
