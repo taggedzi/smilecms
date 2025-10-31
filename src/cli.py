@@ -6,7 +6,7 @@ import shutil
 import time
 import webbrowser
 from enum import Enum
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Iterable, Iterator, Sequence, cast
 
@@ -63,6 +63,8 @@ from .reporting import (
 from .scaffold import ScaffoldError, ScaffoldResult, normalize_slug, scaffold_content
 from .staging import StagingResult, reset_directory, stage_static_site
 from .templates import TemplateAssets
+from .preview_server import make_request_handler as _make_request_handler
+from .preview_server import serve as _serve
 from .state import BuildTracker, ChangeSummary
 from .validation import DocumentIssue, DocumentValidationError, IssueSeverity, lint_workspace
 from .verify import VerificationReport, verify_site
@@ -1192,56 +1194,7 @@ def _load(path: str) -> Config:
         raise typer.BadParameter(str(exc)) from exc
 
 
-class _ThreadingHTTPServer(ThreadingHTTPServer):
-    daemon_threads = True
-    allow_reuse_address = True
-
-
-def _make_request_handler(directory: Path) -> type[SimpleHTTPRequestHandler]:
-    directory_path = str(directory)
-
-    class PreviewRequestHandler(SimpleHTTPRequestHandler):
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
-            super().__init__(*args, directory=directory_path, **kwargs)
-
-        # Ensure correct Content-Type headers for common static assets during preview.
-        # Some platforms may default to application/octet-stream for newer extensions
-        # like .webp or .jsonl, which can break image/audio playback in browsers.
-        extensions_map = dict(SimpleHTTPRequestHandler.extensions_map)
-        extensions_map.update(
-            {
-                ".webp": "image/webp",
-                ".svg": "image/svg+xml",
-                ".json": "application/json; charset=utf-8",
-                ".jsonl": "application/json; charset=utf-8",
-                ".js": "application/javascript; charset=utf-8",
-                ".css": "text/css; charset=utf-8",
-                ".mp3": "audio/mpeg",
-                ".m4a": "audio/mp4",
-                ".aac": "audio/aac",
-                ".flac": "audio/flac",
-                ".ogg": "audio/ogg",
-                ".wav": "audio/wav",
-                ".jpg": "image/jpeg",
-                ".jpeg": "image/jpeg",
-            }
-        )
-
-    return PreviewRequestHandler
-
-
-@contextlib.contextmanager
-def _serve(
-    host: str,
-    port: int,
-    handler: type[SimpleHTTPRequestHandler],
-) -> Iterator[ThreadingHTTPServer]:
-    server = _ThreadingHTTPServer((host, port), handler)
-    try:
-        yield server
-    finally:
-        server.shutdown()
-        server.server_close()
+## preview server helpers moved to src.preview_server
 
 
 def _remove_path(path: Path) -> None:
