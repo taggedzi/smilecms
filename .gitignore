@@ -87,3 +87,12 @@ temp_media/
 # Ignore generated media files
 ################################################################################
 media/image_gallery_raw/*/*.json
+
+################################################################################
+# Example demo site outputs (generated during local builds)
+################################################################################
+examples/demo-site/public_html/
+examples/demo-site/site/
+examples/demo-site/.cache/
+examples/demo-site/media/derived/
+examples/demo-site/media/image_gallery_raw/*/*.json
