@@ -36,9 +36,13 @@ spacy-en = [
   # Install the small English model for spaCy; version pinned for stability.
   "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl"
 ]
+gui = [
+  "PySide6>=6.6"
+]
 
 [project.scripts]
 smilecms = "src.cli:app"
+smilecms-gui = "src.gui.main:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
