@@ -14,7 +14,7 @@ import sys
 import webbrowser
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterable, Sequence
+from typing import Any, Callable, Iterable, Sequence, Literal
 
 import yaml
 
@@ -215,7 +215,14 @@ def save_config(cfg: Config, config_path: Path, backup: bool = True) -> dict[str
 # -------------------------
 
 
-def scaffold(kind: str, slug: str, *, title: str | None, force: bool, config_path: Path) -> ScaffoldResult:
+def scaffold(
+    kind: Literal["post", "gallery", "track"],
+    slug: str,
+    *,
+    title: str | None,
+    force: bool,
+    config_path: Path,
+) -> ScaffoldResult:
     normalized = normalize_slug(slug)
     cfg = load_config(config_path)
     return scaffold_content(config=cfg, kind=kind, slug=normalized, title=title, force=force)
@@ -248,7 +255,7 @@ def build(
 
     # Optional: adjust Pillow decompression bomb guard if configured
     try:
-        from PIL import Image  # type: ignore
+        from PIL import Image
 
         limit = getattr(cfg.media_processing, "decompression_bomb_limit", None)
         if limit is not None:
@@ -555,12 +562,12 @@ def check_environment(cfg: Config | None = None) -> EnvStatus:
     spacy_avail = False
     spacy_model: str | None = None
     try:
-        import torch  # type: ignore
+        import torch
 
         torch_avail = True
         cuda_avail = bool(getattr(torch, "cuda", None) and torch.cuda.is_available())
         try:
-            from torch.backends import mps as torch_mps  # type: ignore
+            from torch.backends import mps as torch_mps
 
             mps_avail = bool(torch_mps.is_available())
         except Exception:
@@ -568,13 +575,13 @@ def check_environment(cfg: Config | None = None) -> EnvStatus:
     except Exception:
         torch_avail = False
     try:
-        import huggingface_hub  # type: ignore
+        import huggingface_hub
 
         hf_avail = True
     except Exception:
         hf_avail = False
     try:
-        import spacy  # type: ignore
+        import spacy
 
         spacy_avail = True
         try:

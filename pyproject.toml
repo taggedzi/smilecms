@@ -92,6 +92,10 @@ disable_error_code = ["misc"]  # silences "Untyped decorator makes function..."
 module = ["src.cli"]
 disable_error_code = ["misc"]
 
+[[tool.mypy.overrides]]
+module = ["src.gui.*"]
+disable_error_code = ["misc", "no-untyped-def", "no-untyped-call"]
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "-q"

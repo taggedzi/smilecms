@@ -173,7 +173,7 @@ class MainWindow(QtWidgets.QMainWindow):
         add_mru(root)
         self._refresh_mru()
         if detected["exists"]:
-            self._load_config(detected["config_path"])  # type: ignore[arg-type]
+            self._load_config(detected["config_path"]) 
             self._tabs.setCurrentIndex(1)
             self._update_project_theme()
         else:
