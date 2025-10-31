@@ -7,7 +7,7 @@ import logging
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, Set, Any, Union, cast
+from typing import Dict, Iterable, Set, Any, Union, cast, Callable
 
 import math
 from PIL import Image, ImageDraw, ImageFont
@@ -59,8 +59,18 @@ class MediaProcessingResult:
         return sum(len(items) for items in self.variants.values())
 
 
-def process_media_plan(plan: MediaPlan, config: Config) -> MediaProcessingResult:
-    """Execute derivative tasks and return processing details."""
+def process_media_plan(
+    plan: MediaPlan,
+    config: Config,
+    *,
+    on_progress: Callable[[str], None] | None = None,
+) -> MediaProcessingResult:
+    """Execute derivative tasks and return processing details.
+
+    When provided, ``on_progress`` is called with either "derivative" or "asset"
+    after handling each corresponding unit of work. This enables callers (e.g.,
+    the CLI) to display progress without changing core logic or results.
+    """
     result = MediaProcessingResult()
     derived_root = config.media_processing.output_dir
     expected_files: Set[Path] = set()
@@ -72,12 +82,16 @@ def process_media_plan(plan: MediaPlan, config: Config) -> MediaProcessingResult
             logger.warning(message)
             result.missing_sources.append(source.as_posix())
             result.skipped_tasks += 1
+            if on_progress is not None:
+                on_progress("derivative")
             continue
 
         if not _is_image(source):
             logger.info("Skipping unsupported media type: %s", source)
             result.unsupported_media.append(source.as_posix())
             result.skipped_tasks += 1
+            if on_progress is not None:
+                on_progress("derivative")
             continue
 
         destination = task.destination
@@ -87,6 +101,8 @@ def process_media_plan(plan: MediaPlan, config: Config) -> MediaProcessingResult
             variant = _load_existing_variant(destination, task.profile, derived_root)
             result.add_task_variant(task.media_path, variant, reused=True)
             expected_files.add(destination.resolve())
+            if on_progress is not None:
+                on_progress("derivative")
             continue
 
         try:
@@ -107,6 +123,8 @@ def process_media_plan(plan: MediaPlan, config: Config) -> MediaProcessingResult
         variant.path = _relative_variant_path(destination, derived_root)
         result.add_task_variant(task.media_path, variant)
         expected_files.add(destination.resolve())
+        if on_progress is not None:
+            on_progress("derivative")
 
     for rel_path, source in plan.static_assets.items():
         destination = derived_root / rel_path
@@ -114,6 +132,8 @@ def process_media_plan(plan: MediaPlan, config: Config) -> MediaProcessingResult
             message = f"Media source missing: {source}"
             logger.warning(message)
             result.missing_sources.append(source.as_posix())
+            if on_progress is not None:
+                on_progress("asset")
             continue
         destination.parent.mkdir(parents=True, exist_ok=True)
         if _is_cached(source, destination):
@@ -138,6 +158,8 @@ def process_media_plan(plan: MediaPlan, config: Config) -> MediaProcessingResult
             )
             result.add_static_variant(rel_path, variant)
         expected_files.add(destination.resolve())
+        if on_progress is not None:
+            on_progress("asset")
 
     pruned = _prune_stale_artifacts(derived_root, expected_files)
     if pruned:

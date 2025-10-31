@@ -12,6 +12,13 @@ from typing import TYPE_CHECKING, Annotated, Any, Iterable, Iterator, Sequence, 
 
 import typer
 from rich.console import Console
+from rich.progress import (
+    Progress,
+    BarColumn,
+    TaskProgressColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 
 from .articles import write_article_pages
 from .config import Config, MediaProcessingConfig, load_config
@@ -327,7 +334,30 @@ def _generate_site_artifacts(
     start = time.perf_counter()
 
     media_plan = collect_media_plan(documents, config)
-    media_result = process_media_plan(media_plan, config)
+    # Show a live progress bar during media processing for better feedback on large sites.
+    columns = [
+        "[progress.description]{task.description}",
+        BarColumn(),
+        TaskProgressColumn(),
+        "•",
+        TimeElapsedColumn(),
+        "•",
+        TimeRemainingColumn(),
+    ]
+    # Use transient=True so completed bars don't clutter the final summary.
+    with Progress(*columns, transient=True) as progress:
+        deriv_total = len(media_plan.tasks)
+        asset_total = len(media_plan.static_assets)
+        deriv_task_id = progress.add_task("Derivatives", total=deriv_total) if deriv_total > 0 else None
+        asset_task_id = progress.add_task("Assets", total=asset_total) if asset_total > 0 else None
+
+        def _on_progress(kind: str) -> None:
+            if kind == "derivative" and deriv_task_id is not None:
+                progress.advance(deriv_task_id, 1)
+            elif kind == "asset" and asset_task_id is not None:
+                progress.advance(asset_task_id, 1)
+
+        media_result = process_media_plan(media_plan, config, on_progress=_on_progress)
     apply_variants_to_documents(documents, media_result.variants)
     updated_gallery = 0
     if config.gallery.enabled:
