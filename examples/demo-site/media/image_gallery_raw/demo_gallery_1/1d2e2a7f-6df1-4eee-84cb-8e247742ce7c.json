@@ -1,0 +1,62 @@
+{
+  "ai_confidence": 0.9772663116455078,
+  "alt_raw": "there is a black and white photo of a car parked on a dirt road",
+  "alt_text": "There is a black and white photo of a car parked on a dirt road",
+  "caption": "There is a black and white photo of a car parked on a dirt road",
+  "caption_raw": "there is a black and white photo of a car parked on a dirt road",
+  "captured_at": null,
+  "collection_id": "demo_gallery_1",
+  "created_at": "2025-10-21T07:12:59.292965Z",
+  "derived": {
+    "download": "media/derived/large/gallery/demo_gallery_1/1d2e2a7f-6df1-4eee-84cb-8e247742ce7c.jpg",
+    "original": "gallery/demo_gallery_1/1d2e2a7f-6df1-4eee-84cb-8e247742ce7c.png",
+    "thumbnail": "media/derived/thumb/gallery/demo_gallery_1/1d2e2a7f-6df1-4eee-84cb-8e247742ce7c.webp",
+    "web": "media/derived/large/gallery/demo_gallery_1/1d2e2a7f-6df1-4eee-84cb-8e247742ce7c.jpg"
+  },
+  "description": "There is a black and white photo of a car parked on a dirt road.",
+  "description_raw": "there is a black and white photo of a car parked on a dirt road",
+  "filename": "1d2e2a7f-6df1-4eee-84cb-8e247742ce7c.png",
+  "filesize": 1934272,
+  "hash": "277b42d2cee59d1bfbccc6020f6dab6518a81590a3f3cc9ca1f59be50ce79290",
+  "height": 768,
+  "id": "1d2e2a7f-6df1-4eee-84cb-8e247742ce7c",
+  "last_generated_at": "2025-10-30T23:00:41.201295Z",
+  "llm_revision": 3,
+  "llm_updated_at": "2025-10-27T02:07:31.647375Z",
+  "manual_overrides": {},
+  "ml_generated_at": "2025-10-27T02:07:52.301164Z",
+  "ml_model_signature": "caption:Salesforce/blip-image-captioning-large|tagger:none",
+  "ml_source_hash": "277b42d2cee59d1bfbccc6020f6dab6518a81590a3f3cc9ca1f59be50ce79290",
+  "modified_at": "2025-10-20T02:55:02.823685Z",
+  "notes": [
+    "Image flagged as rating:general"
+  ],
+  "rating": "rating:general",
+  "tag_scores": {
+    "a black and white photo": 1.0,
+    "a car": 2.0,
+    "a dirt road": 3.0,
+    "car": 4.0,
+    "dirt": 5.0,
+    "road": 6.0
+  },
+  "tags": [
+    "A Black And White Photo",
+    "A Car",
+    "A Dirt Road",
+    "Car",
+    "Dirt",
+    "Road"
+  ],
+  "tags_raw": [
+    "a black and white photo",
+    "a car",
+    "a dirt road",
+    "car",
+    "dirt",
+    "road"
+  ],
+  "title": "1d2e2a7f 6df1 4eee 84cb 8e247742ce7c",
+  "version": 1,
+  "width": 1368
+}

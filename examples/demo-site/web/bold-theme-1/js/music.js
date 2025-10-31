@@ -2,7 +2,8 @@ const DEFAULT_TRACKS_META_SOURCES = [
   "../data/music/manifest.json",
   "/site/data/music/manifest.json",
 ];
-const DEFAULT_TRACKS_SOURCES = ["../data/music/tracks.jsonl", "/site/data/music/tracks.jsonl"];
+// Use absolute root path to avoid base-URL issues under /music/
+const DEFAULT_TRACKS_SOURCES = ["/data/music/tracks.jsonl", "/site/data/music/tracks.jsonl"];
 const DEFAULT_SITE_CONFIG_SOURCES = ["../config/site.json", "/site/config/site.json"];
 
 const GLOBAL_DATA = window.__SMILE_DATA__ || {};
@@ -471,13 +472,23 @@ function openModal(track, options = {}) {
     lyricsBody.textContent = "";
   }
 
-  const audioSrc = track.audio?.src ? resolveMediaPath(track.audio.src) : null;
+  const audioSrc = track.audio?.src
+    ? resolveMediaPath(track.audio.src)
+    : (track.download?.src ? resolveMediaPath(track.download.src) : null);
   if (audioSrc) {
+    // Set both src and a <source> child to help browsers that prefer explicit types
     audioEl.src = audioSrc;
+    try {
+      const sourceEl = document.createElement("source");
+      sourceEl.src = audioSrc;
+      // Best-effort MIME hint
+      sourceEl.type = track.audio?.mime_type || "audio/mpeg";
+      audioEl.innerHTML = "";
+      audioEl.appendChild(sourceEl);
+    } catch {}
     audioEl.load();
-    audioEl.play().catch(() => {
-      /* autoplay might be blocked */
-    });
+    // Play on user-initiated open; ignore autoplay blocks
+    audioEl.play().catch(() => {});
   }
 
   if (track.download?.enabled && track.download?.src) {

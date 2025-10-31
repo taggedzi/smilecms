@@ -115,6 +115,13 @@ class GalleryConfig(BaseModel):
         default=True,
         description="Toggle automatic LLM-based metadata cleanup.",
     )
+    local_models_only: bool = Field(
+        default=True,
+        description=(
+            "When true, load ML models (captioning/tagging) only from local cache or local paths. "
+            "Set to false to allow on-demand downloads from Hugging Face during builds."
+        ),
+    )
     llm_prompt_path: Path | None = Field(
         default=None,
         description="Optional path to a custom prompt template used for metadata cleanup.",
@@ -237,7 +244,7 @@ class Config(BaseModel):
     media_dir: Path = Field(default=Path("media"))
     article_media_dir: Path = Field(default=Path("content/media"))
     output_dir: Path = Field(default=Path("site"))
-    templates_dir: Path = Field(default=Path("web/dark-theme-1"))
+    templates_dir: Path = Field(default=Path("web"))
     site_theme: str | None = Field(
         default=None,
         description="Optional theme folder located under templates_dir to stage for the build.",
@@ -290,11 +297,71 @@ class Config(BaseModel):
 
 
 def load_config(path: str | Path) -> Config:
-    config_path = Path(path)
+    """Load configuration and resolve relative paths based on the config location.
+
+    The ``path`` argument may point to a file (e.g., ``/site/smilecms.yml``) or a
+    directory containing that file. All relative paths inside the configuration
+    are interpreted relative to the directory holding the config file.
+    """
+    candidate = Path(path)
+    config_path = candidate
     data: dict[str, Any] = {}
-    if config_path.exists():
-        with config_path.open("r", encoding="utf-8") as handle:
-            data = yaml.safe_load(handle) or {}
+    base_dir: Path
+    if candidate.is_dir():
+        # Allow pointing at a project directory without a config file; use defaults.
+        config_file = candidate / "smilecms.yml"
+        if config_file.exists():
+            with config_file.open("r", encoding="utf-8") as handle:
+                data = yaml.safe_load(handle) or {}
+        # Anchor defaults to the provided directory.
+        base_dir = candidate.resolve()
+        config_path = config_file
     else:
-        raise FileNotFoundError(config_path)
-    return Config(**data)
+        config_path = candidate
+        if config_path.exists():
+            with config_path.open("r", encoding="utf-8") as handle:
+                data = yaml.safe_load(handle) or {}
+        else:
+            raise FileNotFoundError(config_path)
+        base_dir = config_path.parent.resolve()
+
+    cfg = Config(**data)
+
+    def _abs_required(value: Path) -> Path:
+        return value if value.is_absolute() else (base_dir / value).resolve()
+
+    def _abs_optional(value: Path | None) -> Path | None:
+        if value is None:
+            return None
+        return _abs_required(value)
+
+    # Top-level paths
+    cfg.content_dir = _abs_required(cfg.content_dir)
+    cfg.media_dir = _abs_required(cfg.media_dir)
+    cfg.article_media_dir = _abs_required(cfg.article_media_dir)
+    cfg.output_dir = _abs_required(cfg.output_dir)
+    cfg.templates_dir = _abs_required(cfg.templates_dir)
+    cfg.cache_dir = _abs_required(cfg.cache_dir)
+    cfg.themes_dir = _abs_optional(cfg.themes_dir)
+
+    # Media processing
+    mp = cfg.media_processing
+    mp.source_dir = _abs_required(mp.source_dir)
+    mp.output_dir = _abs_required(mp.output_dir)
+    wm = mp.watermark
+    wm.font_path = _abs_optional(wm.font_path)
+
+    # Gallery
+    gal = cfg.gallery
+    gal.source_dir = _abs_required(gal.source_dir)
+    gal.llm_prompt_path = _abs_optional(gal.llm_prompt_path)
+
+    # Music
+    mus = cfg.music
+    mus.source_dir = _abs_required(mus.source_dir)
+
+    # Feeds: keep output_subdir as relative to output_dir; absolutize optional file path
+    feed = cfg.feeds
+    feed.site_config_path = _abs_optional(feed.site_config_path)
+
+    return cfg

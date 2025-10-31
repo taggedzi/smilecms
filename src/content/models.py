@@ -93,6 +93,10 @@ class ContentMeta(BaseModel):
         default=None,
         description="Relative path (within media mounts) to the downloadable asset.",
     )
+    primary_audio_path: Optional[str] = Field(
+        default=None,
+        description="Relative path to the primary audio asset for audio items.",
+    )
 
     @field_validator("slug")
     def _normalize_slug(cls, value: str) -> str:

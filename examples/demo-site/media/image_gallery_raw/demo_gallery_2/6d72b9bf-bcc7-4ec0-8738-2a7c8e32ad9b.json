@@ -1,0 +1,65 @@
+{
+  "ai_confidence": 0.9263416528701782,
+  "alt_raw": "there is a cartoon of a space ship flying through the air",
+  "alt_text": "There is a cartoon of a space ship flying through the air",
+  "caption": "There is a cartoon of a space ship flying through the air",
+  "caption_raw": "there is a cartoon of a space ship flying through the air",
+  "captured_at": null,
+  "collection_id": "demo_gallery_2",
+  "created_at": "2025-10-21T07:14:08.109944Z",
+  "derived": {
+    "download": "media/derived/large/gallery/demo_gallery_2/6d72b9bf-bcc7-4ec0-8738-2a7c8e32ad9b.jpg",
+    "original": "gallery/demo_gallery_2/6d72b9bf-bcc7-4ec0-8738-2a7c8e32ad9b.png",
+    "thumbnail": "media/derived/thumb/gallery/demo_gallery_2/6d72b9bf-bcc7-4ec0-8738-2a7c8e32ad9b.webp",
+    "web": "media/derived/large/gallery/demo_gallery_2/6d72b9bf-bcc7-4ec0-8738-2a7c8e32ad9b.jpg"
+  },
+  "description": "There is a cartoon of a space ship flying through the air.",
+  "description_raw": "there is a cartoon of a space ship flying through the air",
+  "filename": "6d72b9bf-bcc7-4ec0-8738-2a7c8e32ad9b.png",
+  "filesize": 719203,
+  "hash": "cbe73d3d3ec269edfb9b2ac38db6beefac4d9b5bea42ca97d7f80cc6ece43eff",
+  "height": 1024,
+  "id": "6d72b9bf-bcc7-4ec0-8738-2a7c8e32ad9b",
+  "last_generated_at": "2025-10-30T23:00:41.201295Z",
+  "llm_revision": 3,
+  "llm_updated_at": "2025-10-27T02:07:31.647375Z",
+  "manual_overrides": {},
+  "ml_generated_at": "2025-10-27T02:08:16.678145Z",
+  "ml_model_signature": "caption:Salesforce/blip-image-captioning-large|tagger:none",
+  "ml_source_hash": "cbe73d3d3ec269edfb9b2ac38db6beefac4d9b5bea42ca97d7f80cc6ece43eff",
+  "modified_at": "2025-10-04T20:00:18.308506Z",
+  "notes": [
+    "Image flagged as rating:general"
+  ],
+  "rating": "rating:general",
+  "tag_scores": {
+    "a cartoon": 1.0,
+    "a space ship": 2.0,
+    "air": 3.0,
+    "cartoon": 4.0,
+    "ship": 5.0,
+    "space": 6.0,
+    "the air": 7.0
+  },
+  "tags": [
+    "A Cartoon",
+    "A Space Ship",
+    "Air",
+    "Cartoon",
+    "Ship",
+    "Space",
+    "The Air"
+  ],
+  "tags_raw": [
+    "a cartoon",
+    "a space ship",
+    "air",
+    "cartoon",
+    "ship",
+    "space",
+    "the air"
+  ],
+  "title": "6d72b9bf Bcc7 4ec0 8738 2a7c8e32ad9b",
+  "version": 1,
+  "width": 1024
+}

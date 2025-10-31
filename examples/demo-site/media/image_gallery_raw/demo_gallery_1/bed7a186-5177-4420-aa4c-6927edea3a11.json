@@ -1,0 +1,65 @@
+{
+  "ai_confidence": 0.9918640851974487,
+  "alt_raw": "black and white photograph of an old car parked on a dirt road",
+  "alt_text": "Black and white photograph of an old car parked on a dirt road",
+  "caption": "Black and white photograph of an old car parked on a dirt road",
+  "caption_raw": "black and white photograph of an old car parked on a dirt road",
+  "captured_at": null,
+  "collection_id": "demo_gallery_1",
+  "created_at": "2025-10-21T07:12:59.458823Z",
+  "derived": {
+    "download": "media/derived/large/gallery/demo_gallery_1/bed7a186-5177-4420-aa4c-6927edea3a11.jpg",
+    "original": "gallery/demo_gallery_1/bed7a186-5177-4420-aa4c-6927edea3a11.png",
+    "thumbnail": "media/derived/thumb/gallery/demo_gallery_1/bed7a186-5177-4420-aa4c-6927edea3a11.webp",
+    "web": "media/derived/large/gallery/demo_gallery_1/bed7a186-5177-4420-aa4c-6927edea3a11.jpg"
+  },
+  "description": "Black and white photograph of an old car parked on a dirt road.",
+  "description_raw": "black and white photograph of an old car parked on a dirt road",
+  "filename": "bed7a186-5177-4420-aa4c-6927edea3a11.png",
+  "filesize": 1878593,
+  "hash": "95ec74e3ebcd731a37b096c7aae70f1c236cd0fd62ee5597be061b93bcf30139",
+  "height": 768,
+  "id": "bed7a186-5177-4420-aa4c-6927edea3a11",
+  "last_generated_at": "2025-10-30T23:00:41.201295Z",
+  "llm_revision": 3,
+  "llm_updated_at": "2025-10-27T02:07:31.647375Z",
+  "manual_overrides": {},
+  "ml_generated_at": "2025-10-27T02:08:04.600000Z",
+  "ml_model_signature": "caption:Salesforce/blip-image-captioning-large|tagger:none",
+  "ml_source_hash": "95ec74e3ebcd731a37b096c7aae70f1c236cd0fd62ee5597be061b93bcf30139",
+  "modified_at": "2025-10-20T01:45:31.303873Z",
+  "notes": [
+    "Image flagged as rating:general"
+  ],
+  "rating": "rating:general",
+  "tag_scores": {
+    "a dirt road": 1.0,
+    "an old car": 2.0,
+    "black and white photograph": 3.0,
+    "car": 4.0,
+    "dirt": 5.0,
+    "photograph": 6.0,
+    "road": 7.0
+  },
+  "tags": [
+    "A Dirt Road",
+    "An Old Car",
+    "Black And White Photograph",
+    "Car",
+    "Dirt",
+    "Photograph",
+    "Road"
+  ],
+  "tags_raw": [
+    "a dirt road",
+    "an old car",
+    "black and white photograph",
+    "car",
+    "dirt",
+    "photograph",
+    "road"
+  ],
+  "title": "Bed7a186 5177 4420 Aa4c 6927edea3a11",
+  "version": 1,
+  "width": 1368
+}

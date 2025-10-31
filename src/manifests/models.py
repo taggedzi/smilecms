@@ -32,6 +32,7 @@ class ManifestItem(BaseModel):
     asset_count: int = Field(default=0, ge=0)
     has_media: bool = Field(default=False)
     duration: Optional[float] = Field(default=None, ge=0)
+    audio_path: Optional[str] = Field(default=None, description="Primary audio asset path for audio items.")
 
 
 class ManifestPage(BaseModel):

@@ -28,7 +28,8 @@ class ScriptAsset(BaseModel):
     src: str = Field(...)
     type: str | None = Field(default=None)
     defer: bool = Field(default=False)
-    async_: bool = Field(default=False, alias="async")
+    # Accept "async" from JSON and expose as async_ in Python
+    async_: bool = Field(default=False, alias="async", validation_alias="async")
     integrity: str | None = Field(default=None)
     crossorigin: str | None = Field(default=None)
 

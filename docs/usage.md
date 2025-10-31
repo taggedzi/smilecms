@@ -7,6 +7,27 @@ This guide collects the practical command-line workflows that drive the SmileCMS
 - Run all commands from the project root so the CLI can locate `smilecms.yml` and the content/media directories.
 - The CLI uses [Typer](https://typer.tiangolo.com/), so global help is always available via `smilecms --help` and `smilecms <command> --help`.
 
+## Using an External Project Directory
+- You can keep your site project (config, content, media, theme) outside of the CMS codebase and point SmileCMS at it with `--project` or `--config`.
+- `--project DIR` targets a directory; if `smilecms.yml` is missing, SmileCMS uses safe defaults anchored to `DIR` (`content/`, `media/`, `web/`, `site/`, `.cache/`).
+- `--config` accepts either a file path to `smilecms.yml` or a directory containing that file. Example: `smilecms build -c ../my-site` or `smilecms build -c ../my-site/smilecms.yml`.
+- All relative paths are resolved relative to the project directory (the directory holding `smilecms.yml`, or `--project` when no config file is present). This keeps all reads/writes within your project folder.
+- Typical external project layout:
+  - `my-site/smilecms.yml`
+  - `my-site/content/`
+  - `my-site/media/`
+  - `my-site/web/` (or a theme folder selected via `site_theme`)
+  - `my-site/site/` (generated)
+  - `my-site/.cache/` (generated)
+
+### Overriding the output directory
+- All commands read `output_dir` from config, but you can override it for a single build with `--output-dir PATH`.
+- Relative `--output-dir` values are resolved against `--project` when present, otherwise against the config location.
+- Example:
+  ```bash
+  smilecms build --project my-site --output-dir public_html
+  ```
+
 ## Build Pipeline Overview
 
 A successful `smilecms build` run executes the following stages:
@@ -38,8 +59,8 @@ The preview and verification commands operate on the generated bundle in `site/`
   ```bash
   smilecms build
   # -> prints incremental/force status, document and media statistics,
-  #    lists staged assets, and writes site/report.json
-  
+      #    lists staged assets, and writes site/report.json
+
   # Regenerate and overwrite gallery sidecars (use sparingly)
   smilecms build --refresh-gallery
   ```
@@ -135,6 +156,23 @@ The preview and verification commands operate on the generated bundle in `site/`
   smilecms clean --cache
   # -> removes site/, media/derived/, and .cache/ when they exist
   ```
+
+### `smilecms init`
+- **Purpose:** Scaffold a new external project directory with a default `smilecms.yml` and folders.
+- **Arguments:**
+  - `target_dir`: directory to create or populate.
+- **Options:**
+  - `--force`, `-f`: overwrite existing files that this command manages.
+- **Outputs:** Creates `content/`, `content/media/`, `media/image_gallery_raw/`, `media/music_collection/`, a placeholder `web/README.md`, `.gitignore`, and a default `smilecms.yml` with relative paths.
+- **Example:**
+  ```bash
+  smilecms init my-site
+  smilecms build --project my-site
+  ```
+
+### `--project DIR` (alias for `--config DIR/smilecms.yml`)
+- All commands accept `--project DIR` to target a site directory containing `smilecms.yml`.
+- `--config` takes precedence when both are supplied.
 
 ## Tips for Automation
 - Chain `smilecms lint --strict`, `smilecms build`, and `smilecms verify` in continuous integration to fail early on content or asset regressions.

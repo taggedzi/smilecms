@@ -88,13 +88,26 @@ def _build_track_record(document: ContentDocument) -> Tuple[dict[str, Any] | Non
     warnings: list[str] = []
     meta = document.meta
 
-    audio_ref = meta.hero_media
-    if audio_ref is None:
-        warnings.append(f"Track '{meta.slug}' is missing a primary audio reference; skipping.")
-        return None, warnings
+    # Determine the actual audio source for this track. For audio content we
+    # prefer the explicit primary_audio_path recorded during ingestion. This
+    # path points at the processed media namespace (e.g. "audio/<slug>/<file>.mp3").
+    audio_path = (meta.primary_audio_path or "").strip() if meta.primary_audio_path else None
+    audio_mime: str | None = None
 
-    audio_variant = _select_variant(audio_ref, ("download", "original", "web"))
-    audio_path = audio_variant.path if audio_variant else audio_ref.path
+    if not audio_path:
+        # Backward-compatibility: older content may have used hero_media to point
+        # at the audio asset. This is not ideal (hero is for visual cover art),
+        # but keep this fallback to avoid hard failures.
+        audio_ref = meta.hero_media
+        if audio_ref is None or not (audio_ref.path or "").strip():
+            warnings.append(
+                f"Track '{meta.slug}' is missing a primary audio reference; skipping."
+            )
+            return None, warnings
+        variant = _select_variant(audio_ref, ("download", "original", "web"))
+        audio_path = (variant.path if variant else audio_ref.path) or None
+        audio_mime = audio_ref.mime_type
+
     if not audio_path:
         warnings.append(f"Track '{meta.slug}' has an empty audio path; skipping.")
         return None, warnings
@@ -121,12 +134,19 @@ def _build_track_record(document: ContentDocument) -> Tuple[dict[str, Any] | Non
     download_path = None
     download_filename = None
     if meta.download_enabled:
+        # Prefer the explicit download file when provided; otherwise fall back
+        # to the primary audio.
         if meta.download_path:
-            download_ref = _find_reference(document, meta.download_path) or audio_ref
+            # Attempt to locate a matching reference for variant selection; if
+            # we don't find one, trust the provided path as-is.
+            download_ref = _find_reference(document, meta.download_path)
+            if download_ref:
+                download_variant = _select_variant(download_ref, ("download", "original", "web"))
+                download_path = (download_variant.path if download_variant else download_ref.path) or None
+            else:
+                download_path = meta.download_path
         else:
-            download_ref = audio_ref
-        download_variant = _select_variant(download_ref, ("download", "original", "web"))
-        download_path = (download_variant.path if download_variant else download_ref.path) or None
+            download_path = audio_path
         if download_path:
             download_filename = Path(download_path).name
 
@@ -153,7 +173,7 @@ def _build_track_record(document: ContentDocument) -> Tuple[dict[str, Any] | Non
         "updated_at": meta.updated_at.isoformat() if meta.updated_at else None,
         "audio": {
             "src": audio_path,
-            "mime_type": audio_ref.mime_type,
+            "mime_type": audio_mime,
         },
         "download": {
             "enabled": bool(meta.download_enabled and download_path),

@@ -322,20 +322,36 @@ def _iter_images(directory: Path) -> Iterable[Path]:
 
 
 def _resolve_variant_path(config: Config, relative_path: str) -> str:
-    """Convert a variant path into a web-consumable posix path."""
+    """Convert a variant path into a web-consumable posix path.
+
+    Ensures that even when media derivatives are produced outside the output
+    directory, the returned path is a site-relative path that matches where
+    staging places the files (mirrors logic in src.staging.stage_static_site).
+    """
     derived_root = config.media_processing.output_dir
     variant = PurePosixPath(relative_path.lstrip("/"))
 
+    # Simple case: derived root is a relative path like "media/derived"
     if not derived_root.is_absolute():
         base = PurePosixPath(derived_root.as_posix().lstrip("./"))
         return str(base / variant)
 
-    combined = (derived_root / Path(relative_path)).resolve()
+    output_root = config.output_dir.resolve()
     try:
-        relative = combined.relative_to(config.output_dir.resolve())
+        # If the combined path already lives under output_dir, return relative path.
+        combined = (derived_root / Path(relative_path)).resolve()
+        relative = combined.relative_to(output_root)
         return relative.as_posix()
     except ValueError:
-        return PurePosixPath(combined.as_posix()).as_posix()
+        # Otherwise, mirror staging: compute a project-relative base from
+        # output_dir.parent when possible, falling back to the leaf name.
+        project_root = output_root.parent
+        try:
+            rel_base = derived_root.resolve().relative_to(project_root)
+        except ValueError:
+            rel_base = Path(derived_root.name)
+        web_base = PurePosixPath(rel_base.as_posix())
+        return str(web_base / variant)
 
 
 def _collection_to_payload(collection: GalleryCollectionEntry, data_root: Path) -> dict[str, object]:

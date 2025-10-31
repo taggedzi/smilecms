@@ -90,10 +90,12 @@ class TaggingSession:
             processor = BlipProcessor.from_pretrained(
                 config.gallery.caption_model,
                 cache_dir=str(caption_cache),
+                local_files_only=bool(config.gallery.local_models_only),
             )
             caption_model = BlipForConditionalGeneration.from_pretrained(
                 config.gallery.caption_model,
                 cache_dir=str(caption_cache),
+                local_files_only=bool(config.gallery.local_models_only),
             )
             caption_model.to(device)
             caption_model.eval()

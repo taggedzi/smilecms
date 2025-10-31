@@ -1,0 +1,62 @@
+{
+  "ai_confidence": 0.9713364243507385,
+  "alt_raw": "there is a drawing of a flying saucer on a white background",
+  "alt_text": "There is a drawing of a flying saucer on a white background",
+  "caption": "There is a drawing of a flying saucer on a white background",
+  "caption_raw": "there is a drawing of a flying saucer on a white background",
+  "captured_at": null,
+  "collection_id": "demo_gallery_2",
+  "created_at": "2025-10-21T07:14:08.137516Z",
+  "derived": {
+    "download": "media/derived/large/gallery/demo_gallery_2/9685aa66-e0b0-4c97-9602-ca894185dfd5.jpg",
+    "original": "gallery/demo_gallery_2/9685aa66-e0b0-4c97-9602-ca894185dfd5.png",
+    "thumbnail": "media/derived/thumb/gallery/demo_gallery_2/9685aa66-e0b0-4c97-9602-ca894185dfd5.webp",
+    "web": "media/derived/large/gallery/demo_gallery_2/9685aa66-e0b0-4c97-9602-ca894185dfd5.jpg"
+  },
+  "description": "There is a drawing of a flying saucer on a white background.",
+  "description_raw": "there is a drawing of a flying saucer on a white background",
+  "filename": "9685aa66-e0b0-4c97-9602-ca894185dfd5.png",
+  "filesize": 517867,
+  "hash": "b92ad80897de07c9f02f89cd6c2a583ca394701fe0570e8a775f8e7c0f39a901",
+  "height": 1024,
+  "id": "9685aa66-e0b0-4c97-9602-ca894185dfd5",
+  "last_generated_at": "2025-10-30T23:00:41.201295Z",
+  "llm_revision": 3,
+  "llm_updated_at": "2025-10-27T02:07:31.647375Z",
+  "manual_overrides": {},
+  "ml_generated_at": "2025-10-27T02:08:20.617608Z",
+  "ml_model_signature": "caption:Salesforce/blip-image-captioning-large|tagger:none",
+  "ml_source_hash": "b92ad80897de07c9f02f89cd6c2a583ca394701fe0570e8a775f8e7c0f39a901",
+  "modified_at": "2025-10-04T19:59:20.215633Z",
+  "notes": [
+    "Image flagged as rating:general"
+  ],
+  "rating": "rating:general",
+  "tag_scores": {
+    "a drawing": 1.0,
+    "a flying saucer": 2.0,
+    "a white background": 3.0,
+    "background": 4.0,
+    "drawing": 5.0,
+    "saucer": 6.0
+  },
+  "tags": [
+    "A Drawing",
+    "A Flying Saucer",
+    "A White Background",
+    "Background",
+    "Drawing",
+    "Saucer"
+  ],
+  "tags_raw": [
+    "a drawing",
+    "a flying saucer",
+    "a white background",
+    "background",
+    "drawing",
+    "saucer"
+  ],
+  "title": "9685aa66 E0b0 4c97 9602 Ca894185dfd5",
+  "version": 1,
+  "width": 1024
+}

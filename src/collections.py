@@ -129,7 +129,7 @@ def load_music_documents(config: Config) -> list[ContentDocument]:
             continue
 
         audio_rel_path = _media_path("audio", slug, audio_path.name)
-        hero_reference = _build_media_reference(
+        audio_reference = _build_media_reference(
             audio_rel_path,
             data.get("audio_meta", {}),
         )
@@ -163,6 +163,25 @@ def load_music_documents(config: Config) -> list[ContentDocument]:
         if download_path and download_path != audio_rel_path:
             assets.append(_build_media_reference(download_path, download_meta_entry))
 
+        # Prefer a visual cover image for hero_media on the homepage manifest.
+        # Choose an asset whose filename suggests a cover first; otherwise the first image/video asset.
+        hero_reference: MediaReference | None = None
+        for ref in assets:
+            name = Path(ref.path).name.lower()
+            suffix = Path(ref.path).suffix.lower()
+            if suffix in IMAGE_EXTENSIONS and ("cover" in name or name.startswith("cover")):
+                hero_reference = ref
+                break
+        if hero_reference is None:
+            for ref in assets:
+                suffix = Path(ref.path).suffix.lower()
+                if suffix in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS):
+                    hero_reference = ref
+                    break
+        # Fallback to the audio reference when no visual asset is present.
+        if hero_reference is None:
+            hero_reference = audio_reference
+
         meta = ContentMeta(
             slug=slug,
             title=title,
@@ -176,6 +195,7 @@ def load_music_documents(config: Config) -> list[ContentDocument]:
             duration=duration,
             download_enabled=download_enabled,
             download_path=download_path,
+            primary_audio_path=audio_rel_path,
         )
 
         lyrics_text = _read_lyrics_file(directory)

@@ -563,9 +563,13 @@ function renderAudioTile(item, mediaBasePath) {
     media.hidden = true;
   }
 
-  const audioVariant = selectVariant(item.hero_media, ["original"]);
-  if (audio && audioVariant) {
-    audio.src = resolveMediaPath(audioVariant.path, mediaBasePath);
+  const audioSrc = item.audio_path
+    ? resolveMediaPath(item.audio_path, mediaBasePath)
+    : (selectVariant(item.hero_media, ["original"]) 
+        ? resolveMediaPath(selectVariant(item.hero_media, ["original"]).path, mediaBasePath)
+        : "");
+  if (audio && audioSrc) {
+    audio.src = audioSrc;
   }
 
   if (meta) {
@@ -748,6 +752,11 @@ function joinPath(base, suffix) {
   }
   return `${base}/${suffix}`;
 }
+
+
+
+
+
 
 
 

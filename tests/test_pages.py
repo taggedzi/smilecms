@@ -17,7 +17,7 @@ from src.pages import (
 )
 from src.templates import TemplateAssets
 
-THEME_SOURCE = Path(__file__).resolve().parents[1] / "web" / "dark-theme-1" / "themes" / "default"
+THEME_SOURCE = Path(__file__).resolve().parent / "fixtures" / "test-theme" / "themes" / "default"
 
 
 def _copy_default_theme(destination: Path) -> None:

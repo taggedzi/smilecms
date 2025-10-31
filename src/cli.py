@@ -81,6 +81,26 @@ ConfigPathOption = Annotated[
     str,
     typer.Option("--config", "-c", help="Path to configuration file."),
 ]
+ProjectDirOption = Annotated[
+    str | None,
+    typer.Option(
+        "--project",
+        help=(
+            "Path to a site project directory (containing smilecms.yml). "
+            "Equivalent to --config <dir>/smilecms.yml."
+        ),
+    ),
+]
+OutputDirOption = Annotated[
+    str | None,
+    typer.Option(
+        "--output-dir",
+        help=(
+            "Optional override for the site output directory. When relative, it is "
+            "resolved against --project if provided, otherwise against the config location."
+        ),
+    ),
+]
 TitleOption = Annotated[
     str | None,
     typer.Option("--title", "-t", help="Override the default title derived from the slug."),
@@ -126,6 +146,7 @@ def new(  # noqa: PLR0913
     ],
     title: TitleOption = None,
     config_path: ConfigPathOption = "smilecms.yml",
+    project_dir: ProjectDirOption = None,
     force: ForceFlag = False,
 ) -> None:
     """Create a new post, gallery, or track using the recommended layout."""
@@ -135,7 +156,8 @@ def new(  # noqa: PLR0913
         console.print(f"[bold red]Cannot scaffold[/]: {exc}")
         raise typer.Exit(code=1) from exc
 
-    config: Config = _load(config_path)
+    config_file = _resolve_config_arg(config_path, project_dir)
+    config: Config = _load(config_file)
 
     try:
         result = scaffold_content(
@@ -159,13 +181,15 @@ def new(  # noqa: PLR0913
 @app.command()
 def lint(
     config_path: ConfigPathOption = "smilecms.yml",
+    project_dir: ProjectDirOption = None,
     strict: Annotated[
         bool,
         typer.Option("--strict", help="Treat warnings as errors."),
     ] = False,
 ) -> None:
     """Run lightweight checks for common content issues."""
-    config: Config = _load(config_path)
+    config_file = _resolve_config_arg(config_path, project_dir)
+    config: Config = _load(config_file)
     report = lint_workspace(config)
 
     if not report.issues:
@@ -192,6 +216,8 @@ def lint(
 @app.command()
 def build(
     config_path: ConfigPathOption = "smilecms.yml",
+    project_dir: ProjectDirOption = None,
+    output_dir: OutputDirOption = None,
     force: ForceFlag = False,
     refresh_gallery: Annotated[
         bool,
@@ -202,7 +228,13 @@ def build(
     ] = False,
 ) -> None:
     """Run a full rebuild of site artifacts."""
-    config: Config = _load(config_path)
+    config_file = _resolve_config_arg(config_path, project_dir)
+    config: Config = _load(config_file)
+
+    if output_dir:
+        base_dir = Path(project_dir) if project_dir else Path(config_file).parent
+        override_path = Path(output_dir)
+        config.output_dir = (override_path if override_path.is_absolute() else (base_dir / override_path)).resolve()
 
     # Optionally adjust Pillow's decompression bomb limit based on config.
     # Useful when processing ultra‑high‑resolution assets in a trusted context.
@@ -218,7 +250,7 @@ def build(
     except Exception:
         # If Pillow isn't available or attribute is missing, continue.
         pass
-    tracker = BuildTracker(config, Path(config_path))
+    tracker = BuildTracker(config, Path(config_file))
     fingerprints = tracker.compute_fingerprints()
     change_summary = tracker.summarize_changes(fingerprints)
 
@@ -543,6 +575,7 @@ def _print_accumulated_warnings(
 @app.command()
 def verify(
     config_path: ConfigPathOption = "smilecms.yml",
+    project_dir: ProjectDirOption = None,
     html_validation: Annotated[
         bool,
         typer.Option(
@@ -567,7 +600,8 @@ def verify(
     ] = None,
 ) -> None:
     """Scan the generated site bundle for missing links or assets."""
-    config: Config = _load(config_path)
+    config_file = _resolve_config_arg(config_path, project_dir)
+    config: Config = _load(config_file)
     output_dir = Path(config.output_dir)
 
     if not output_dir.exists():
@@ -632,6 +666,7 @@ def verify(
 @audit_app.command("media")
 def audit_media_command(
     config_path: ConfigPathOption = "smilecms.yml",
+    project_dir: ProjectDirOption = None,
     json_output: Annotated[
         bool,
         typer.Option(
@@ -641,7 +676,8 @@ def audit_media_command(
     ] = False,
 ) -> None:
     """Inspect media references and files for missing or misplaced assets."""
-    config: Config = _load(config_path)
+    config_file = _resolve_config_arg(config_path, project_dir)
+    config: Config = _load(config_file)
     documents = load_documents(config)
     result = audit_media(documents, config)
     if json_output:
@@ -653,6 +689,7 @@ def audit_media_command(
 @app.command()
 def preview(
     config_path: ConfigPathOption = "smilecms.yml",
+    project_dir: ProjectDirOption = None,
     host: Annotated[
         str,
         typer.Option("--host", help="Host interface to bind the preview server."),
@@ -670,7 +707,8 @@ def preview(
     ] = False,
 ) -> None:
     """Serve the generated site directory with a simple HTTP server."""
-    config: Config = _load(config_path)
+    config_file = _resolve_config_arg(config_path, project_dir)
+    config: Config = _load(config_file)
     if port < 0 or port > 65535:
         raise typer.BadParameter("Port must be between 0 and 65535.")
 
@@ -714,13 +752,15 @@ def preview(
 @app.command()
 def clean(
     config_path: ConfigPathOption = "smilecms.yml",
+    project_dir: ProjectDirOption = None,
     include_cache: Annotated[
         bool,
         typer.Option("--cache", help="Also remove the configured cache directory."),
     ] = False,
 ) -> None:
     """Remove generated artifacts (site bundle, media derivatives, and optional cache)."""
-    config: Config = _load(config_path)
+    config_file = _resolve_config_arg(config_path, project_dir)
+    config: Config = _load(config_file)
     media_processing: MediaProcessingConfig = cast(
         MediaProcessingConfig,
         getattr(config, "media_processing"),
@@ -743,6 +783,104 @@ def clean(
 
     noun = "directory" if removed == 1 else "directories"
     console.print(f"[bold green]Clean complete[/]: removed {removed} {noun}.")
+
+
+@app.command()
+def init(
+    target_dir: Annotated[
+        str,
+        typer.Argument(..., help="Directory to create or populate with a new SmileCMS project."),
+    ],
+    force: ForceFlag = False,
+) -> None:
+    """Scaffold a new external project directory with config and folders."""
+    root = Path(target_dir)
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        console.print(f"[bold red]Cannot create directory[/]: {exc}")
+        raise typer.Exit(code=1) from exc
+
+    created: list[Path] = []
+    updated: list[Path] = []
+
+    def write_text(path: Path, content: str) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists() and not force:
+            return
+        existed = path.exists()
+        path.write_text(content, encoding="utf-8")
+        (updated if existed else created).append(path)
+
+    # Core directories
+    for rel in [
+        "content/posts/.gitkeep",
+        "content/media/.gitkeep",
+        "media/image_gallery_raw/.gitkeep",
+        "media/music_collection/.gitkeep",
+        "web/README.md",
+    ]:
+        dest = root / rel
+        if dest.suffix == ".gitkeep":
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if not dest.exists():
+                dest.write_text("", encoding="utf-8")
+                created.append(dest)
+        else:
+            write_text(
+                dest,
+                (
+                    "# Web Theme Placeholder\n\n"
+                    "Place your theme assets under this 'web/' directory.\n"
+                    "You can copy a theme folder from the SmileCMS repo or your own templates,\n"
+                    "and point 'templates_dir' at it in smilecms.yml.\n"
+                ),
+            )
+
+    # .gitignore
+    write_text(
+        root / ".gitignore",
+        (
+            "# SmileCMS build artifacts\n"
+            "site/\n"
+            "media/derived/\n"
+            ".cache/\n"
+        ),
+    )
+
+    # Default configuration
+    config_path = root / "smilecms.yml"
+    default_config = (
+        "project_name: New SmileCMS Project\n"
+        "content_dir: content\n"
+        "article_media_dir: content/media\n"
+        "media_dir: media\n"
+        "output_dir: site\n"
+        "templates_dir: web\n"
+        "site_theme: \n"
+        "cache_dir: .cache\n"
+        "media_processing:\n"
+        "  source_dir: content/media\n"
+        "  output_dir: media/derived\n"
+        "gallery:\n"
+        "  enabled: true\n"
+        "  source_dir: media/image_gallery_raw\n"
+        "  metadata_filename: meta.yml\n"
+        "music:\n"
+        "  enabled: true\n"
+        "  source_dir: media/music_collection\n"
+        "  metadata_filename: meta.yml\n"
+    )
+    if config_path.exists() and not force:
+        console.print(f"[bold yellow]Skipping[/]: existing {config_path} (use --force to overwrite)")
+    else:
+        write_text(config_path, default_config)
+
+    console.print("[bold green]Project initialized[/]:")
+    for path in created:
+        console.print(f"- {_display_path(path)} (new)")
+    for path in updated:
+        console.print(f"- {_display_path(path)} (updated)")
 
 
 def _print_scaffold_summary(kind: NewContentType, slug: str, result: ScaffoldResult) -> None:
@@ -1024,6 +1162,29 @@ def _make_request_handler(directory: Path) -> type[SimpleHTTPRequestHandler]:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             super().__init__(*args, directory=directory_path, **kwargs)
 
+        # Ensure correct Content-Type headers for common static assets during preview.
+        # Some platforms may default to application/octet-stream for newer extensions
+        # like .webp or .jsonl, which can break image/audio playback in browsers.
+        extensions_map = dict(SimpleHTTPRequestHandler.extensions_map)
+        extensions_map.update(
+            {
+                ".webp": "image/webp",
+                ".svg": "image/svg+xml",
+                ".json": "application/json; charset=utf-8",
+                ".jsonl": "application/json; charset=utf-8",
+                ".js": "application/javascript; charset=utf-8",
+                ".css": "text/css; charset=utf-8",
+                ".mp3": "audio/mpeg",
+                ".m4a": "audio/mp4",
+                ".aac": "audio/aac",
+                ".flac": "audio/flac",
+                ".ogg": "audio/ogg",
+                ".wav": "audio/wav",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+            }
+        )
+
     return PreviewRequestHandler
 
 
@@ -1046,3 +1207,14 @@ def _remove_path(path: Path) -> None:
         shutil.rmtree(path, ignore_errors=True)
     elif path.exists():
         path.unlink(missing_ok=True)
+def _resolve_config_arg(config_path: str, project_dir: str | None) -> str:
+    """Choose the effective config file path from --config/--project.
+
+    If both are supplied, --config takes precedence.
+    """
+    if project_dir:
+        candidate = Path(project_dir)
+        # Only use project dir when config_path is the default value
+        if config_path == "smilecms.yml":
+            return str(candidate / "smilecms.yml")
+    return config_path

@@ -9,7 +9,7 @@ from src.articles import ArticleBodyRenderer, write_article_pages
 from src.config import Config
 from src.content import ContentDocument, ContentMeta, ContentStatus, MediaReference
 
-THEME_SOURCE = Path(__file__).resolve().parents[1] / "web" / "dark-theme-1" / "themes" / "default"
+THEME_SOURCE = Path(__file__).resolve().parent / "fixtures" / "test-theme" / "themes" / "default"
 
 
 def _make_document(slug: str = "sample-post") -> ContentDocument:

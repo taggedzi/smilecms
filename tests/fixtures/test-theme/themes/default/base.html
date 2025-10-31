@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ page.title }}</title>
+    {% for href in assets.styles %}
+    <link rel="stylesheet" href="{{ href }}" />
+    {% endfor %}
+    {% for href in page.styles %}
+    <link rel="stylesheet" href="{{ href }}" />
+    {% endfor %}
+  </head>
+  <body class="{{ page.body_class }}">
+    <header class="site-header">
+      <div class="site-branding">
+        <strong class="site-title">{{ site.title }}</strong>
+        <span class="site-tagline">{{ site.tagline }}</span>
+      </div>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          {% for item in navigation['items'] %}
+            <li>
+              <a href="{{ item.href }}"{% if item.active %} aria-current="page"{% endif %}>{{ item.label }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </nav>
+    </header>
+    <div id="app-shell"
+      class="app-shell"
+      data-shell-theme="{{ shell.theme }}"
+      {% for k, v in shell.data_attributes.items() %} data-{{ k }}="{{ v }}"{% endfor %}>
+      {% block content %}{% endblock %}
+    </div>
+
+    {% for script in assets.scripts %}
+    <script{% if script.type %} type="{{ script.type }}"{% endif %} src="{{ script.src }}"></script>
+    {% endfor %}
+    {% for script in page.scripts %}
+    <script{% if script.type %} type="{{ script.type }}"{% endif %} src="{{ script.src }}"></script>
+    {% endfor %}
+
+    <script>window.__SMILE_DATA__ = window.__SMILE_DATA__ || {};</script>
+
+    <footer class="site-footer">
+      <small>&copy; {{ site.title }}</small>
+    </footer>
+  </body>
+  
+</html>

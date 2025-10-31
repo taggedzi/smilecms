@@ -1,0 +1,59 @@
+{
+  "ai_confidence": 0.9701724648475647,
+  "alt_raw": "there is a red and white car parked on the side of the road",
+  "alt_text": "There is a red and white car parked on the side of the road",
+  "caption": "There is a red and white car parked on the side of the road",
+  "caption_raw": "there is a red and white car parked on the side of the road",
+  "captured_at": null,
+  "collection_id": "demo_gallery_1",
+  "created_at": "2025-10-21T07:12:59.329523Z",
+  "derived": {
+    "download": "media/derived/large/gallery/demo_gallery_1/7f3c6390-46eb-4c7c-8b2d-d4f9b8e38a44.jpg",
+    "original": "gallery/demo_gallery_1/7f3c6390-46eb-4c7c-8b2d-d4f9b8e38a44.png",
+    "thumbnail": "media/derived/thumb/gallery/demo_gallery_1/7f3c6390-46eb-4c7c-8b2d-d4f9b8e38a44.webp",
+    "web": "media/derived/large/gallery/demo_gallery_1/7f3c6390-46eb-4c7c-8b2d-d4f9b8e38a44.jpg"
+  },
+  "description": "There is a red and white car parked on the side of the road.",
+  "description_raw": "there is a red and white car parked on the side of the road",
+  "filename": "7f3c6390-46eb-4c7c-8b2d-d4f9b8e38a44.png",
+  "filesize": 1982108,
+  "hash": "e0cb612f616e5455638e949b4b0dc8da42d20cbb1b34a1a931f69b67419e4fe7",
+  "height": 768,
+  "id": "7f3c6390-46eb-4c7c-8b2d-d4f9b8e38a44",
+  "last_generated_at": "2025-10-30T23:00:41.201295Z",
+  "llm_revision": 3,
+  "llm_updated_at": "2025-10-27T02:07:31.647375Z",
+  "manual_overrides": {},
+  "ml_generated_at": "2025-10-27T02:07:58.505717Z",
+  "ml_model_signature": "caption:Salesforce/blip-image-captioning-large|tagger:none",
+  "ml_source_hash": "e0cb612f616e5455638e949b4b0dc8da42d20cbb1b34a1a931f69b67419e4fe7",
+  "modified_at": "2025-10-20T02:48:15.224003Z",
+  "notes": [
+    "Image flagged as rating:general"
+  ],
+  "rating": "rating:general",
+  "tag_scores": {
+    "a red and white car": 1.0,
+    "car": 2.0,
+    "road": 3.0,
+    "the road": 4.0,
+    "the side": 5.0
+  },
+  "tags": [
+    "A Red And White Car",
+    "Car",
+    "Road",
+    "The Road",
+    "The Side"
+  ],
+  "tags_raw": [
+    "a red and white car",
+    "car",
+    "road",
+    "the road",
+    "the side"
+  ],
+  "title": "7f3c6390 46eb 4c7c 8b2d D4f9b8e38a44",
+  "version": 1,
+  "width": 1368
+}

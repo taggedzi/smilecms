@@ -1,0 +1,62 @@
+{
+  "ai_confidence": 0.9678915739059448,
+  "alt_raw": "there is an old car that is parked on the side of the road",
+  "alt_text": "There is an old car that is parked on the side of the road",
+  "caption": "There is an old car that is parked on the side of the road",
+  "caption_raw": "there is an old car that is parked on the side of the road",
+  "captured_at": null,
+  "collection_id": "demo_gallery_1",
+  "created_at": "2025-10-21T07:12:59.392212Z",
+  "derived": {
+    "download": "media/derived/large/gallery/demo_gallery_1/b459d03e-a1ed-4ba8-9952-2089877fcbd4.jpg",
+    "original": "gallery/demo_gallery_1/b459d03e-a1ed-4ba8-9952-2089877fcbd4.png",
+    "thumbnail": "media/derived/thumb/gallery/demo_gallery_1/b459d03e-a1ed-4ba8-9952-2089877fcbd4.webp",
+    "web": "media/derived/large/gallery/demo_gallery_1/b459d03e-a1ed-4ba8-9952-2089877fcbd4.jpg"
+  },
+  "description": "There is an old car that is parked on the side of the road.",
+  "description_raw": "there is an old car that is parked on the side of the road",
+  "filename": "b459d03e-a1ed-4ba8-9952-2089877fcbd4.png",
+  "filesize": 2007194,
+  "hash": "783d9b27acb47064b851d8fa8869e9664b91e7c5b3eb116671b86f008cc3b97a",
+  "height": 768,
+  "id": "b459d03e-a1ed-4ba8-9952-2089877fcbd4",
+  "last_generated_at": "2025-10-30T23:00:41.201295Z",
+  "llm_revision": 3,
+  "llm_updated_at": "2025-10-27T02:07:31.647375Z",
+  "manual_overrides": {},
+  "ml_generated_at": "2025-10-27T02:08:02.582119Z",
+  "ml_model_signature": "caption:Salesforce/blip-image-captioning-large|tagger:none",
+  "ml_source_hash": "783d9b27acb47064b851d8fa8869e9664b91e7c5b3eb116671b86f008cc3b97a",
+  "modified_at": "2025-10-20T02:18:21.635214Z",
+  "notes": [
+    "Image flagged as rating:general"
+  ],
+  "rating": "rating:general",
+  "tag_scores": {
+    "an old car": 1.0,
+    "car": 2.0,
+    "road": 3.0,
+    "that": 4.0,
+    "the road": 5.0,
+    "the side": 6.0
+  },
+  "tags": [
+    "An Old Car",
+    "Car",
+    "Road",
+    "That",
+    "The Road",
+    "The Side"
+  ],
+  "tags_raw": [
+    "an old car",
+    "car",
+    "road",
+    "that",
+    "the road",
+    "the side"
+  ],
+  "title": "B459d03e A1ed 4ba8 9952 2089877fcbd4",
+  "version": 1,
+  "width": 1368
+}
