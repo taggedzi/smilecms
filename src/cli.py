@@ -208,10 +208,11 @@ def lint(
         location = issue.source_path
         if issue.pointer:
             location = f"{location} :: {issue.pointer}"
-        # Disable wrapping to keep assertions stable in CI (avoid breaking words).
+        # Allow folding instead of truncation so full messages remain present in CI.
         console.print(
             f"[bold {style}]{issue.severity.name}[/] {location} - {issue.message}",
-            no_wrap=True,
+            soft_wrap=True,
+            overflow="fold",
         )
 
     console.print(
