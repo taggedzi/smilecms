@@ -208,11 +208,18 @@ def lint(
         location = issue.source_path
         if issue.pointer:
             location = f"{location} :: {issue.pointer}"
-        # Allow folding instead of truncation so full messages remain present in CI.
+        # Print header and message separately to avoid truncation on narrow terminals.
         console.print(
-            f"[bold {style}]{issue.severity.name}[/] {location} - {issue.message}",
-            soft_wrap=True,
+            f"[bold {style}]{issue.severity.name}[/] {location} - ",
             overflow="fold",
+            soft_wrap=False,
+            end="",
+        )
+        console.print(
+            issue.message,
+            markup=False,
+            overflow="fold",
+            soft_wrap=True,
         )
 
     console.print(
