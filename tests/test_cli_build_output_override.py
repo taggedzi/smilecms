@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 from typer.testing import CliRunner
 
@@ -29,13 +29,7 @@ def test_build_respects_output_dir_override(tmp_path: Path) -> None:
     project.mkdir()
     (project / "web").mkdir(parents=True, exist_ok=True)
     # Copy minimal test theme into the project
-    fixture = (
-        Path(__file__).resolve().parent
-        / "fixtures"
-        / "test-theme"
-        / "themes"
-        / "default"
-    )
+    fixture = Path(__file__).resolve().parent / "fixtures" / "test-theme" / "themes" / "default"
     dest = project / "web" / "themes" / "default"
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(fixture, dest)
