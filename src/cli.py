@@ -208,7 +208,11 @@ def lint(
         location = issue.source_path
         if issue.pointer:
             location = f"{location} :: {issue.pointer}"
-        console.print(f"[bold {style}]{issue.severity.name}[/] {location} - {issue.message}")
+        # Disable wrapping to keep assertions stable in CI (avoid breaking words).
+        console.print(
+            f"[bold {style}]{issue.severity.name}[/] {location} - {issue.message}",
+            no_wrap=True,
+        )
 
     console.print(
         f"[bold blue]Summary[/]: {report.error_count} error(s), {report.warning_count} warning(s) "
