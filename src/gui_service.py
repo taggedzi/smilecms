@@ -626,3 +626,120 @@ def check_environment(cfg: Config | None = None) -> EnvStatus:
 
 def open_in_browser(url: str) -> None:
     webbrowser.open(url)
+
+
+# -------------------------
+# Clean (guarded)
+# -------------------------
+
+
+def clean(cfg: Config, include_cache: bool = False) -> dict[str, list[tuple[str, Path]]]:
+    targets: list[tuple[str, Path]] = [
+        ("site output", Path(cfg.output_dir)),
+        ("media derivatives", Path(cfg.media_processing.output_dir)),
+    ]
+    if include_cache:
+        targets.append(("cache", Path(cfg.cache_dir)))
+
+    removed: list[tuple[str, Path]] = []
+    skipped: list[tuple[str, Path]] = []
+    for label, path in targets:
+        try:
+            if path.exists():
+                if path.is_dir():
+                    import shutil
+
+                    shutil.rmtree(path, ignore_errors=True)
+                else:
+                    path.unlink(missing_ok=True)
+                removed.append((label, path))
+            else:
+                skipped.append((label, path))
+        except Exception:
+            # If removal fails, treat as skipped; GUI can surface errors separately
+            skipped.append((label, path))
+    return {"removed": removed, "skipped": skipped}
+
+
+# -------------------------
+# Theme management (examples -> project)
+# -------------------------
+
+
+def _examples_web_dir() -> Path | None:
+    # Attempt to locate the repo examples directory relative to this file.
+    here = Path(__file__).resolve()
+    # .../src/gui_service.py -> repo_root/src -> repo_root
+    repo_root = here.parent.parent
+    candidates = [
+        repo_root / "examples" / "demo-site" / "web",
+    ]
+    for cand in candidates:
+        if cand.exists() and cand.is_dir():
+            return cand
+    return None
+
+
+def list_stock_themes() -> dict[str, Path]:
+    base = _examples_web_dir()
+    if not base:
+        return {}
+    themes: dict[str, Path] = {}
+    try:
+        for child in base.iterdir():
+            if child.is_dir():
+                themes[child.name] = child
+    except OSError:
+        pass
+    return themes
+
+
+def install_stock_theme(
+    config_path: Path,
+    theme_folder_name: str,
+    *,
+    overwrite: bool = False,
+) -> dict[str, Path | Config]:
+    """Copy a stock theme from examples into the project's templates_dir and update site_theme.
+
+    Returns a dict containing installed_path, updated_config, updated_config_path.
+    """
+    stock = list_stock_themes()
+    if theme_folder_name not in stock:
+        raise FileNotFoundError(f"Theme '{theme_folder_name}' not found in examples.")
+    cfg = load_config(config_path)
+    source = stock[theme_folder_name]
+    dest = Path(cfg.templates_dir) / theme_folder_name
+
+    import shutil
+
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    # Python 3.11+ supports dirs_exist_ok
+    shutil.copytree(source, dest, dirs_exist_ok=overwrite)
+
+    # Update config to point at the selected theme
+    cfg.site_theme = theme_folder_name
+    save_config(cfg, Path(config_path), backup=True)
+    return {"installed_path": dest, "updated_config": cfg, "updated_config_path": Path(config_path)}
+
+
+def list_installed_themes(cfg: Config) -> list[str]:
+    """List theme folder names available under the project's templates_dir."""
+    themes: list[str] = []
+    root = Path(cfg.templates_dir)
+    try:
+        if root.exists():
+            for child in root.iterdir():
+                if child.is_dir():
+                    themes.append(child.name)
+    except OSError:
+        pass
+    return sorted(themes)
+
+
+def set_site_theme(config_path: Path, theme_name: str) -> Config:
+    """Update site_theme in smilecms.yml and create a .bak."""
+    cfg = load_config(config_path)
+    cfg.site_theme = theme_name
+    save_config(cfg, Path(config_path), backup=True)
+    return cfg

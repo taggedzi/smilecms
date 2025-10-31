@@ -97,6 +97,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self._env_status.setMinimumHeight(140)
         layout.addWidget(self._env_status)
 
+        # Project theme status
+        self._project_theme_status = QtWidgets.QLabel("")
+        layout.addWidget(self._project_theme_status)
+
         env_btns = QtWidgets.QHBoxLayout()
         self._open_hf_btn = QtWidgets.QPushButton("Open HF cache folder")
         self._open_hf_btn.clicked.connect(self._open_hf_cache)
@@ -171,6 +175,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if detected["exists"]:
             self._load_config(detected["config_path"])  # type: ignore[arg-type]
             self._tabs.setCurrentIndex(1)
+            self._update_project_theme()
         else:
             QtWidgets.QMessageBox.information(
                 self,
@@ -216,27 +221,157 @@ class MainWindow(QtWidgets.QMainWindow):
     # ------------- Config Tab -------------
     def _init_config_tab(self):
         w = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(w)
+        vlayout = QtWidgets.QVBoxLayout(w)
 
         self._config_path_label = QtWidgets.QLabel("Config: -")
-        layout.addWidget(self._config_path_label)
+        vlayout.addWidget(self._config_path_label)
 
+        self._config_tabs = QtWidgets.QTabWidget()
+        vlayout.addWidget(self._config_tabs, 1)
+
+        # YAML editor tab
+        yaml_tab = QtWidgets.QWidget()
+        yv = QtWidgets.QVBoxLayout(yaml_tab)
         self._yaml_edit = QtWidgets.QPlainTextEdit()
         self._yaml_edit.setLineWrapMode(QtWidgets.QPlainTextEdit.NoWrap)
-        layout.addWidget(self._yaml_edit, 1)
+        yv.addWidget(self._yaml_edit, 1)
+        ybtns = QtWidgets.QHBoxLayout()
+        y_load = QtWidgets.QPushButton("Reload")
+        y_load.clicked.connect(self._reload_config)
+        y_diff = QtWidgets.QPushButton("Preview Changes")
+        y_diff.clicked.connect(self._preview_diff)
+        y_save = QtWidgets.QPushButton("Save (.bak)")
+        y_save.clicked.connect(self._save_config)
+        ybtns.addWidget(y_load)
+        ybtns.addWidget(y_diff)
+        ybtns.addWidget(y_save)
+        ybtns.addStretch(1)
+        yv.addLayout(ybtns)
+        self._config_tabs.addTab(yaml_tab, "YAML")
 
-        btns = QtWidgets.QHBoxLayout()
-        load_btn = QtWidgets.QPushButton("Reload")
-        load_btn.clicked.connect(self._reload_config)
-        diff_btn = QtWidgets.QPushButton("Preview Changes")
-        diff_btn.clicked.connect(self._preview_diff)
-        save_btn = QtWidgets.QPushButton("Save (.bak)")
-        save_btn.clicked.connect(self._save_config)
-        btns.addWidget(load_btn)
-        btns.addWidget(diff_btn)
-        btns.addWidget(save_btn)
-        btns.addStretch(1)
-        layout.addLayout(btns)
+        # Form editor tab
+        form_tab = QtWidgets.QScrollArea()
+        form_tab.setWidgetResizable(True)
+        form_container = QtWidgets.QWidget()
+        fv = QtWidgets.QVBoxLayout(form_container)
+
+        # Project settings
+        proj_box = QtWidgets.QGroupBox("Project")
+        proj = QtWidgets.QFormLayout(proj_box)
+        self._f_project_name = QtWidgets.QLineEdit()
+        proj.addRow("Project name", self._f_project_name)
+        fv.addWidget(proj_box)
+
+        # Paths
+        paths_box = QtWidgets.QGroupBox("Paths")
+        paths = QtWidgets.QFormLayout(paths_box)
+        self._f_content_dir = QtWidgets.QLineEdit()
+        self._f_article_media_dir = QtWidgets.QLineEdit()
+        self._f_media_dir = QtWidgets.QLineEdit()
+        self._f_output_dir = QtWidgets.QLineEdit()
+        self._f_templates_dir = QtWidgets.QLineEdit()
+        self._f_site_theme = QtWidgets.QLineEdit()
+        self._f_cache_dir = QtWidgets.QLineEdit()
+        self._f_themes_dir = QtWidgets.QLineEdit()
+        self._f_theme_name = QtWidgets.QLineEdit()
+        paths.addRow("content_dir", self._f_content_dir)
+        paths.addRow("article_media_dir", self._f_article_media_dir)
+        paths.addRow("media_dir", self._f_media_dir)
+        paths.addRow("output_dir", self._f_output_dir)
+        paths.addRow("templates_dir", self._f_templates_dir)
+        paths.addRow("site_theme", self._f_site_theme)
+        paths.addRow("cache_dir", self._f_cache_dir)
+        paths.addRow("themes_dir", self._f_themes_dir)
+        paths.addRow("theme_name", self._f_theme_name)
+        fv.addWidget(paths_box)
+
+        # Media processing
+        mp_box = QtWidgets.QGroupBox("Media processing")
+        mp = QtWidgets.QFormLayout(mp_box)
+        self._f_mp_source_dir = QtWidgets.QLineEdit()
+        self._f_mp_output_dir = QtWidgets.QLineEdit()
+        mp.addRow("media_processing.source_dir", self._f_mp_source_dir)
+        mp.addRow("media_processing.output_dir", self._f_mp_output_dir)
+        fv.addWidget(mp_box)
+
+        # Gallery
+        gal_box = QtWidgets.QGroupBox("Gallery")
+        gal = QtWidgets.QFormLayout(gal_box)
+        self._f_gal_enabled = QtWidgets.QCheckBox()
+        self._f_gal_source_dir = QtWidgets.QLineEdit()
+        self._f_gal_metadata_filename = QtWidgets.QLineEdit()
+        gal.addRow("enabled", self._f_gal_enabled)
+        gal.addRow("source_dir", self._f_gal_source_dir)
+        gal.addRow("metadata_filename", self._f_gal_metadata_filename)
+        fv.addWidget(gal_box)
+
+        # Music
+        mus_box = QtWidgets.QGroupBox("Music")
+        mus = QtWidgets.QFormLayout(mus_box)
+        self._f_mus_enabled = QtWidgets.QCheckBox()
+        self._f_mus_source_dir = QtWidgets.QLineEdit()
+        self._f_mus_metadata_filename = QtWidgets.QLineEdit()
+        mus.addRow("enabled", self._f_mus_enabled)
+        mus.addRow("source_dir", self._f_mus_source_dir)
+        mus.addRow("metadata_filename", self._f_mus_metadata_filename)
+        fv.addWidget(mus_box)
+
+        # Feeds
+        feed_box = QtWidgets.QGroupBox("Feeds")
+        feed = QtWidgets.QFormLayout(feed_box)
+        self._f_feed_enabled = QtWidgets.QCheckBox()
+        self._f_feed_limit = QtWidgets.QSpinBox()
+        self._f_feed_limit.setRange(1, 500)
+        self._f_feed_base_url = QtWidgets.QLineEdit()
+        self._f_feed_site_config_path = QtWidgets.QLineEdit()
+        self._f_feed_output_subdir = QtWidgets.QLineEdit()
+        feed.addRow("enabled", self._f_feed_enabled)
+        feed.addRow("limit", self._f_feed_limit)
+        feed.addRow("base_url", self._f_feed_base_url)
+        feed.addRow("site_config_path", self._f_feed_site_config_path)
+        feed.addRow("output_subdir", self._f_feed_output_subdir)
+        fv.addWidget(feed_box)
+
+        fbtns = QtWidgets.QHBoxLayout()
+        f_apply = QtWidgets.QPushButton("Apply to YAML editor")
+        f_apply.clicked.connect(self._apply_form_to_yaml)
+        f_save = QtWidgets.QPushButton("Save (.bak) from form")
+        f_save.clicked.connect(self._save_form_config)
+        fbtns.addWidget(f_apply)
+        fbtns.addWidget(f_save)
+        fbtns.addStretch(1)
+        fv.addLayout(fbtns)
+
+        # Theme tools
+        theme_box = QtWidgets.QGroupBox("Theme tools")
+        th = QtWidgets.QVBoxLayout(theme_box)
+        self._theme_status_label = QtWidgets.QLabel("Theme status: unknown")
+        th.addWidget(self._theme_status_label)
+        # Installed themes dropdown
+        drop_row = QtWidgets.QHBoxLayout()
+        self._installed_theme_combo = QtWidgets.QComboBox()
+        self._apply_installed_theme_btn = QtWidgets.QPushButton("Use selected theme")
+        self._apply_installed_theme_btn.clicked.connect(self._apply_installed_theme)
+        drop_row.addWidget(QtWidgets.QLabel("Installed themes:"))
+        drop_row.addWidget(self._installed_theme_combo)
+        drop_row.addWidget(self._apply_installed_theme_btn)
+        drop_row.addStretch(1)
+        th.addLayout(drop_row)
+
+        theme_btns = QtWidgets.QHBoxLayout()
+        self._install_theme_btn = QtWidgets.QPushButton("Install default theme…")
+        self._install_theme_btn.clicked.connect(self._install_theme_dialog)
+        self._open_templates_btn = QtWidgets.QPushButton("Open templates folder")
+        self._open_templates_btn.clicked.connect(self._open_templates_dir)
+        theme_btns.addWidget(self._install_theme_btn)
+        theme_btns.addWidget(self._open_templates_btn)
+        theme_btns.addStretch(1)
+        th.addLayout(theme_btns)
+        fv.addWidget(theme_box)
+
+        fv.addStretch(1)
+        form_tab.setWidget(form_container)
+        self._config_tabs.addTab(form_tab, "Form")
 
         self._tabs.addTab(w, "Configure")
 
@@ -247,6 +382,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self._current_config_text = text
         self._config_path_label.setText(f"Config: {path}")
         self._yaml_edit.setPlainText(text)
+        self._populate_config_form(cfg)
+        self._update_theme_status(cfg)
+        self._update_project_theme()
+        
+    def _update_project_theme(self):
+        if not self._current_config_path:
+            self._project_theme_status.setText("")
+            return
+        cfg = load_config(self._current_config_path)
+        resolved = cfg.resolved_templates_dir
+        parts = []
+        parts.append(f"templates_dir: {cfg.templates_dir}")
+        parts.append(f"site_theme: {cfg.site_theme or '(not set)'}")
+        parts.append(f"resolved theme path: {resolved} ({'exists' if resolved.exists() else 'missing'})")
+        self._project_theme_status.setText("Theme • " + "; ".join(parts))
 
     def _reload_config(self):
         if self._current_config_path:
@@ -295,6 +445,204 @@ class MainWindow(QtWidgets.QMainWindow):
         self._current_config_text = after_text
         self._config_path_label.setText(f"Config: {res['saved_path']}")
         QtWidgets.QMessageBox.information(self, "Save", "Configuration saved.")
+        self._update_theme_status(cfg)
+
+    def _populate_config_form(self, cfg: Config):
+        self._f_project_name.setText(cfg.project_name)
+        self._f_content_dir.setText(str(cfg.content_dir))
+        self._f_article_media_dir.setText(str(cfg.article_media_dir))
+        self._f_media_dir.setText(str(cfg.media_dir))
+        self._f_output_dir.setText(str(cfg.output_dir))
+        self._f_templates_dir.setText(str(cfg.templates_dir))
+        self._f_site_theme.setText(str(cfg.site_theme or ""))
+        self._f_cache_dir.setText(str(cfg.cache_dir))
+        self._f_themes_dir.setText(str(cfg.themes_dir or ""))
+        self._f_theme_name.setText(str(cfg.theme_name))
+        self._f_mp_source_dir.setText(str(cfg.media_processing.source_dir))
+        self._f_mp_output_dir.setText(str(cfg.media_processing.output_dir))
+        self._f_gal_enabled.setChecked(bool(cfg.gallery.enabled))
+        self._f_gal_source_dir.setText(str(cfg.gallery.source_dir))
+        self._f_gal_metadata_filename.setText(str(cfg.gallery.metadata_filename))
+        self._f_mus_enabled.setChecked(bool(cfg.music.enabled))
+        self._f_mus_source_dir.setText(str(cfg.music.source_dir))
+        self._f_mus_metadata_filename.setText(str(cfg.music.metadata_filename))
+        self._f_feed_enabled.setChecked(bool(cfg.feeds.enabled))
+        self._f_feed_limit.setValue(int(cfg.feeds.limit))
+        self._f_feed_base_url.setText(str(cfg.feeds.base_url or ""))
+        self._f_feed_site_config_path.setText(str(cfg.feeds.site_config_path or ""))
+        self._f_feed_output_subdir.setText(str(cfg.feeds.output_subdir or ""))
+
+    def _collect_form_data(self) -> Config:
+        data = {
+            "project_name": self._f_project_name.text(),
+            "content_dir": self._f_content_dir.text(),
+            "article_media_dir": self._f_article_media_dir.text(),
+            "media_dir": self._f_media_dir.text(),
+            "output_dir": self._f_output_dir.text(),
+            "templates_dir": self._f_templates_dir.text(),
+            "site_theme": self._f_site_theme.text() or None,
+            "cache_dir": self._f_cache_dir.text(),
+            "themes_dir": self._f_themes_dir.text() or None,
+            "theme_name": self._f_theme_name.text() or "default",
+            "media_processing": {
+                "source_dir": self._f_mp_source_dir.text(),
+                "output_dir": self._f_mp_output_dir.text(),
+            },
+            "gallery": {
+                "enabled": self._f_gal_enabled.isChecked(),
+                "source_dir": self._f_gal_source_dir.text(),
+                "metadata_filename": self._f_gal_metadata_filename.text(),
+            },
+            "music": {
+                "enabled": self._f_mus_enabled.isChecked(),
+                "source_dir": self._f_mus_source_dir.text(),
+                "metadata_filename": self._f_mus_metadata_filename.text(),
+            },
+            "feeds": {
+                "enabled": self._f_feed_enabled.isChecked(),
+                "limit": int(self._f_feed_limit.value()),
+                "base_url": self._f_feed_base_url.text() or None,
+                "site_config_path": self._f_feed_site_config_path.text() or None,
+                "output_subdir": self._f_feed_output_subdir.text() or None,
+            },
+        }
+        return Config(**data)
+
+    def _apply_form_to_yaml(self):
+        try:
+            cfg = self._collect_form_data()
+        except Exception as exc:  # noqa: BLE001
+            QtWidgets.QMessageBox.critical(self, "Config", f"Invalid values: {exc}")
+            return
+        from ..gui_service import render_config_yaml
+
+        text = render_config_yaml(cfg)
+        self._yaml_edit.setPlainText(text)
+
+    def _save_form_config(self):
+        if not self._current_config_path:
+            return
+        try:
+            cfg = self._collect_form_data()
+        except Exception as exc:  # noqa: BLE001
+            QtWidgets.QMessageBox.critical(self, "Config", f"Invalid values: {exc}")
+            return
+        from ..gui_service import render_config_yaml, save_config, diff_yaml
+
+        after = render_config_yaml(cfg)
+        diff = diff_yaml(self._current_config_text, after)
+        confirm = QtWidgets.QMessageBox.question(
+            self,
+            "Save Config (Form)",
+            "This will overwrite smilecms.yml and create a .bak. Proceed?\n\n"
+            + (diff or "(no changes)"),
+        )
+        if confirm != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        res = save_config(cfg, self._current_config_path, backup=True)
+        self._current_config = cfg
+        self._current_config_text = after
+        self._yaml_edit.setPlainText(after)
+        self._config_path_label.setText(f"Config: {res['saved_path']}")
+        QtWidgets.QMessageBox.information(self, "Save", "Configuration saved.")
+        self._update_theme_status(cfg)
+
+    def _update_theme_status(self, cfg: Config):
+        try:
+            templates_dir = Path(cfg.templates_dir)
+            resolved = cfg.resolved_templates_dir
+            status = []
+            status.append(f"templates_dir: {'exists' if templates_dir.exists() else 'missing'} ({templates_dir})")
+            if cfg.site_theme:
+                status.append(f"site_theme: {cfg.site_theme}")
+                status.append(
+                    f"theme folder: {'exists' if resolved.exists() else 'missing'} ({resolved})"
+                )
+            else:
+                status.append("site_theme: not set (using templates_dir root)")
+                status.append(f"theme folder: {'exists' if resolved.exists() else 'missing'} ({resolved})")
+            self._theme_status_label.setText("; ".join(status))
+            # Refresh installed themes dropdown
+            from ..gui_service import list_installed_themes
+
+            themes = list_installed_themes(cfg)
+            self._installed_theme_combo.clear()
+            self._installed_theme_combo.addItems(themes)
+            if cfg.site_theme and cfg.site_theme in themes:
+                self._installed_theme_combo.setCurrentText(cfg.site_theme)
+        except Exception as exc:  # noqa: BLE001
+            self._theme_status_label.setText(f"Theme status error: {exc}")
+
+    def _install_theme_dialog(self):
+        if not self._current_config_path:
+            QtWidgets.QMessageBox.warning(self, "Theme", "Open a project first.")
+            return
+        from ..gui_service import list_stock_themes, install_stock_theme
+
+        themes = list_stock_themes()
+        if not themes:
+            QtWidgets.QMessageBox.information(
+                self,
+                "Theme",
+                "No stock themes found in the examples directory. Ensure you're running from the repository checkout.",
+            )
+            return
+        names = sorted(themes.keys())
+        name, ok = QtWidgets.QInputDialog.getItem(self, "Install theme", "Theme", names, 0, False)
+        if not ok or not name:
+            return
+        dest = Path(load_config(self._current_config_path).templates_dir) / name
+        overwrite = False
+        if dest.exists():
+            resp = QtWidgets.QMessageBox.warning(
+                self,
+                "Overwrite?",
+                f"Theme folder already exists: {dest}\nOverwrite files?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No,
+            )
+            if resp != QtWidgets.QMessageBox.Yes:
+                return
+            overwrite = True
+        try:
+            result = install_stock_theme(self._current_config_path, name, overwrite=overwrite)
+        except Exception as exc:  # noqa: BLE001
+            QtWidgets.QMessageBox.critical(self, "Theme", f"Install failed: {exc}")
+            return
+        # Reload config and update form
+        self._load_config(self._current_config_path)
+        QtWidgets.QMessageBox.information(
+            self,
+            "Theme",
+            f"Installed theme to: {result['installed_path']} and updated config.",
+        )
+
+    def _open_templates_dir(self):
+        if not self._current_config_path:
+            return
+        cfg = load_config(self._current_config_path)
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(str(cfg.templates_dir)))
+
+    def _apply_installed_theme(self):
+        if not self._current_config_path:
+            return
+        name = self._installed_theme_combo.currentText().strip()
+        if not name:
+            return
+        from ..gui_service import set_site_theme
+
+        try:
+            cfg = set_site_theme(self._current_config_path, name)
+        except Exception as exc:  # noqa: BLE001
+            QtWidgets.QMessageBox.critical(self, "Theme", f"Failed to set theme: {exc}")
+            return
+        # Update UI
+        self._current_config = cfg
+        self._current_config_text = render_config_yaml(cfg)
+        self._yaml_edit.setPlainText(self._current_config_text)
+        self._populate_config_form(cfg)
+        self._update_theme_status(cfg)
+        self._update_project_theme()
 
     # ------------- New Content Tab -------------
     def _init_new_content_tab(self):
@@ -356,9 +704,17 @@ class MainWindow(QtWidgets.QMainWindow):
         opts.addStretch(1)
         v.addLayout(opts)
 
-        self._build_progress = QtWidgets.QProgressBar()
-        self._build_progress.setRange(0, 0)  # indeterminate until first event
-        v.addWidget(self._build_progress)
+        # Granular progress bars
+        bars = QtWidgets.QGridLayout()
+        bars.addWidget(QtWidgets.QLabel("Derivatives"), 0, 0)
+        self._bar_deriv = QtWidgets.QProgressBar()
+        self._bar_deriv.setRange(0, 1)
+        bars.addWidget(self._bar_deriv, 0, 1)
+        bars.addWidget(QtWidgets.QLabel("Assets"), 1, 0)
+        self._bar_assets = QtWidgets.QProgressBar()
+        self._bar_assets.setRange(0, 1)
+        bars.addWidget(self._bar_assets, 1, 1)
+        v.addLayout(bars)
 
         self._build_output = QtWidgets.QPlainTextEdit()
         self._build_output.setReadOnly(True)
@@ -367,6 +723,17 @@ class MainWindow(QtWidgets.QMainWindow):
         run_btn = QtWidgets.QPushButton("Build")
         run_btn.clicked.connect(self._run_build)
         v.addWidget(run_btn)
+
+        # Clean section
+        clean_box = QtWidgets.QGroupBox("Clean generated artifacts")
+        ch = QtWidgets.QHBoxLayout(clean_box)
+        self._clean_cache = QtWidgets.QCheckBox("Include cache directory")
+        clean_btn = QtWidgets.QPushButton("Clean…")
+        clean_btn.clicked.connect(self._run_clean)
+        ch.addWidget(self._clean_cache)
+        ch.addWidget(clean_btn)
+        ch.addStretch(1)
+        v.addWidget(clean_box)
 
         self._tabs.addTab(w, "Build")
 
@@ -396,11 +763,25 @@ class MainWindow(QtWidgets.QMainWindow):
         def log(msg: str):
             self._build_output.appendPlainText(msg)
 
+        # Reset counters
+        self._deriv_done = 0
+        self._deriv_total = 0
+        self._asset_done = 0
+        self._asset_total = 0
+
         def on_progress(step: str, inc: int, total: int):
-            # Make a best-effort progress indicator
-            self._build_progress.setRange(0, total if total > 0 else 0)
-            val = min(self._build_progress.value() + inc, self._build_progress.maximum())
-            self._build_progress.setValue(val)
+            if step == "Derivatives":
+                if self._deriv_total != total:
+                    self._deriv_total = total
+                    self._bar_deriv.setRange(0, max(total, 1))
+                self._deriv_done = min(self._deriv_done + inc, self._deriv_total or 1)
+                self._bar_deriv.setValue(self._deriv_done)
+            elif step == "Assets":
+                if self._asset_total != total:
+                    self._asset_total = total
+                    self._bar_assets.setRange(0, max(total, 1))
+                self._asset_done = min(self._asset_done + inc, self._asset_total or 1)
+                self._bar_assets.setValue(self._asset_done)
 
         from ..gui_service import build as svc_build
 
@@ -412,6 +793,35 @@ class MainWindow(QtWidgets.QMainWindow):
             progress_cb=on_progress,
             log_cb=log,
         )
+
+    def _run_clean(self):
+        if not self._current_config_path:
+            QtWidgets.QMessageBox.warning(self, "Clean", "Open a project first.")
+            return
+        cfg = load_config(self._current_config_path)
+        include_cache = self._clean_cache.isChecked()
+        # Show guardrail confirmation
+        paths = [
+            ("site output", str(cfg.output_dir)),
+            ("media derivatives", str(cfg.media_processing.output_dir)),
+        ]
+        if include_cache:
+            paths.append(("cache", str(cfg.cache_dir)))
+        text = "This will permanently delete the following directories:\n\n"
+        text += "\n".join(f"- {label}: {p}" for label, p in paths)
+        text += "\n\nType CONFIRM to proceed."
+        input_text, ok = QtWidgets.QInputDialog.getText(self, "Confirm Clean", text)
+        if not ok or input_text.strip().upper() != "CONFIRM":
+            return
+        from ..gui_service import clean as svc_clean
+
+        result = svc_clean(cfg, include_cache=include_cache)
+        lines = ["Clean complete:"]
+        for label, path in result["removed"]:
+            lines.append(f"- Removed {label}: {path}")
+        for label, path in result["skipped"]:
+            lines.append(f"- Skipped {label}: {path} (not found)")
+        QtWidgets.QMessageBox.information(self, "Clean", "\n".join(lines))
 
     # ------------- Test Tab -------------
     def _init_test_tab(self):
@@ -619,8 +1029,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def _on_worker_done(self, result):
         if isinstance(result, BuildResult):
             self._build_output.appendPlainText("Build complete.")
-            self._build_progress.setRange(0, 1)
-            self._build_progress.setValue(1)
+            # Ensure bars show completion
+            self._bar_deriv.setValue(self._bar_deriv.maximum())
+            self._bar_assets.setValue(self._bar_assets.maximum())
         self._thread.quit()
         self._thread.wait()
 
