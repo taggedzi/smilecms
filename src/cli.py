@@ -339,7 +339,8 @@ def _generate_site_artifacts(
 
     media_plan = collect_media_plan(documents, config)
     # Show a live progress bar during media processing for better feedback on large sites.
-    columns = [
+    # Use transient=True so completed bars don't clutter the final summary.
+    with Progress(
         "[progress.description]{task.description}",
         BarColumn(),
         TaskProgressColumn(),
@@ -347,9 +348,8 @@ def _generate_site_artifacts(
         TimeElapsedColumn(),
         "•",
         TimeRemainingColumn(),
-    ]
-    # Use transient=True so completed bars don't clutter the final summary.
-    with Progress(*columns, transient=True) as progress:
+        transient=True,
+    ) as progress:
         deriv_total = len(media_plan.tasks)
         asset_total = len(media_plan.static_assets)
         deriv_task_id = progress.add_task("Derivatives", total=deriv_total) if deriv_total > 0 else None
