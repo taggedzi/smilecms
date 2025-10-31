@@ -74,27 +74,29 @@ def stage_static_site(
     if derived_source.exists():
         derived_source_abs = derived_source.resolve()
         output_root_abs = output_root.resolve()
-        should_copy = True
         try:
+            # If the derived source already lives under the output root, do not copy.
             derived_source_abs.relative_to(output_root_abs)
-            should_copy = False
+            result.staged_paths.append(derived_source_abs)
         except ValueError:
-            should_copy = True
+            # Compute a sensible relative path under the output root. Prefer the
+            # path relative to the project root (assumed to be output_root.parent).
+            if derived_source.is_absolute():
+                project_root = output_root_abs.parent
+                try:
+                    relative_target = derived_source_abs.relative_to(project_root)
+                except ValueError:
+                    # Fallback: use the final directory name when outside project root.
+                    relative_target = Path(derived_source_abs.name)
+            else:
+                relative_target = derived_source
 
-        if should_copy:
-            relative_target = (
-                derived_source
-                if not derived_source.is_absolute()
-                else Path(derived_source.name)
-            )
             derived_destination = output_root / relative_target
             derived_destination.parent.mkdir(parents=True, exist_ok=True)
             if derived_destination.exists():
                 shutil.rmtree(derived_destination)
             shutil.copytree(derived_source_abs, derived_destination)
             result.staged_paths.append(derived_destination)
-        else:
-            result.staged_paths.append(derived_source_abs)
 
     return result
 

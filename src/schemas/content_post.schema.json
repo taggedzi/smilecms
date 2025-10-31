@@ -63,6 +63,9 @@
         },
         "download_path": {
           "type": ["string", "null"]
+        },
+        "primary_audio_path": {
+          "type": ["string", "null"]
         }
       },
       "additionalProperties": false

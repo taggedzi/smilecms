@@ -1,0 +1,62 @@
+{
+  "ai_confidence": 0.9781027436256409,
+  "alt_raw": "an image of a cartoon spaceship flying through the air",
+  "alt_text": "An image of a cartoon spaceship flying through the air",
+  "caption": "An image of a cartoon spaceship flying through the air",
+  "caption_raw": "an image of a cartoon spaceship flying through the air",
+  "captured_at": null,
+  "collection_id": "demo_gallery_2",
+  "created_at": "2025-10-21T07:14:08.052941Z",
+  "derived": {
+    "download": "media/derived/large/gallery/demo_gallery_2/44266bbe-8512-441d-8e39-90340678b439.jpg",
+    "original": "gallery/demo_gallery_2/44266bbe-8512-441d-8e39-90340678b439.png",
+    "thumbnail": "media/derived/thumb/gallery/demo_gallery_2/44266bbe-8512-441d-8e39-90340678b439.webp",
+    "web": "media/derived/large/gallery/demo_gallery_2/44266bbe-8512-441d-8e39-90340678b439.jpg"
+  },
+  "description": "An image of a cartoon spaceship flying through the air.",
+  "description_raw": "an image of a cartoon spaceship flying through the air",
+  "filename": "44266bbe-8512-441d-8e39-90340678b439.png",
+  "filesize": 482290,
+  "hash": "e13ac842cdeb4870f176e619bfd2e1dbaf3d76477e507d2b160e59e636dd9e6e",
+  "height": 1024,
+  "id": "44266bbe-8512-441d-8e39-90340678b439",
+  "last_generated_at": "2025-10-30T23:00:41.201295Z",
+  "llm_revision": 3,
+  "llm_updated_at": "2025-10-27T02:07:31.647375Z",
+  "manual_overrides": {},
+  "ml_generated_at": "2025-10-27T02:08:14.773063Z",
+  "ml_model_signature": "caption:Salesforce/blip-image-captioning-large|tagger:none",
+  "ml_source_hash": "e13ac842cdeb4870f176e619bfd2e1dbaf3d76477e507d2b160e59e636dd9e6e",
+  "modified_at": "2025-10-04T20:00:41.566278Z",
+  "notes": [
+    "Image flagged as rating:general"
+  ],
+  "rating": "rating:general",
+  "tag_scores": {
+    "a cartoon spaceship": 1.0,
+    "air": 2.0,
+    "an image": 3.0,
+    "cartoon": 4.0,
+    "spaceship": 5.0,
+    "the air": 6.0
+  },
+  "tags": [
+    "A Cartoon Spaceship",
+    "Air",
+    "An Image",
+    "Cartoon",
+    "Spaceship",
+    "The Air"
+  ],
+  "tags_raw": [
+    "a cartoon spaceship",
+    "air",
+    "an image",
+    "cartoon",
+    "spaceship",
+    "the air"
+  ],
+  "title": "44266bbe 8512 441d 8e39 90340678b439",
+  "version": 1,
+  "width": 1024
+}

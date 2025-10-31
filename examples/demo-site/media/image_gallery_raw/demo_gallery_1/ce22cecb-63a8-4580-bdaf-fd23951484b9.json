@@ -1,0 +1,71 @@
+{
+  "ai_confidence": 0.9948465824127197,
+  "alt_raw": "black and white photograph of an old car on a dirt road in the woods",
+  "alt_text": "Black and white photograph of an old car on a dirt road in the woods",
+  "caption": "Black and white photograph of an old car on a dirt road in the woods",
+  "caption_raw": "black and white photograph of an old car on a dirt road in the woods",
+  "captured_at": null,
+  "collection_id": "demo_gallery_1",
+  "created_at": "2025-10-21T07:12:59.224034Z",
+  "derived": {
+    "download": "media/derived/large/gallery/demo_gallery_1/ce22cecb-63a8-4580-bdaf-fd23951484b9.jpg",
+    "original": "gallery/demo_gallery_1/ce22cecb-63a8-4580-bdaf-fd23951484b9.png",
+    "thumbnail": "media/derived/thumb/gallery/demo_gallery_1/ce22cecb-63a8-4580-bdaf-fd23951484b9.webp",
+    "web": "media/derived/large/gallery/demo_gallery_1/ce22cecb-63a8-4580-bdaf-fd23951484b9.jpg"
+  },
+  "description": "Black and white photograph of an old car on a dirt road in the woods.",
+  "description_raw": "black and white photograph of an old car on a dirt road in the woods",
+  "filename": "ce22cecb-63a8-4580-bdaf-fd23951484b9.png",
+  "filesize": 1924930,
+  "hash": "dc9de9434354b1ccd6af0ddccd0ef9de383bccb634a8878161d8177bc08d55c2",
+  "height": 768,
+  "id": "ce22cecb-63a8-4580-bdaf-fd23951484b9",
+  "last_generated_at": "2025-10-30T23:00:41.201295Z",
+  "llm_revision": 3,
+  "llm_updated_at": "2025-10-27T02:07:31.647375Z",
+  "manual_overrides": {},
+  "ml_generated_at": "2025-10-27T02:08:08.869126Z",
+  "ml_model_signature": "caption:Salesforce/blip-image-captioning-large|tagger:none",
+  "ml_source_hash": "dc9de9434354b1ccd6af0ddccd0ef9de383bccb634a8878161d8177bc08d55c2",
+  "modified_at": "2025-10-20T00:47:17.798221Z",
+  "notes": [
+    "Image flagged as rating:general"
+  ],
+  "rating": "rating:general",
+  "tag_scores": {
+    "a dirt road": 1.0,
+    "an old car": 2.0,
+    "black and white photograph": 3.0,
+    "car": 4.0,
+    "dirt": 5.0,
+    "photograph": 6.0,
+    "road": 7.0,
+    "the woods": 8.0,
+    "woods": 9.0
+  },
+  "tags": [
+    "A Dirt Road",
+    "An Old Car",
+    "Black And White Photograph",
+    "Car",
+    "Dirt",
+    "Photograph",
+    "Road",
+    "The Woods",
+    "Woods"
+  ],
+  "tags_raw": [
+    "a dirt road",
+    "an old car",
+    "black and white photograph",
+    "car",
+    "dirt",
+    "photograph",
+    "road",
+    "the woods",
+    "woods"
+  ],
+  "title": "Ce22cecb 63a8 4580 Bdaf Fd23951484b9",
+  "version": 1,
+  "width": 1368
+}

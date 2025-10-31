@@ -1,0 +1,68 @@
+{
+  "ai_confidence": 0.97148197889328,
+  "alt_raw": "there is a drawing of a space ship with a clock on it",
+  "alt_text": "There is a drawing of a space ship with a clock on it",
+  "caption": "There is a drawing of a space ship with a clock on it",
+  "caption_raw": "there is a drawing of a space ship with a clock on it",
+  "captured_at": null,
+  "collection_id": "demo_gallery_2",
+  "created_at": "2025-10-21T07:14:08.076976Z",
+  "derived": {
+    "download": "media/derived/large/gallery/demo_gallery_2/72f36b12-a78e-4fc4-92c5-cf66d9065342.jpg",
+    "original": "gallery/demo_gallery_2/72f36b12-a78e-4fc4-92c5-cf66d9065342.png",
+    "thumbnail": "media/derived/thumb/gallery/demo_gallery_2/72f36b12-a78e-4fc4-92c5-cf66d9065342.webp",
+    "web": "media/derived/large/gallery/demo_gallery_2/72f36b12-a78e-4fc4-92c5-cf66d9065342.jpg"
+  },
+  "description": "There is a drawing of a space ship with a clock on it.",
+  "description_raw": "there is a drawing of a space ship with a clock on it",
+  "filename": "72f36b12-a78e-4fc4-92c5-cf66d9065342.png",
+  "filesize": 749789,
+  "hash": "2fc14e9687cb3abf0c843ccdf0c2df83d40a569d6d78d1fb09277b34d01fbda2",
+  "height": 1024,
+  "id": "72f36b12-a78e-4fc4-92c5-cf66d9065342",
+  "last_generated_at": "2025-10-30T23:00:41.201295Z",
+  "llm_revision": 3,
+  "llm_updated_at": "2025-10-27T02:07:31.647375Z",
+  "manual_overrides": {},
+  "ml_generated_at": "2025-10-27T02:08:18.652931Z",
+  "ml_model_signature": "caption:Salesforce/blip-image-captioning-large|tagger:none",
+  "ml_source_hash": "2fc14e9687cb3abf0c843ccdf0c2df83d40a569d6d78d1fb09277b34d01fbda2",
+  "modified_at": "2025-10-04T20:00:29.928306Z",
+  "notes": [
+    "Image flagged as rating:general"
+  ],
+  "rating": "rating:general",
+  "tag_scores": {
+    "a clock": 1.0,
+    "a drawing": 2.0,
+    "a space ship": 3.0,
+    "clock": 4.0,
+    "drawing": 5.0,
+    "it": 6.0,
+    "ship": 7.0,
+    "space": 8.0
+  },
+  "tags": [
+    "A Clock",
+    "A Drawing",
+    "A Space Ship",
+    "Clock",
+    "Drawing",
+    "It",
+    "Ship",
+    "Space"
+  ],
+  "tags_raw": [
+    "a clock",
+    "a drawing",
+    "a space ship",
+    "clock",
+    "drawing",
+    "it",
+    "ship",
+    "space"
+  ],
+  "title": "72f36b12 A78e 4fc4 92c5 Cf66d9065342",
+  "version": 1,
+  "width": 1024
+}

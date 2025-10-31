@@ -75,6 +75,7 @@ class ManifestGenerator:
             asset_count=asset_count,
             has_media=asset_count > 0,
             duration=meta.duration,
+            audio_path=(meta.primary_audio_path if (meta.content_type.value == "audio") else None),
         )
 
 

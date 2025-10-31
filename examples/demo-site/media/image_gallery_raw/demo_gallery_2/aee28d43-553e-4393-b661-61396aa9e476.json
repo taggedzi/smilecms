@@ -1,0 +1,62 @@
+{
+  "ai_confidence": 0.9618206024169922,
+  "alt_raw": "this is an image of a spaceship flying in the sky",
+  "alt_text": "This is an image of a spaceship flying in the sky",
+  "caption": "This is an image of a spaceship flying in the sky",
+  "caption_raw": "this is an image of a spaceship flying in the sky",
+  "captured_at": null,
+  "collection_id": "demo_gallery_2",
+  "created_at": "2025-10-21T07:14:08.002453Z",
+  "derived": {
+    "download": "media/derived/large/gallery/demo_gallery_2/aee28d43-553e-4393-b661-61396aa9e476.jpg",
+    "original": "gallery/demo_gallery_2/aee28d43-553e-4393-b661-61396aa9e476.png",
+    "thumbnail": "media/derived/thumb/gallery/demo_gallery_2/aee28d43-553e-4393-b661-61396aa9e476.webp",
+    "web": "media/derived/large/gallery/demo_gallery_2/aee28d43-553e-4393-b661-61396aa9e476.jpg"
+  },
+  "description": "This is an image of a spaceship flying in the sky.",
+  "description_raw": "this is an image of a spaceship flying in the sky",
+  "filename": "aee28d43-553e-4393-b661-61396aa9e476.png",
+  "filesize": 748974,
+  "hash": "ea71c69675cde512f989d46ab2f62e9ddddf76cd6915c0f181b0d189c2df8dc9",
+  "height": 1024,
+  "id": "aee28d43-553e-4393-b661-61396aa9e476",
+  "last_generated_at": "2025-10-30T23:00:41.201295Z",
+  "llm_revision": 3,
+  "llm_updated_at": "2025-10-27T02:07:31.647375Z",
+  "manual_overrides": {},
+  "ml_generated_at": "2025-10-27T02:08:22.466489Z",
+  "ml_model_signature": "caption:Salesforce/blip-image-captioning-large|tagger:none",
+  "ml_source_hash": "ea71c69675cde512f989d46ab2f62e9ddddf76cd6915c0f181b0d189c2df8dc9",
+  "modified_at": "2025-10-04T20:00:53.355631Z",
+  "notes": [
+    "Image flagged as rating:general"
+  ],
+  "rating": "rating:general",
+  "tag_scores": {
+    "a spaceship": 1.0,
+    "an image": 2.0,
+    "sky": 3.0,
+    "spaceship": 4.0,
+    "the sky": 5.0,
+    "this": 6.0
+  },
+  "tags": [
+    "A Spaceship",
+    "An Image",
+    "Sky",
+    "Spaceship",
+    "The Sky",
+    "This"
+  ],
+  "tags_raw": [
+    "a spaceship",
+    "an image",
+    "sky",
+    "spaceship",
+    "the sky",
+    "this"
+  ],
+  "title": "Aee28d43 553e 4393 B661 61396aa9e476",
+  "version": 1,
+  "width": 1024
+}
