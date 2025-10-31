@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -41,11 +42,11 @@ Body text.
 
         result = runner.invoke(app, ["lint"])
         assert result.exit_code == 1, result.output
-        assert "Media file not found" in result.output
+        assert re.search(r"Media\s+file\s+not\s+found", result.output)
         assert "media/missing-hero.jpg" in result.output
         assert "assets[0].alt_text" in result.output
         assert "image-without-alt.jpg" in result.output
-        assert "Document status is 'draft'" in result.output
+        assert re.search(r"Document\s+status\s+is\s+'draft'", result.output)
 
 
 def test_lint_clean_when_content_is_valid() -> None:
